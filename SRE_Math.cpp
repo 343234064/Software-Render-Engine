@@ -25,8 +25,51 @@ namespace SREngine {
 	//
 	//=============================
     inline void Multiply2X2(float & fOut_11, float & fOut_12, float & fOut_21, float & fOut_22,
-					 float f1_11, float f1_12, float f1_21, float f1_22,
-					 float f2_11, float f2_12, float f2_21, float f2_22);
+					        float f1_11, float f1_12, float f1_21, float f1_22,
+					        float f2_11, float f2_12, float f2_21, float f2_22);
+
+
+
+
+    //=============================
+	//Public functions
+	//
+	//
+	//=============================
+    //=============================
+	//Clamp
+	//
+	//
+	//=============================
+    FLOAT Clamp(const FLOAT value, const FLOAT fmin, const FLOAT fmax)
+    {
+        if(value<fmax)
+        {
+            if(value>fmin)
+                return value;
+            else
+                return fmin;
+        }
+        else
+            return fmax;
+    }
+
+
+    //=============================
+	//Linear interpolation
+	//
+	//
+	//=============================
+    FLOAT Lerp(const FLOAT starting, const FLOAT ending, const FLOAT factor)
+    {
+        FLOAT _factor=Clamp(factor,0,1);
+
+        return starting+(ending-starting)*_factor;
+    }
+
+
+
+
 
 
     //=============================
@@ -34,7 +77,6 @@ namespace SREngine {
 	//
 	//
 	//=============================
-
 	//=============================
 	//1D vector operations
 	//
@@ -44,19 +86,23 @@ namespace SREngine {
 		return fabs(x - vec.x) <= EPSILON;
 	}
 
+
 	bool Vector::operator != (const VEC & vec) const {
 		return fabs(x - vec.x) > EPSILON;
 	}
+
 
 	VEC Vector::operator + (const VEC & vec) const {
 
 		return VEC(x + vec.x);
 	}
 
+
 	VEC Vector::operator - (const VEC & vec) const {
 
 		return VEC(x - vec.x);
 	}
+
 
 	VEC & Vector::operator = (const VEC & vec) {
 
@@ -68,7 +114,14 @@ namespace SREngine {
         return *this;
 	}
 
+
 	VEC operator * (FLOAT factor, const VEC & vec) {
+
+		return VEC(factor * vec.x);
+	}
+
+
+    VEC operator * (const VEC & vec, FLOAT factor) {
 
 		return VEC(factor * vec.x);
 	}
@@ -84,20 +137,24 @@ namespace SREngine {
                (fabs(y - vec.y) <= EPSILON);
 	}
 
+
 	bool Vector2::operator != (const VEC2 & vec) const {
 		return (fabs(x - vec.x) > EPSILON) ||
                (fabs(y - vec.y) > EPSILON);
 	}
+
 
 	VEC2 Vector2::operator + (const VEC2 & vec) const {
 
 		return VEC2(x + vec.x, y + vec.y);
 	}
 
+
 	VEC2 Vector2::operator - (const VEC2 & vec) const {
 
 		return VEC2(x - vec.x, y - vec.y);
 	}
+
 
 	VEC2 & Vector2::operator = (const VEC2 & vec) {
 
@@ -110,7 +167,14 @@ namespace SREngine {
         return *this;
 	}
 
+
 	VEC2 operator * (FLOAT factor, const VEC2 & vec) {
+
+		return VEC2(factor * vec.x, factor*vec.y);
+	}
+
+
+    VEC2 operator * (const VEC2 & vec, FLOAT factor) {
 
 		return VEC2(factor * vec.x, factor*vec.y);
 	}
@@ -127,21 +191,25 @@ namespace SREngine {
                (fabs(z - vec.z) <= EPSILON);
 	}
 
+
 	bool Vector3::operator != (const VEC3 & vec) const {
 		return (fabs(x - vec.x) > EPSILON) ||
                (fabs(y - vec.y) > EPSILON) ||
                (fabs(z - vec.z) > EPSILON);
 	}
 
+
 	VEC3 Vector3::operator + (const VEC3 & vec) const {
 
 		return VEC3(x + vec.x, y + vec.y, z + vec.z);
 	}
 
+
 	VEC3 Vector3::operator - (const VEC3 & vec) const {
 
 		return VEC3(x - vec.x, y - vec.y, z - vec.z);
 	}
+
 
 	VEC3 & Vector3::operator = (const VEC3 & vec) {
 
@@ -155,7 +223,14 @@ namespace SREngine {
         return *this;
 	}
 
+
 	VEC3 operator * (FLOAT factor, const VEC3 & vec) {
+
+		return VEC3(factor * vec.x, factor*vec.y, factor*vec.z);
+	}
+
+
+    VEC3 operator * (const VEC3 & vec, FLOAT factor) {
 
 		return VEC3(factor * vec.x, factor*vec.y, factor*vec.z);
 	}
@@ -173,6 +248,7 @@ namespace SREngine {
                (fabs(w - vec.w) <= EPSILON);
 	}
 
+
 	bool Vector4::operator != (const VEC4 & vec) const {
 		return (fabs(x - vec.x) > EPSILON) ||
                (fabs(y - vec.y) > EPSILON) ||
@@ -180,15 +256,18 @@ namespace SREngine {
                (fabs(w - vec.w) > EPSILON);
 	}
 
+
 	VEC4 Vector4::operator + (const VEC4 & vec) const {
 
 		return VEC4(x + vec.x, y + vec.y, z + vec.z, w + vec.w);
 	}
 
+
 	VEC4 Vector4::operator - (const VEC4 & vec) const {
 
 		return VEC4(x - vec.x, y - vec.y, z - vec.z, w - vec.w);
 	}
+
 
 	VEC4 & Vector4::operator = (const VEC4 & vec) {
 
@@ -203,12 +282,17 @@ namespace SREngine {
         return *this;
 	}
 
+
 	VEC4 operator * (FLOAT factor, const VEC4 & vec) {
 
 		return VEC4(factor * vec.x, factor*vec.y, factor*vec.z, factor*vec.w);
 	}
 
 
+    VEC4 operator * (const VEC4 & vec, FLOAT factor) {
+
+		return VEC4(factor * vec.x, factor*vec.y, factor*vec.z, factor*vec.w);
+	}
 
 
 
@@ -443,10 +527,10 @@ namespace SREngine {
 	//
 	//vector
 	//=============================
-	PVEC Normalize (PVEC out, CPVEC vector) {
+	PVEC Normalize (PVEC vector) {
 
 #ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == vector)
+		if (nullptr == vector)
         {
             _LOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
@@ -456,17 +540,17 @@ namespace SREngine {
 		FLOAT len = Lenth(vector);
 
 		if ((len >= EPSILON) || (len <= -EPSILON))
-			out->x = vector->x / len;
+			vector->x = vector->x / len;
         else
         {
 #ifdef _SRE_DEBUG_
             _LOG(SRE_ERROR_DIVIDEBYZERO);
 #endif
-            out->x=0.0;
+
         }
 
 
-		return out;
+		return vector;
 	}
 
 
@@ -475,10 +559,10 @@ namespace SREngine {
 	//
 	//vector2
 	//=============================
-	PVEC2 Normalize(PVEC2 out, CPVEC2 vector) {
+	PVEC2 Normalize(PVEC2 vector) {
 
 #ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == vector)
+		if (nullptr == vector)
         {
             _LOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
@@ -488,19 +572,18 @@ namespace SREngine {
 		FLOAT len = Lenth(vector);
 
 		if ((len >= EPSILON) || (len <= -EPSILON)){
-			out->x = vector->x / len;
-			out->y = vector->y / len;
+			vector->x = vector->x / len;
+			vector->y = vector->y / len;
 		}
 		else
         {
 #ifdef _SRE_DEBUG_
             _LOG(SRE_ERROR_DIVIDEBYZERO);
 #endif
-            out->x=0.0;
-            out->y=0.0;
+
         }
 
-		return out;
+		return vector;
 	}
 
 
@@ -509,10 +592,10 @@ namespace SREngine {
 	//
 	//vector3
 	//=============================
-	PVEC3 Normalize(PVEC3 out, CPVEC3 vector) {
+	PVEC3 Normalize(PVEC3 vector) {
 
 #ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == vector)
+		if (nullptr == vector)
         {
             _LOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
@@ -522,21 +605,20 @@ namespace SREngine {
 		FLOAT len = Lenth(vector);
 
 		if ((len >= EPSILON) || (len <= -EPSILON)) {
-			out->x = vector->x / len;
-			out->y = vector->y / len;
-			out->z = vector->z / len;
+			vector->x = vector->x / len;
+			vector->y = vector->y / len;
+			vector->z = vector->z / len;
 		}
 		else
         {
+
 #ifdef _SRE_DEBUG_
             _LOG(SRE_ERROR_DIVIDEBYZERO);
 #endif
-            out->x=0.0;
-            out->y=0.0;
-            out->z=0.0;
+
         }
 
-		return out;
+		return vector;
 	}
 
 
@@ -545,10 +627,10 @@ namespace SREngine {
 	//
 	//vector4
 	//=============================
-	PVEC4 Normalize(PVEC4 out, CPVEC4 vector) {
+	PVEC4 Normalize(PVEC4 vector) {
 
 #ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == vector)
+		if (nullptr == vector)
         {
             _LOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
@@ -558,23 +640,21 @@ namespace SREngine {
 		FLOAT len = Lenth(vector);
 
 		if ((len >= EPSILON) || (len <= -EPSILON)) {
-			out->x = vector->x / len;
-			out->y = vector->y / len;
-			out->z = vector->z / len;
-			out->w = vector->w / len;
+			vector->x = vector->x / len;
+			vector->y = vector->y / len;
+			vector->z = vector->z / len;
+			vector->w = vector->w / len;
 		}
 		else
         {
 #ifdef _SRE_DEBUG_
             _LOG(SRE_ERROR_DIVIDEBYZERO);
 #endif
-            out->x=0.0;
-            out->y=0.0;
-            out->z=0.0;
-            out->w=0.0;
+
         }
 
-		return out;
+		return vector;
+
 	}
 
 
@@ -597,7 +677,7 @@ namespace SREngine {
 
 		for(INT i=0; i<3; i++)
             for(INT j=0; j<3; j++)
-               if(fabs(this->m[i][j] - mat.m[i][j]) > EPSILON)
+               if(fabs((*this)[i][j] - mat[i][j]) > EPSILON)
                return false;
 
         return true;
@@ -608,7 +688,7 @@ namespace SREngine {
 
 		for(INT i=0; i<3; i++)
             for(INT j=0; j<3; j++)
-               if(fabs(this->m[i][j] - mat.m[i][j]) > EPSILON)
+               if(fabs((*this)[i][j] - mat[i][j]) > EPSILON)
                return true;
 
         return false;
@@ -624,6 +704,7 @@ namespace SREngine {
 			);
 	}
 
+
 	MAT33 Matrix3x3::operator - (const MAT33 & mat) const {
 
 		return MAT33(
@@ -633,7 +714,58 @@ namespace SREngine {
 			);
 	}
 
-	MAT33 operator * (FLOAT factor, const MAT33 & mat) {
+
+	FLOAT * Matrix3x3::operator [] (const INT & i)
+	{
+	    return (&_11) + i*3;
+	}
+
+
+	const FLOAT * Matrix3x3::operator [] (const INT & i) const
+	{
+	    return (&_11) + i*3;
+	}
+
+
+	MAT33 Matrix3x3::operator * (const MAT33 & mat) const
+	{
+
+        FLOAT m2 =(_11 - _21)*(mat._22 - mat._12);
+        FLOAT m4 =(_21 + _22 - _11)*(mat._11 - mat._12 + mat._22);
+        FLOAT m5 =(_21 + _22)*(mat._12 - mat._11);
+        FLOAT m6 = _11*mat._11;
+        FLOAT m7 =(_31 + _32 - _11)*(mat._11 - mat._13 + mat._23);
+        FLOAT m8 =(_31 - _11)*(mat._13 - mat._23);
+        FLOAT m9 =(_31 + _32)*(mat._13 - mat._11);
+        FLOAT m12=( - _13 + _32 + _33)*(mat._22 + mat._31 - mat._32);
+        FLOAT m13=(_13 - _33)*(mat._22 - mat._32);
+        FLOAT m14= _13*mat._31;
+        FLOAT m15=(_32 + _33)*( - mat._31 + mat._32);
+        FLOAT m16=( - _13 + _22 + _23)*(mat._23+ mat._31 - mat._33);
+        FLOAT m17=(_13 - _23)*(mat._23 - mat._33);
+        FLOAT m18=(_22 + _23)*( - mat._31 + mat._33);
+
+
+		return MAT33(
+			m6 + m14 + _12*mat._21,
+            (_11 + _12 + _13 -
+             _21 - _22 - _32 - _33)*mat._22 + m4 + m5 + m6 + m12 + m14 + m15,
+            m6 + m7 + m9 +(_11 + _12 + _13 -
+                           _22 - _23 - _31 - _32)*mat._23 + m14 + m16 + m18,
+			m2 + _22*(mat._12 + mat._21 + mat._33 -
+                            mat._11 - mat._22 - mat._23 - mat._31) + m4 + m6 + m14 + m16 + m17,
+            m2 + m4 + m5 + m6 +  _23*mat._32,
+            m14 + m16 + m17 + m18 + _21*mat._13,
+			m6 + m7 + m8 + _32*(mat._13 + mat._21 + mat._32 -
+                                mat._11 - mat._22 - mat._23 - mat._31) + m12 + m13 + m14,
+            m12 + m13 + m14 + m15 + _31*mat._12,
+            m6 + m7 + m8 + m9 + _33*mat._33
+			);
+
+	}
+
+
+    MAT33 operator * (const MAT33 & mat, FLOAT factor) {
 
 		return MAT33(
 			factor * mat._11, factor * mat._12, factor * mat._13,
@@ -642,6 +774,21 @@ namespace SREngine {
 			);
 
 	}
+
+
+    MAT33 operator * (FLOAT factor, const MAT33 & mat) {
+
+		return MAT33(
+			factor * mat._11, factor * mat._12, factor * mat._13,
+			factor * mat._21, factor * mat._22, factor * mat._23,
+			factor * mat._31, factor * mat._32, factor * mat._33
+			);
+
+	}
+
+
+
+
 
 
 
@@ -657,10 +804,11 @@ namespace SREngine {
 
 		for(INT i=0; i<4; i++)
             for(INT j=0; j<4; j++)
-               if(fabs(this->m[i][j] - mat.m[i][j]) > EPSILON)
+               if(fabs((*this)[i][j] - mat[i][j]) > EPSILON)
                return false;
 
         return true;
+
 	}
 
 
@@ -668,7 +816,7 @@ namespace SREngine {
 
 		for(INT i=0; i<4; i++)
             for(INT j=0; j<4; j++)
-               if(fabs(this->m[i][j] - mat.m[i][j]) > EPSILON)
+               if(fabs((*this)[i][j] - mat[i][j]) > EPSILON)
                return true;
 
         return false;
@@ -685,7 +833,9 @@ namespace SREngine {
 			);
 	}
 
-	MAT44 Matrix4x4::operator - (const MAT44 & mat) const {
+
+	MAT44 Matrix4x4::operator - (const MAT44 & mat) const
+    {
 
 		return MAT44(
 			_11 - mat._11, _12 - mat._12, _13 - mat._13, _14 - mat._14,
@@ -694,12 +844,90 @@ namespace SREngine {
 			_41 - mat._41, _42 - mat._42, _43 - mat._43, _44 - mat._44
 			);
 	}
-	FLOAT  Matrix4x4::operator [] (const INT & i) const
-	{
-	    return *(&(_11)+i);
+
+
+    MAT44 Matrix4x4::operator * (const MAT44 & mat) const
+    {
+
+        float fTmp[7][4];
+
+	    Multiply2X2(fTmp[0][0], fTmp[0][1], fTmp[0][2], fTmp[0][3],
+					_11 + _33, _12 + _34, _21 + _43, _22 + _44,
+					mat._11 + mat._33, mat._12 + mat._34, mat._21 + mat._43, mat._22 + mat._44);
+
+	    Multiply2X2(fTmp[1][0], fTmp[1][1], fTmp[1][2], fTmp[1][3],
+					_31 + _33, _32 + _34, _41 + _43, _42 + _44,
+					mat._11, mat._12, mat._21, mat._22);
+
+	    Multiply2X2(fTmp[2][0], fTmp[2][1], fTmp[2][2], fTmp[2][3],
+					_11, _12, _21, _22,
+					mat._13 - mat._33, mat._14 - mat._34, mat._23 - mat._43, mat._24 - mat._44);
+
+        Multiply2X2(fTmp[3][0], fTmp[3][1], fTmp[3][2], fTmp[3][3],
+					_33, _34, _43, _44,
+					mat._31 - mat._11, mat._32 - mat._12, mat._41 - mat._21, mat._42 - mat._22);
+
+	    Multiply2X2(fTmp[4][0], fTmp[4][1], fTmp[4][2], fTmp[4][3],
+					_11 + _13, _12 + _14, _21 + _23, _22 + _24,
+					mat._33, mat._34, mat._43, mat._44);
+
+	    Multiply2X2(fTmp[5][0], fTmp[5][1], fTmp[5][2], fTmp[5][3],
+					_31 - _11, _32 - _12, _41 - _21, _42 - _22,
+					mat._11 + mat._13, mat._12 + mat._14, mat._21 + mat._23, mat._22 + mat._24);
+
+        Multiply2X2(fTmp[6][0], fTmp[6][1], fTmp[6][2], fTmp[6][3],
+					_13 - _33, _14 - _34, _23 - _43, _24 - _44,
+					mat._31 + mat._33, mat._32 + mat._34, mat._41 + mat._43, mat._42 + mat._44);
+
+        return MAT44(
+
+        fTmp[0][0] + fTmp[3][0] - fTmp[4][0] + fTmp[6][0],
+        fTmp[0][1] + fTmp[3][1] - fTmp[4][1] + fTmp[6][1],
+        fTmp[0][2] + fTmp[3][2] - fTmp[4][2] + fTmp[6][2],
+        fTmp[0][3] + fTmp[3][3] - fTmp[4][3] + fTmp[6][3],
+
+	    fTmp[2][0] + fTmp[4][0],
+	    fTmp[2][1] + fTmp[4][1],
+	    fTmp[2][2] + fTmp[4][2],
+	    fTmp[2][3] + fTmp[4][3],
+
+	    fTmp[1][0] + fTmp[3][0],
+	    fTmp[1][1] + fTmp[3][1],
+	    fTmp[1][2] + fTmp[3][2],
+        fTmp[1][3] + fTmp[3][3],
+
+	    fTmp[0][0] - fTmp[1][0] + fTmp[2][0] + fTmp[5][0],
+	    fTmp[0][1] - fTmp[1][1] + fTmp[2][1] + fTmp[5][1],
+	    fTmp[0][2] - fTmp[1][2] + fTmp[2][2] + fTmp[5][2],
+	    fTmp[0][3] - fTmp[1][3] + fTmp[2][3] + fTmp[5][3]
+			);
 	}
 
+
+	FLOAT * Matrix4x4::operator [] (const INT & i)
+	{
+	    return (&_11) + i*4;
+	}
+
+
+	const FLOAT * Matrix4x4::operator [] (const INT & i) const
+	{
+	    return (&_11) + i*4;
+	}
+
+
 	MAT44 operator * (FLOAT factor, const MAT44 & mat) {
+
+		return MAT44(
+			factor * mat._11, factor * mat._12, factor * mat._13, factor * mat._14,
+			factor * mat._21, factor * mat._22, factor * mat._23, factor * mat._24,
+			factor * mat._31, factor * mat._32, factor * mat._33, factor * mat._34,
+			factor * mat._41, factor * mat._42, factor * mat._43, factor * mat._44
+			);
+	}
+
+
+    MAT44 operator * (const MAT44 & mat, FLOAT factor) {
 
 		return MAT44(
 			factor * mat._11, factor * mat._12, factor * mat._13, factor * mat._14,
@@ -1058,8 +1286,9 @@ namespace SREngine {
         }
 #endif
 
-        FLOAT det = Determinant(out);
+        FLOAT det = Determinant(mat);
         if((det >= EPSILON) || (det <= -EPSILON)){
+
             FLOAT invDet = 1/det;
 
             out->_11= invDet*(mat->_22*mat->_33 - mat->_32*mat->_23);
@@ -1073,8 +1302,8 @@ namespace SREngine {
             out->_33= invDet*(mat->_11*mat->_22 - mat->_21*mat->_12);
 
             return true;
-        }
-        else
+         }
+         else
             return false;
 
     }
@@ -1101,6 +1330,7 @@ namespace SREngine {
             return false;
         }
 #endif
+
         *out = *mat;
 	    INT row[4];
 	    INT col[4];
@@ -1113,7 +1343,7 @@ namespace SREngine {
 		    {
 		        for (INT k = j; k < 4; k++)
  			    {
-                   float cur = fabs(out->m[j][k]);
+                   float cur = fabs((*out)[j][k]);
 				   if (cur > Max)
 				   {
 					    Max	= cur;
@@ -1130,29 +1360,29 @@ namespace SREngine {
 		    if (row[i] != i)
 		    {
 		        //swap the element
-		        temp=out->m[i][0]; out->m[i][0]=out->m[row[i]][0]; out->m[row[i]][0]=temp;
-                temp=out->m[i][1]; out->m[i][1]=out->m[row[i]][1]; out->m[row[i]][1]=temp;
-                temp=out->m[i][2]; out->m[i][2]=out->m[row[i]][2]; out->m[row[i]][2]=temp;
-                temp=out->m[i][3]; out->m[i][3]=out->m[row[i]][3]; out->m[row[i]][3]=temp;
+		        temp=(*out)[i][0]; (*out)[i][0]=(*out)[row[i]][0]; (*out)[row[i]][0]=temp;
+                temp=(*out)[i][1]; (*out)[i][1]=(*out)[row[i]][1]; (*out)[row[i]][1]=temp;
+                temp=(*out)[i][2]; (*out)[i][2]=(*out)[row[i]][2]; (*out)[row[i]][2]=temp;
+                temp=(*out)[i][3]; (*out)[i][3]=(*out)[row[i]][3]; (*out)[row[i]][3]=temp;
 
 		    }
 
 		    if (col[i] != i)
 		    {
 		        //swap the element
-		        temp=out->m[0][i]; out->m[0][i]=out->m[0][col[i]]; out->m[0][col[i]]=temp;
-                temp=out->m[1][i]; out->m[1][i]=out->m[1][col[i]]; out->m[1][col[i]]=temp;
-                temp=out->m[2][i]; out->m[2][i]=out->m[2][col[i]]; out->m[2][col[i]]=temp;
-                temp=out->m[3][i]; out->m[3][i]=out->m[3][col[i]]; out->m[3][col[i]]=temp;
+		        temp=(*out)[0][i]; (*out)[0][i]=(*out)[0][col[i]]; (*out)[0][col[i]]=temp;
+                temp=(*out)[1][i]; (*out)[1][i]=(*out)[1][col[i]]; (*out)[1][col[i]]=temp;
+                temp=(*out)[2][i]; (*out)[2][i]=(*out)[2][col[i]]; (*out)[2][col[i]]=temp;
+                temp=(*out)[3][i]; (*out)[3][i]=(*out)[3][col[i]]; (*out)[3][col[i]]=temp;
 
 		    }
 
-     		out->m[i][i] = 1.0f / out->m[i][i];
+     		(*out)[i][i] = 1.0f / (*out)[i][i];
 
 		    for (INT k = 0; k < 4; k ++)
 		    {
 			    if (k != i)
-				   out->m[i][k] *= out->m[i][i];
+				   (*out)[i][k] *= (*out)[i][i];
 		    }
 
 		    for (INT j = 0; j < 4; j ++)
@@ -1162,7 +1392,7 @@ namespace SREngine {
 				    for	(INT k = 0; k < 4; k ++)
 				    {
 					   if (k != i)
-                           out->m[j][k] = out->m[j][k] - out->m[j][i] * out->m[i][k];
+                           (*out)[j][k] = (*out)[j][k] - (*out)[j][i] * (*out)[i][k];
 				    }
                 }
 		    }
@@ -1170,7 +1400,7 @@ namespace SREngine {
 		    for (INT j = 0; j < 4; j ++)
 		    {
                 if (j != i)
-                    out->m[j][i] *= -out->m[i][i];
+                    (*out)[j][i] *= -(*out)[i][i];
 		    }
 	    }
 
@@ -1179,18 +1409,18 @@ namespace SREngine {
 		   if (col[i] != i)
 		   {
 		      //swap the element
-              temp=out->m[i][0]; out->m[i][0]=out->m[col[i]][0]; out->m[col[i]][0]=temp;
-              temp=out->m[i][1]; out->m[i][1]=out->m[col[i]][1]; out->m[col[i]][1]=temp;
-              temp=out->m[i][2]; out->m[i][2]=out->m[col[i]][2]; out->m[col[i]][2]=temp;
-              temp=out->m[i][3]; out->m[i][3]=out->m[col[i]][3]; out->m[col[i]][3]=temp;
+              temp=(*out)[i][0]; (*out)[i][0]=(*out)[col[i]][0]; (*out)[col[i]][0]=temp;
+              temp=(*out)[i][1]; (*out)[i][1]=(*out)[col[i]][1]; (*out)[col[i]][1]=temp;
+              temp=(*out)[i][2]; (*out)[i][2]=(*out)[col[i]][2]; (*out)[col[i]][2]=temp;
+              temp=(*out)[i][3]; (*out)[i][3]=(*out)[col[i]][3]; (*out)[col[i]][3]=temp;
 		   }
 		   if (row[i] != i)
 		   {
 		      //swap the element
-              temp=out->m[0][i]; out->m[0][i]=out->m[0][row[i]]; out->m[0][row[i]]=temp;
-              temp=out->m[1][i]; out->m[1][i]=out->m[1][row[i]]; out->m[1][row[i]]=temp;
-              temp=out->m[2][i]; out->m[2][i]=out->m[2][row[i]]; out->m[2][row[i]]=temp;
-              temp=out->m[3][i]; out->m[3][i]=out->m[3][row[i]]; out->m[3][row[i]]=temp;
+              temp=(*out)[0][i]; (*out)[0][i]=(*out)[0][row[i]]; (*out)[0][row[i]]=temp;
+              temp=(*out)[1][i]; (*out)[1][i]=(*out)[1][row[i]]; (*out)[1][row[i]]=temp;
+              temp=(*out)[2][i]; (*out)[2][i]=(*out)[2][row[i]]; (*out)[2][row[i]]=temp;
+              temp=(*out)[3][i]; (*out)[3][i]=(*out)[3][row[i]]; (*out)[3][row[i]]=temp;
 		   }
 	    }
 
@@ -1253,4 +1483,1768 @@ namespace SREngine {
 
         return out;
 	}
+
+
+
+
+
+
+
+    //=============================
+	//Quaternion functions
+	//
+	//
+	//=============================
+
+	//=============================
+	//Quaternion operations
+	//
+	//
+	//=============================
+    bool  Quaternion::operator == (const QUAT & quat) const
+    {
+
+        if(fabs(w - quat.w) <= EPSILON && fabs(x - quat.x) <= EPSILON &&
+           fabs(y - quat.y) <= EPSILON && fabs(z - quat.z) <= EPSILON)
+               return true;
+
+        return false;
+    }
+
+
+    bool  Quaternion::operator != (const QUAT & quat) const
+    {
+
+        if(fabs(w - quat.w) > EPSILON || fabs(x - quat.x) > EPSILON ||
+           fabs(y - quat.y) > EPSILON || fabs(z - quat.z) > EPSILON)
+               return true;
+
+        return false;
+    }
+
+
+    QUAT  Quaternion::operator +  (const QUAT & quat) const
+    {
+
+        return QUAT(w+quat.w,
+                    x+quat.x,
+                    y+quat.y,
+                    z+quat.z);
+
+    }
+
+
+    QUAT  Quaternion::operator -  (const QUAT & quat) const
+    {
+
+        return QUAT(w-quat.w,
+                    x-quat.x,
+                    y-quat.y,
+                    z-quat.z);
+
+    }
+
+
+    QUAT  Quaternion::operator *  (const QUAT & quat) const
+    {
+
+        return QUAT(w*quat.w-x*quat.x-y*quat.y-z*quat.z,
+                    w*quat.x+x*quat.w+y*quat.z-z*quat.y,
+                    w*quat.y-x*quat.z+y*quat.w+z*quat.x,
+                    w*quat.z+x*quat.y-y*quat.x+z*quat.w);
+
+    }
+
+
+    QUAT  operator *  (FLOAT factor, const QUAT & quat)
+    {
+
+        return QUAT(factor*quat.w,
+                    factor*quat.x,
+                    factor*quat.y,
+                    factor*quat.z);
+
+    }
+
+
+    QUAT  operator *  (const QUAT & quat, FLOAT factor)
+    {
+
+        return QUAT(factor*quat.w,
+                    factor*quat.x,
+                    factor*quat.y,
+                    factor*quat.z);
+
+    }
+
+
+
+    //==================================
+	//Length
+	//
+	//return the length of a quaternion
+	//==================================
+    FLOAT    Length(CPQUAT quat)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == quat )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return 0.0;
+        }
+#endif
+
+        return sqrt(quat->w*quat->w+quat->x*quat->x+quat->y*quat->y+quat->z*quat->z);
+
+
+    }
+
+
+    //==================================
+	//Dot
+	//
+	//return the dot product of 2 quaternions
+	//==================================
+    FLOAT    Dot(CPQUAT quat1, CPQUAT quat2)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == quat1 || nullptr == quat2)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return 0.0;
+        }
+#endif
+
+        return quat1->w*quat2->w+quat1->x*quat2->x+quat1->y*quat2->y+quat1->z*quat2->z;
+
+
+    }
+
+
+    //==================================
+	//Cross
+	//
+	//return the cross product of 2 quaternions
+	//==================================
+    PVEC3     Cross(PVEC3 out, CPQUAT quat1, CPQUAT quat2)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out || nullptr == quat1 || nullptr == quat2)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+        out->x=quat1->y*quat2->z - quat1->z*quat2->y;
+        out->y=quat1->z*quat2->x - quat1->x*quat2->z;
+        out->z=quat1->x*quat2->y - quat1->y*quat2->x;
+
+        return out;
+
+    }
+
+
+    //==================================
+	//Inverse
+	//
+	//return the inverse of a quaternion
+	//==================================
+    bool     Inverse(PQUAT out, CPQUAT quat)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out || nullptr == quat)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return false;
+        }
+#endif
+
+        FLOAT length=Length(quat);
+
+        if(fabs(length) < EPSILON)
+            return false;
+
+        out->w= quat->w/length;
+        out->x=-quat->x/length;
+        out->y=-quat->y/length;
+        out->z=-quat->z/length;
+
+        return true;
+
+    }
+
+
+    //==================================
+	//Identity
+	//
+	//return a identical quaternion
+	//==================================
+    PQUAT     Identity(PQUAT quat)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == quat)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+
+        quat->w=1.0;
+        quat->x=0.0;
+        quat->y=0.0;
+        quat->z=0.0;
+
+        return quat;
+
+    }
+
+
+
+    //==================================
+	//Exponentiation
+	//
+	//
+    //
+    //raising a quaternion to an exponent
+	//==================================
+    PQUAT    Exponent(PQUAT out, CPQUAT quat, const FLOAT exponent)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out || nullptr == quat)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+        if(fabs(quat->w)<(1-EPSILON))
+        {
+            FLOAT alpha=acos(quat->w);
+            FLOAT newAlpha=alpha*exponent;
+            out->w=cos(newAlpha);
+
+            FLOAT mult=sin(newAlpha)/sin(alpha);
+            out->x=quat->x*mult;
+            out->y=quat->y*mult;
+            out->z=quat->z*mult;
+
+        }
+        else
+        {
+            out->w=quat->w;
+            out->x=quat->x;
+            out->y=quat->y;
+            out->z=quat->z;
+        }
+
+        return out;
+
+    }
+
+
+    //==================================
+	//Multiply
+	//
+    //
+    //
+	//==================================
+    PQUAT    Multiply(PQUAT out, CPQUAT quat1, CPQUAT quat2)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out || nullptr == quat1 || nullptr == quat2)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+
+        out->w=quat1->w*quat2->w-quat1->x*quat2->x-quat1->y*quat2->y-quat1->z*quat2->z;
+        out->x=quat1->w*quat2->x+quat1->x*quat2->w+quat1->y*quat2->z-quat1->z*quat2->y;
+        out->y=quat1->w*quat2->y-quat1->x*quat2->z+quat1->y*quat2->w+quat1->z*quat2->x;
+        out->z=quat1->w*quat2->z+quat1->x*quat2->y-quat1->y*quat2->x+quat1->z*quat2->w;
+
+
+
+        return out;
+
+    }
+
+
+    //==================================
+	//Normalize
+	//
+    //
+    //
+	//==================================
+    PQUAT    Normalize(PQUAT quat)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == quat)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+		FLOAT len = Length(quat);
+
+		if ((len >= EPSILON) || (len <= -EPSILON))
+        {
+            FLOAT inv=1/len;
+            quat->w=quat->w*inv;
+            quat->x=quat->x*inv;
+            quat->y=quat->y*inv;
+            quat->z=quat->z*inv;
+
+        }
+        else
+        {
+#ifdef _SRE_DEBUG_
+            _LOG(SRE_ERROR_DIVIDEBYZERO);
+#endif
+
+        }
+
+
+        return quat;
+
+    }
+
+
+    //==================================
+	//Spherical linear interpolation
+	//
+	//starting : the starting orientation
+	//ending   : the ending orientation
+	//factor: the interpolation factor,
+    //        0 <= factor <=1
+    //
+    //return the interpolates between start to end
+	//==================================
+    PQUAT     Slerp(PQUAT out, CPQUAT starting, CPQUAT ending, FLOAT factor)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out || nullptr == starting || nullptr == ending)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+        FLOAT _factor=Clamp(factor,0,1);
+
+        QUAT q1=QUAT(starting->w, starting->x, starting->y, starting->z);
+        QUAT q2=QUAT(ending->w, ending->x, ending->y, ending->z);
+
+        Normalize(&q1);
+        Normalize(&q2);
+
+        FLOAT cosOmega=Dot(&q1,&q2);
+        if(cosOmega<0.0)
+        {
+           q1.w=-q1.w;
+           q1.x=-q1.x;
+           q1.y=-q1.y;
+           q1.z=-q1.z;
+           cosOmega=-cosOmega;
+        }
+
+        FLOAT k0,k1;
+        if(cosOmega>(1-EPSILON))
+        {
+            k0=1.0-_factor;
+            k1=_factor;
+        }
+        else
+        {
+            FLOAT sinOmega=sqrt(1.0-cosOmega*cosOmega);
+            FLOAT omega=atan2(sinOmega, cosOmega);
+            FLOAT invSinOmega=1.0/sinOmega;
+
+            k0=sin((1.0-_factor)*omega)*invSinOmega;
+            k1=sin(_factor*omega)*invSinOmega;
+
+        }
+
+        out->w=q1.w*k0+q2.w*k1;
+        out->x=q1.x*k0+q2.x*k1;
+        out->y=q1.y*k0+q2.y*k1;
+        out->z=q1.z*k0+q2.z*k1;
+
+        return out;
+
+    }
+
+
+    //==================================
+	//QuaternionFromRotateAxis
+	//
+	//
+	//get a quaternion from a giving axis and
+	//angle
+	//==================================
+    PQUAT    QuaternionFromRotateAxis(PQUAT out, CPVEC3 axis, const FLOAT angle)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out || nullptr == axis)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+        out->w=cos(angle/2.0);
+
+        VEC3 _axis=VEC3(axis->x, axis->y, axis->z);
+        Normalize(&_axis);
+
+        FLOAT Sin=sin(angle/2.0);
+
+        out->x=Sin*_axis.x;
+        out->y=Sin*_axis.y;
+        out->z=Sin*_axis.z;
+
+        return out;
+
+    }
+
+
+    //==================================
+	//QuaternionFromRotateYawPitchRoll
+	//
+	//Rotation order:
+	//roll->pitch->yaw
+	//
+	//get a quaternion from 3 giving euler angle
+	//==================================
+    PQUAT    QuaternionFromRotateYawPitchRoll(PQUAT out, const FLOAT yaw, const FLOAT pitch, const FLOAT roll)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+
+        FLOAT CosY=cos(yaw/2.0);
+        FLOAT SinY=sin(yaw/2.0);
+
+        FLOAT CosX=cos(pitch/2.0);
+        FLOAT SinX=sin(pitch/2.0);
+
+        FLOAT CosZ=cos(roll/2.0);
+        FLOAT SinZ=sin(roll/2.0);
+
+
+        out->w=CosY*CosX*CosZ+SinY*SinX*SinZ;
+        out->x=CosY*SinX*CosZ+SinY*CosX*SinZ;
+        out->y=SinY*CosX*CosZ-CosY*SinX*SinZ;
+        out->z=CosY*CosX*SinZ-SinY*SinX*CosZ;
+
+
+        return out;
+
+    }
+
+
+
+
+    //==================================
+	//Transform functions
+	//
+	//
+	//==================================
+
+    //==================================
+	//Translation
+	//
+	//Build a translation matrix
+	//==================================
+	PMAT33 MatrixTranslation(PMAT33 out, const FLOAT tx, const FLOAT ty)
+	{
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+        Identity(out);
+        out->_31=tx;
+        out->_32=ty;
+
+	    return out;
+
+	}
+
+
+    PMAT44 MatrixTranslation(PMAT44 out, const FLOAT tx, const FLOAT ty, const FLOAT tz)
+	{
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+        Identity(out);
+        out->_41=tx;
+        out->_42=ty;
+        out->_43=tz;
+
+	    return out;
+
+	}
+
+
+	//==================================
+	//Scaling
+	//
+	//Build a uniform scaling matrix
+	//
+	//x will be scaled by a factor sx
+	//y will be scaled by a factor sy
+	//z will be scaled by a factor sz
+	//w will be scaled by a factor sw
+	//==================================
+	PMAT33 MatrixScaling(PMAT33 out, const FLOAT sx, const FLOAT sy, const FLOAT sz)
+	{
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+        Identity(out);
+        out->_11=sx;
+        out->_22=sy;
+        out->_33=sz;
+
+        return out;
+
+	}
+
+
+    PMAT44 MatrixScaling(PMAT44 out, const FLOAT sx, const FLOAT sy, const FLOAT sz, const FLOAT sw)
+	{
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+        Identity(out);
+        out->_11=sx;
+        out->_22=sy;
+        out->_33=sz;
+        out->_44=sw;
+
+        return out;
+
+	}
+
+
+	//==================================
+	//Scaling
+	//
+	//Build a non-uniform scaling matrix
+	//
+	//axis : An arbitrary axis which to scale along
+	//scale: scale factor
+	//==================================
+	PMAT33 MatrixScalingAxis(PMAT33 out, CPVEC3 axis, const FLOAT scale)
+	{
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+
+        VEC3 _axis = *axis;
+        Normalize(&_axis);
+
+        FLOAT xy=_axis.x * _axis.y;
+        FLOAT xz=_axis.x * _axis.z;
+        FLOAT yz=_axis.y * _axis.z;
+        out->_11=(scale - 1) * _axis.x * _axis.x+1;
+        out->_22=(scale - 1) * _axis.y * _axis.y+1;
+        out->_33=(scale - 1) * _axis.z * _axis.z+1;
+        out->_21=(scale - 1) * xy;
+        out->_31=(scale - 1) * xz;
+        out->_12=(scale - 1) * xy;
+        out->_32=(scale - 1) * yz;
+        out->_13=(scale - 1) * xz;
+        out->_23=(scale - 1) * yz;
+
+
+        return out;
+	}
+
+
+    PMAT44 MatrixScalingAxis(PMAT44 out, CPVEC3 axis, const FLOAT scale)
+	{
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+        Identity(out);
+
+        VEC3 _axis = *axis;
+        Normalize(&_axis);
+
+        FLOAT xy=_axis.x * _axis.y;
+        FLOAT xz=_axis.x * _axis.z;
+        FLOAT yz=_axis.y * _axis.z;
+        out->_11=(scale - 1) * _axis.x * _axis.x+1;
+        out->_22=(scale - 1) * _axis.y * _axis.y+1;
+        out->_33=(scale - 1) * _axis.z * _axis.z+1;
+        out->_21=(scale - 1) * xy;
+        out->_31=(scale - 1) * xz;
+        out->_12=(scale - 1) * xy;
+        out->_32=(scale - 1) * yz;
+        out->_13=(scale - 1) * xz;
+        out->_23=(scale - 1) * yz;
+
+
+        return out;
+	}
+
+
+	//==================================
+	//Scaling
+	//
+	//Build a non-uniform scaling matrix
+	//
+	//Along axis u, X will be scaled by a factor u_scale
+	//Along axis v, Y will be scaled by a factor v_scale
+	//Along axis w, Z will be scaled by a factor w_scale
+	//
+	//If u, v or w is null, it would not be changed along
+	//this axis.
+	//==================================
+	PMAT33 MatrixScalingUVW(PMAT33 out, CPVEC3 u, const FLOAT u_scale,
+                                        CPVEC3 v, const FLOAT v_scale,
+                                        CPVEC3 w, const FLOAT w_scale)
+	{
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+
+        if(nullptr!=u)
+        {
+            VEC3 _u = *u;
+            Normalize(&_u);
+            out->_11=(u_scale-1) * _u.x * _u.x + 1;
+            out->_21=(u_scale-1) * _u.x * _u.y;
+            out->_31=(u_scale-1) * _u.x * _u.z;
+        }
+        else
+        {
+            out->_11=1;
+            out->_21=0;
+            out->_31=0;
+        }
+
+        if(nullptr!=v)
+        {
+            VEC3 _v = *v;
+            Normalize(&_v);
+            out->_12=(v_scale-1) * _v.y * _v.x;
+            out->_22=(v_scale-1) * _v.y * _v.y + 1;
+            out->_32=(v_scale-1) * _v.y * _v.z;
+        }
+        else
+        {
+            out->_12=0;
+            out->_22=1;
+            out->_32=0;
+        }
+
+        if(nullptr!=w)
+        {
+            VEC3 _w = *w;
+            Normalize(&_w);
+            out->_13=(w_scale-1) * _w.z * _w.x;
+            out->_23=(w_scale-1) * _w.z * _w.y;
+            out->_33=(w_scale-1) * _w.z * _w.z + 1;
+        }
+        else
+        {
+            out->_13=0;
+            out->_23=0;
+            out->_33=1;
+        }
+
+        return out;
+
+	}
+
+
+	PMAT44 MatrixScalingUVW(PMAT44 out, CPVEC3 u, const FLOAT u_scale,
+                                        CPVEC3 v, const FLOAT v_scale,
+                                        CPVEC3 w, const FLOAT w_scale)
+	{
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+        Identity(out);
+
+        if(nullptr!=u)
+        {
+            VEC3 _u = *u;
+            Normalize(&_u);
+            out->_11=(u_scale-1) * _u.x * _u.x + 1;
+            out->_21=(u_scale-1) * _u.x * _u.y;
+            out->_31=(u_scale-1) * _u.x * _u.z;
+        }
+
+
+        if(nullptr!=v)
+        {
+            VEC3 _v = *v;
+            Normalize(&_v);
+            out->_12=(v_scale-1) * _v.y * _v.x;
+            out->_22=(v_scale-1) * _v.y * _v.y + 1;
+            out->_32=(v_scale-1) * _v.y * _v.z;
+        }
+
+
+        if(nullptr!=w)
+        {
+            VEC3 _w = *w;
+            Normalize(&_w);
+            out->_13=(w_scale-1) * _w.z * _w.x;
+            out->_23=(w_scale-1) * _w.z * _w.y;
+            out->_33=(w_scale-1) * _w.z * _w.z + 1;
+        }
+
+
+        return out;
+
+	}
+
+
+    //==================================
+	//Rotation
+	//
+	//Build a rotation matrix
+	//
+    //Rotate along X axis
+	//==================================
+    PMAT33 MatrixRotationX(PMAT33 out, const FLOAT angle)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+         FLOAT Cos=cos(angle);
+         FLOAT Sin=sin(angle);
+
+         out->_11=1; out->_12=0;    out->_13=0;
+         out->_21=0; out->_22= Cos; out->_23=Sin;
+         out->_31=0; out->_32=-Sin; out->_33=Cos;
+
+         return out;
+
+    }
+
+
+    PMAT44 MatrixRotationX(PMAT44 out, const FLOAT angle)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+         FLOAT Cos=cos(angle);
+         FLOAT Sin=sin(angle);
+
+         out->_11=1; out->_12=0;    out->_13=0;   out->_14=0;
+         out->_21=0; out->_22= Cos; out->_23=Sin; out->_24=0;
+         out->_31=0; out->_32=-Sin; out->_33=Cos; out->_34=0;
+         out->_41=0; out->_42=0;    out->_43=0;   out->_44=1;
+
+         return out;
+    }
+
+
+    //==================================
+	//Rotation
+	//
+	//Build a rotation matrix
+	//
+    //Rotate along Y axis
+	//==================================
+    PMAT33 MatrixRotationY(PMAT33 out, const FLOAT angle)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+         FLOAT Cos=cos(angle);
+         FLOAT Sin=sin(angle);
+
+         out->_11=Cos; out->_12=0; out->_13=-Sin;
+         out->_21=0;   out->_22=1; out->_23=0;
+         out->_31=Sin; out->_32=0; out->_33= Cos;
+
+
+         return out;
+
+    }
+
+
+    PMAT44 MatrixRotationY(PMAT44 out, const FLOAT angle)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+         FLOAT Cos=cos(angle);
+         FLOAT Sin=sin(angle);
+
+         out->_11=Cos; out->_12=0; out->_13=-Sin; out->_14=0;
+         out->_21=0;   out->_22=1; out->_23=0;    out->_24=0;
+         out->_31=Sin; out->_32=0; out->_33= Cos; out->_34=0;
+         out->_41=0;   out->_42=0; out->_43=0;    out->_44=1;
+
+         return out;
+    }
+
+
+    //==================================
+	//Rotation
+	//
+	//Build a rotation matrix
+	//
+    //Rotate along Z axis
+	//==================================
+    PMAT33 MatrixRotationZ(PMAT33 out, const FLOAT angle)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+         FLOAT Cos=cos(angle);
+         FLOAT Sin=sin(angle);
+
+         out->_11= Cos; out->_12=Sin; out->_13=0;
+         out->_21=-Sin; out->_22=Cos; out->_23=0;
+         out->_31= 0;   out->_32=0;   out->_33=1;
+
+
+         return out;
+
+    }
+
+
+    PMAT44 MatrixRotationZ(PMAT44 out, const FLOAT angle)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+         FLOAT Cos=cos(angle);
+         FLOAT Sin=sin(angle);
+
+         out->_11= Cos; out->_12=Sin; out->_13=0; out->_14=0;
+         out->_21=-Sin; out->_22=Cos; out->_23=0; out->_24=0;
+         out->_31= 0;   out->_32=0;   out->_33=1; out->_34=0;
+         out->_41= 0;   out->_42=0;   out->_43=0; out->_44=1;
+
+         return out;
+    }
+
+
+    //==================================
+	//Rotation
+	//
+	//Build a rotation matrix
+	//
+    //Rotate along an arbitrary axis
+    //If axis is null, a (1,0,0) vector
+    //will be applied
+	//==================================
+    PMAT33 MatrixRotationAxis(PMAT33 out, CPVEC3 axis, const FLOAT angle)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+         VEC3 _axis= VEC3(1,0,0);
+
+         if(nullptr != axis)
+         {
+             _axis=*axis;
+             Normalize(&_axis);
+         }
+
+         FLOAT Cos=cos(angle);
+         FLOAT Sin=sin(angle);
+
+         out->_11=_axis.x*_axis.x*(1-Cos)+Cos;
+         out->_12=_axis.x*_axis.y*(1-Cos)+_axis.z*Sin;
+         out->_13=_axis.x*_axis.z*(1-Cos)-_axis.y*Sin;
+
+         out->_21=_axis.x*_axis.y*(1-Cos)-_axis.z*Sin;
+         out->_22=_axis.y*_axis.y*(1-Cos)+Cos;
+         out->_23=_axis.y*_axis.z*(1-Cos)+_axis.x*Sin;
+
+         out->_31=_axis.x*_axis.z*(1-Cos)+_axis.y*Sin;
+         out->_32=_axis.y*_axis.z*(1-Cos)-_axis.x*Sin;
+         out->_33=_axis.z*_axis.z*(1-Cos)+Cos;
+
+
+         return out;
+
+    }
+
+
+    PMAT44 MatrixRotationAxis(PMAT44 out, CPVEC3 axis, const FLOAT angle)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+         Identity(out);
+         VEC3 _axis= VEC3(1,0,0);
+
+         if(nullptr != axis)
+         {
+             _axis=*axis;
+             Normalize(&_axis);
+         }
+
+         FLOAT Cos=cos(angle);
+         FLOAT Sin=sin(angle);
+
+         out->_11=_axis.x*_axis.x*(1-Cos)+Cos;
+         out->_12=_axis.x*_axis.y*(1-Cos)+_axis.z*Sin;
+         out->_13=_axis.x*_axis.z*(1-Cos)-_axis.y*Sin;
+
+         out->_21=_axis.x*_axis.y*(1-Cos)-_axis.z*Sin;
+         out->_22=_axis.y*_axis.y*(1-Cos)+Cos;
+         out->_23=_axis.y*_axis.z*(1-Cos)+_axis.x*Sin;
+
+         out->_31=_axis.x*_axis.z*(1-Cos)+_axis.y*Sin;
+         out->_32=_axis.y*_axis.z*(1-Cos)-_axis.x*Sin;
+         out->_33=_axis.z*_axis.z*(1-Cos)+Cos;
+
+
+         return out;
+
+    }
+
+
+    //==================================
+	//Rotation
+	//
+	//Build a rotation matrix
+	//
+    //Rotate based on three euler angles
+    //Rotation matrix multiplication order :
+    //Mz * Mx * My
+    //
+    //yaw:   rotate yaw degrees around y axis
+    //pitch: rotate pitch degrees around x axis
+    //roll:  rotate roll degrees around z axis
+    //
+    //if this matrix multiplied by a row vector v like this:
+    //  v * M
+    //this produces a rotation around the world coordinate system
+	//==================================
+    PMAT33 MatrixRotationYawPitchRoll(PMAT33 out, const FLOAT yaw, const FLOAT pitch, const FLOAT roll)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+        FLOAT CosY=cos(yaw);   FLOAT SinY=sin(yaw);
+        FLOAT CosX=cos(pitch); FLOAT SinX=sin(pitch);
+        FLOAT CosZ=cos(roll);  FLOAT SinZ=sin(roll);
+
+        out->_11= CosY*CosZ+SinY*SinX*SinZ;
+        out->_12= CosX*SinZ;
+        out->_13=-SinY*CosZ+CosY*SinX*SinZ;
+
+        out->_21=-CosY*SinZ+SinY*SinX*CosZ;
+        out->_22= CosX*CosZ;
+        out->_23= SinZ*SinY+CosY*SinX*CosZ;
+
+        out->_31= SinY*CosX;
+        out->_32=-SinX;
+        out->_33= CosY*CosX;
+
+        return out;
+
+    }
+
+
+    PMAT44 MatrixRotationYawPitchRoll(PMAT44 out, const FLOAT yaw, const FLOAT pitch, const FLOAT roll)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out )
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+        Identity(out);
+
+        FLOAT CosY=cos(yaw);   FLOAT SinY=sin(yaw);
+        FLOAT CosX=cos(pitch); FLOAT SinX=sin(pitch);
+        FLOAT CosZ=cos(roll);  FLOAT SinZ=sin(roll);
+
+        out->_11= CosY*CosZ+SinY*SinX*SinZ;
+        out->_12= CosX*SinZ;
+        out->_13=-SinY*CosZ+CosY*SinX*SinZ;
+
+        out->_21=-CosY*SinZ+SinY*SinX*CosZ;
+        out->_22= CosX*CosZ;
+        out->_23= SinZ*SinY+CosY*SinX*CosZ;
+
+        out->_31= SinY*CosX;
+        out->_32=-SinX;
+        out->_33= CosY*CosX;
+
+
+        return out;
+
+    }
+
+
+    //==================================
+	//Rotation
+	//
+	//Build a rotation matrix from a giving
+	//quaternion
+	//
+    //
+	//==================================
+    PMAT33 MatrixRotationQuaternion(PMAT33 out, CPQUAT quat)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out || nullptr == quat)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+
+        out->_11=1-2*quat->y*quat->y-2*quat->z*quat->z;
+        out->_12=2*quat->x*quat->y+2*quat->w*quat->z;
+        out->_13=2*quat->x*quat->z-2*quat->w*quat->y;
+
+        out->_21=2*quat->x*quat->y-2*quat->w*quat->z;
+        out->_22=1-2*quat->x*quat->x-2*quat->z*quat->z;
+        out->_23=2*quat->y*quat->z+2*quat->w*quat->x;
+
+        out->_31=2*quat->x*quat->z+2*quat->w*quat->y;
+        out->_32=2*quat->y*quat->z-2*quat->w*quat->x;
+        out->_33=1-2*quat->x*quat->x-2*quat->y*quat->y;
+
+        return out;
+
+    }
+
+
+    PMAT44 MatrixRotationQuaternion(PMAT44 out, CPQUAT quat)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out || nullptr == quat)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+        Identity(out);
+
+        out->_11=1-2*quat->y*quat->y-2*quat->z*quat->z;
+        out->_12=2*quat->x*quat->y+2*quat->w*quat->z;
+        out->_13=2*quat->x*quat->z-2*quat->w*quat->y;
+
+        out->_21=2*quat->x*quat->y-2*quat->w*quat->z;
+        out->_22=1-2*quat->x*quat->x-2*quat->z*quat->z;
+        out->_23=2*quat->y*quat->z+2*quat->w*quat->x;
+
+        out->_31=2*quat->x*quat->z+2*quat->w*quat->y;
+        out->_32=2*quat->y*quat->z-2*quat->w*quat->x;
+        out->_33=1-2*quat->x*quat->x-2*quat->y*quat->y;
+
+
+        return out;
+
+    }
+
+
+    //==================================
+	//View Matrix
+	//
+	//Build a view matrix based on 3 basics vectors
+	//
+    //
+    //pos:    the camera/viewer's position
+    //lookAt: the point that the camera//viewer is
+    //        looking at
+    //up:     the vector that points to the up direction
+	//==================================
+    PMAT44 MatrixViewLookAt(PMAT44 out, CPVEC3 pos, CPVEC3 lookAt, CPVEC3 up)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out || nullptr == pos ||
+            nullptr == lookAt || nullptr == up)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+        VEC3 view_vector=(*lookAt)-(*pos);
+        Normalize(&view_vector);
+
+        VEC3 right_vector=VEC3();
+        Cross(&right_vector, &view_vector, up);
+        Normalize(&right_vector);
+
+        VEC3 up_vector=VEC3();
+        Cross(&up_vector, &right_vector, &view_vector);
+        Normalize(&up_vector);
+
+        out->_11=right_vector.x;
+        out->_21=right_vector.y;
+        out->_31=right_vector.z;
+        out->_41=-Dot(pos, &right_vector);
+
+        out->_12=up_vector.x;
+        out->_22=up_vector.y;
+        out->_32=up_vector.z;
+        out->_42=-Dot(pos, &up_vector);
+
+        out->_13=view_vector.x;
+        out->_23=view_vector.y;
+        out->_33=view_vector.z;
+        out->_43=-Dot(pos, &view_vector);
+
+        out->_14=0;
+        out->_24=0;
+        out->_34=0;
+        out->_44=1;
+
+
+        return out;
+
+    }
+
+
+    //==================================
+	//View Matrix
+	//
+	//Build a view matrix based on 3 euler angles
+	//
+    //Rotation matrix multiplication order :
+    //My * Mx * Mz
+    //
+    //pos:   the camera/viewer's position
+    //yaw:   rotate yaw degrees around y axis
+    //pitch: rotate pitch degrees around x axis
+    //roll:  rotate roll degrees around z axis
+	//==================================
+    PMAT44 MatrixViewYawPitchRoll(PMAT44 out, CPVEC3 pos, const FLOAT yaw, const FLOAT pitch, const FLOAT roll)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out || nullptr == pos)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+        FLOAT CosY=cos(yaw);   FLOAT SinY=sin(yaw);
+        FLOAT CosX=cos(pitch); FLOAT SinX=sin(pitch);
+        FLOAT CosZ=cos(roll);  FLOAT SinZ=sin(roll);
+
+
+        out->_11= CosY*CosZ-SinX*SinY*SinZ;
+        out->_12= CosY*SinZ+SinX*SinY*CosZ;
+        out->_13=-SinY*CosX;
+        out->_14= 0;
+
+        out->_21=-CosX*SinZ;
+        out->_22= CosX*CosZ;
+        out->_23= SinX;
+        out->_24= 0;
+
+        out->_31= SinY*CosZ+SinX*CosY*SinZ;
+        out->_32= SinY*SinZ-SinX*CosY*CosZ;
+        out->_33= CosX*CosY;
+        out->_34= 0;
+
+        VEC3 xaxis=VEC3(out->_11, out->_12, out->_13);
+        VEC3 yaxis=VEC3(out->_21, out->_22, out->_23);
+        VEC3 zaxis=VEC3(out->_31, out->_32, out->_33);
+        out->_41= -Dot(pos, &xaxis);
+        out->_42= -Dot(pos, &yaxis);
+        out->_43= -Dot(pos, &zaxis);
+        out->_44= 1;
+
+
+        return out;
+
+    }
+
+
+    //==================================
+	//View Matrix
+	//
+	//Build a view matrix from a giving
+	//quaternion
+	//
+    //
+    //
+	//==================================
+    PMAT44 MatrixViewQuaternion(PMAT44 out, CPVEC3 pos, CPQUAT quat)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out || nullptr == pos || nullptr == quat)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+#endif
+
+        out->_11=1-2*quat->y*quat->y-2*quat->z*quat->z;
+        out->_12=2*quat->x*quat->y+2*quat->w*quat->z;
+        out->_13=2*quat->x*quat->z-2*quat->w*quat->y;
+
+        out->_21=2*quat->x*quat->y-2*quat->w*quat->z;
+        out->_22=1-2*quat->x*quat->x-2*quat->z*quat->z;
+        out->_23=2*quat->y*quat->z+2*quat->w*quat->x;
+
+        out->_31=2*quat->x*quat->z+2*quat->w*quat->y;
+        out->_32=2*quat->y*quat->z-2*quat->w*quat->x;
+        out->_33=1-2*quat->x*quat->x-2*quat->y*quat->y;
+
+
+        VEC3 xaxis=VEC3(out->_11, out->_12, out->_13);
+        VEC3 yaxis=VEC3(out->_21, out->_22, out->_23);
+        VEC3 zaxis=VEC3(out->_31, out->_32, out->_33);
+        out->_41= -Dot(pos, &xaxis);
+        out->_42= -Dot(pos, &yaxis);
+        out->_43= -Dot(pos, &zaxis);
+        out->_44= 1;
+
+
+        return out;
+
+    }
+
+
+    //==================================
+	//Projection Matrix
+	//
+	//Build a orthogonal projection matrix
+	//
+    //View volume will be :
+    // -1 < x < 1
+    // -1 < y < 1
+    //  0 < z < 1
+    //
+    //view_width: the width of the view volume,
+    //            computed by right plane-left plane
+    //view_height: the height of the view volume,
+    //             computed by top plane-bottom plane
+    //znear: the minimum z value of the view volume
+    //zfar:  the maximum z value of the view volume
+    //In this function, assuming:
+    // left plane = - right plane
+    // top  plane = - bottom plane
+	//==================================
+    PMAT44 MatrixProjectOrthogonal(PMAT44 out, const FLOAT view_width,
+                                               const FLOAT view_height,
+                                               const FLOAT znear,
+                                               const FLOAT zfar)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+
+        if(fabs(view_width) < EPSILON)
+        {
+             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             return out;
+        }
+
+        if(fabs(view_height) < EPSILON)
+        {
+             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             return out;
+        }
+
+        if(fabs(zfar-znear) < EPSILON)
+        {
+             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             return out;
+        }
+#endif
+
+
+        out->_11= 2.0/view_width;
+        out->_22= 2.0/view_height;
+        out->_33= 1.0/(zfar-znear);
+        out->_34= 0;
+
+        out->_12=0;
+        out->_13=0;
+        out->_14=0;
+
+        out->_21=0;
+        out->_23=0;
+        out->_24=0;
+
+        out->_31=0;
+        out->_32=0;
+
+        out->_41=0;
+        out->_42=0;
+        out->_43=-znear/(zfar-znear);
+        out->_44=1;
+
+        return out;
+
+    }
+
+
+    //==================================
+	//Projection Matrix
+	//
+	//Build a orthogonal projection matrix
+	//
+    //View volume will be :
+    // -1 < x < 1
+    // -1 < y < 1
+    //  0 < z < 1
+    //
+    //left: left plane of the view volume
+    //      (the minimum x value of the view volume)
+    //right: right plane of the view volume
+    //      (the maximum x value of the view volume)
+    //top: top plane of the view volume
+    //     (the minimum y value of the view volume)
+    //bottom: bottom plane of the view volume
+    //        (the maximum y value of the view volume)
+    //znear: the minimum z value of the view volume
+    //zfar:  the maximum z value of the view volume
+	//==================================
+    PMAT44 MatrixProjectOrthonalOffCenter(PMAT44 out, const FLOAT left,
+                                                      const FLOAT right,
+                                                      const FLOAT top,
+                                                      const FLOAT bottom,
+                                                      const FLOAT znear,
+                                                      const FLOAT zfar)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+
+        if(fabs(right-left) < EPSILON)
+        {
+             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             return out;
+        }
+
+        if(fabs(top-bottom) < EPSILON)
+        {
+             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             return out;
+        }
+
+        if(fabs(zfar-znear) < EPSILON)
+        {
+             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             return out;
+        }
+#endif
+
+
+        out->_11= 2.0/(right-left);
+        out->_22= 2.0/(top-bottom);
+        out->_33= 1.0/(zfar-znear);
+
+        out->_14=0;
+        out->_24=0;
+        out->_34=0;
+
+        out->_12=0;
+        out->_13=0;
+
+        out->_21=0;
+        out->_23=0;
+
+        out->_31=0;
+        out->_32=0;
+
+        out->_41=-(right+left)/(right-left);
+        out->_42=-(top+bottom)/(top-bottom);
+        out->_43= znear/(zfar-znear);
+        out->_44=1;
+
+        return out;
+
+    }
+
+
+
+    //==================================
+	//Projection Matrix
+	//
+	//Build a perspective projection matrix
+	//
+    //View volume will be :
+    // -1 < x < 1
+    // -1 < y < 1
+    //  0 < z < 1
+    //
+    //left: left plane of the view volume
+    //      (the minimum x value of the view volume)
+    //right: right plane of the view volume
+    //      (the maximum x value of the view volume)
+    //top: top plane of the view volume
+    //     (the minimum y value of the view volume)
+    //bottom: bottom plane of the view volume
+    //        (the maximum y value of the view volume)
+    //znear: the minimum z value of the view volume
+    //zfar:  the maximum z value of the view volume
+	//==================================
+    PMAT44 MatrixProjectPerspectiveOffCenter(PMAT44 out, const FLOAT left,
+                                                         const FLOAT right,
+                                                         const FLOAT top,
+                                                         const FLOAT bottom,
+                                                         const FLOAT znear,
+                                                         const FLOAT zfar)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+
+        if(fabs(right-left) < EPSILON)
+        {
+             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             return out;
+        }
+
+        if(fabs(top-bottom) < EPSILON)
+        {
+             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             return out;
+        }
+
+        if(fabs(zfar-znear) < EPSILON)
+        {
+             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             return out;
+        }
+#endif
+
+
+        out->_11=(2.0*znear)/(right-left);
+        out->_12=0;
+        out->_13=0;
+        out->_14=0;
+
+        out->_21=0;
+        out->_22=(2.0*znear)/(top-bottom);
+        out->_23=0;
+        out->_24=0;
+
+        out->_31=-(right+left)/(right-left);
+        out->_32=-(top+bottom)/(top-bottom);
+        out->_33= zfar/(zfar-znear);
+        out->_34=1;
+
+        out->_41=0;
+        out->_42=0;
+        out->_43=-(zfar*znear)/(zfar-znear);
+        out->_44=0;
+
+        return out;
+
+    }
+
+
+    //==================================
+	//Projection Matrix
+	//
+	//Build a perspective projection matrix
+	//
+    //View volume will be :
+    // -1 < x < 1
+    // -1 < y < 1
+    //  0 < z < 1
+    //
+    //view_width: the width of the view volume,
+    //            computed by right plane-left plane
+    //view_height: the height of the view volume,
+    //             computed by top plane-bottom plane
+    //znear: the minimum z value of the view volume
+    //zfar:  the maximum z value of the view volume
+    //In this function, assuming:
+    // left plane = - right plane
+    // top  plane = - bottom plane
+	//==================================
+    PMAT44 MatrixProjectPerspective(PMAT44 out, const FLOAT view_width,
+                                                const FLOAT view_height,
+                                                const FLOAT znear,
+                                                const FLOAT zfar)
+    {
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+
+        if(fabs(view_width) < EPSILON)
+        {
+             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             return out;
+        }
+
+        if(fabs(view_height) < EPSILON)
+        {
+             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             return out;
+        }
+
+        if(fabs(zfar-znear) < EPSILON)
+        {
+             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             return out;
+        }
+#endif
+
+
+        out->_11=(2.0*znear)/view_width;
+        out->_12=0;
+        out->_13=0;
+        out->_14=0;
+
+        out->_21=0;
+        out->_22=(2.0*znear)/view_height;
+        out->_23=0;
+        out->_24=0;
+
+        out->_31=0;
+        out->_32=0;
+        out->_33=zfar/(zfar-znear);
+        out->_34=1;
+
+        out->_41=0;
+        out->_42=0;
+        out->_43=-(zfar*znear)/(zfar-znear);
+        out->_44=0;
+
+        return out;
+
+    }
+
+
+    //==================================
+	//Projection Matrix
+	//
+	//Build a perspective projection matrix
+	//
+    //View volume will be :
+    // -1 < x < 1
+    // -1 < y < 1
+    //  0 < z < 1
+    //
+    //fov: the field of the view volume along Y axis
+    //aspectRatio: the ratio that computed by:
+    //             the width of view volume divided by
+    //             the height of the view volume
+    //znear: the minimum z value of the view volume
+    //zfar:  the maximum z value of the view volume
+    //
+	//==================================
+    PMAT44 MatrixProjectPerspectiveFOV(PMAT44 out, const FLOAT fov,
+                                                   const FLOAT aspectRatio,
+                                                   const FLOAT znear,
+                                                   const FLOAT zfar)
+    {
+
+
+#ifdef _SRE_DEBUG_
+		if (nullptr == out)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return nullptr;
+        }
+
+        if(fabs(aspectRatio) < EPSILON)
+        {
+             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             return out;
+        }
+
+        if(fabs(zfar-znear) < EPSILON)
+        {
+             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             return out;
+        }
+#endif
+
+        FLOAT angle=fov/2.0;
+        FLOAT Tan  =tan(angle);
+        FLOAT as   =aspectRatio*Tan;
+
+#ifdef _SRE_DEBUG_
+        if(fabs(as) < EPSILON)
+        {
+             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             return out;
+        }
+
+        if(fabs(Tan) < EPSILON)
+        {
+             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             return out;
+        }
+#endif
+
+        out->_11=1.0/as;
+        out->_12=0;
+        out->_13=0;
+        out->_14=0;
+
+        out->_21=0;
+        out->_22=1.0/Tan;
+        out->_23=0;
+        out->_24=0;
+
+        out->_31=0;
+        out->_32=0;
+        out->_33=zfar/(zfar-znear);
+        out->_34=1;
+
+        out->_41=0;
+        out->_42=0;
+        out->_43=-(zfar*znear)/(zfar-znear);
+        out->_44=0;
+
+        return out;
+
+    }
 }
