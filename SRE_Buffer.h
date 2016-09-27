@@ -83,7 +83,14 @@ namespace SREngine {
             m_pDescript(nullptr), data(nullptr)
             {}
         Buffer(const Buffer & other);
-        virtual ~Buffer();
+        virtual ~Buffer()
+        {
+           if(nullptr != m_pDescript)
+                delete m_pDescript;
+
+           if(nullptr != data)
+                delete[] data;
+        }
 
 
         BufferDescript* GetDescript(){return m_pDescript;}

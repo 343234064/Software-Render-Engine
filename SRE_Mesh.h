@@ -86,7 +86,7 @@ namespace SREngine {
     class IMesh
     {
     public:
-        IMesh():name("/0"){}
+        IMesh():name("\0"){}
         IMesh(string _name):name(_name){}
         virtual ~IMesh(){}
 
@@ -171,19 +171,43 @@ namespace SREngine {
     class TriangleMesh : public IMesh
     {
     public:
-        TriangleMesh(void * vertices=nullptr,
-                     INT  * indices=nullptr,
-                     INT ** edges=nullptr,
-                     Buffer * attributes=nullptr,
-                     SREVAR vertexformat=SRE_FORMAT_VERTEX_XYZ)
+        TriangleMesh(void * vertices = nullptr,
+                     INT  * indices = nullptr,
+                     INT ** edges = nullptr,
+                     Buffer * attributes = nullptr,
+                     SREVAR vertexformat = SRE_FORMAT_VERTEX_XYZ,
+                     INT vertexNumber,
+                     INT indexNumber,
+                     INT edgeNumber)
             m_pVertiexList(vertices),
             m_pIndexList(indices),
             m_pEdgeList(edges),
             m_pAttributes(attributes),
-            m_VertexFormat(vertexformat)
+            m_VertexFormat(vertexformat),
+            m_vertexNumber(vertexNumber),
+            m_indexNumber(indexNumber),
+            m_edgeNumber(edgeNumber)
             {}
         TriangleMesh(const TriangleMesh & other);
-        virtual ~TriangleMesh(){}
+        virtual ~TriangleMesh()
+        {
+            if(nullptr != m_pVertiexList)
+                delete[] m_pVertiexList;
+            if(nullptr != m_pIndexList)
+                delete[] m_pIndexList;
+            if(nullptr != m_pAttributes)
+                delete[] m_pAttributes;
+            if(nullptr != m_pEdgeList)
+            {
+                int i=0;
+                while((i++)<m_edgeNumber)
+                   delete[] m_pEdgeList[i];
+
+                delete m_pEdgeList;
+            }
+
+
+        }
 
 
         TriangleMesh & operator=(const TriangleMesh & other);
@@ -191,11 +215,18 @@ namespace SREngine {
 
 
     protected:
-        void *  m_pVertiexList;
+        //vertexes list, every vertex is a float type data
+        FLOAT *  m_pVertiexList;
+        //index list
         INT  *  m_pIndexList;
+        //edge list, every edge connects to 2 vertexes
         INT  ** m_pEdgeList;
+        //attributes list, which to store every vertex's attributes
         Buffer * m_pAttributes;
         SREVAR m_VertexFormat;
+        int m_vertexNumber;
+        int m_indexNumber;
+        int m_edgeNumber;
 
     };
 

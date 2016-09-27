@@ -70,19 +70,19 @@ namespace SREngine {
 #endif // _SRE_DEBUG_
 
        /*Make sure how many members in each vertex*/
-       INT membersOfperVertex=0;
-       if(vertexFormat==SRE_FORMAT_VERTEX_XY)
-           membersOfperVertex=2;
-       else if(vertexFormat==SRE_FORMAT_VERTEX_XYZ)
-           membersOfperVertex=3;
-       else if(vertexFormat==SRE_FORMAT_VERTEX_XYZW)
-           membersOfperVertex=4;
+       INT membersOfperVertex = 0;
+       if(vertexFormat == SRE_FORMAT_VERTEX_XY)
+           membersOfperVertex = 2;
+       else if(vertexFormat == SRE_FORMAT_VERTEX_XYZ)
+           membersOfperVertex = 3;
+       else if(vertexFormat == SRE_FORMAT_VERTEX_XYZW)
+           membersOfperVertex = 4;
        else
            return INVALIDARG;
 
        /*Generate the vertex list*/
-       FLOAT * vertexList=new FLOAT[vertexNumber*membersOfperVertex];
-       if(nullptr==vertexList)
+       void * vertexList = (void*)(new FLOAT[vertexNumber*membersOfperVertex]);
+       if(nullptr == vertexList)
            return OUTMEMORY;
 
        /*Copy the user's vertice to the vertex list*/
@@ -90,10 +90,10 @@ namespace SREngine {
 
 
        /*Generate the index list*/
-       INT * indexList=new INT[indexNumer];
-       if(nullptr==indexList)
+       INT * indexList = new INT[indexNumer];
+       if(nullptr == indexList)
        {
-           Release(vertexList, true);
+           delete[] vertexList;
            return OUTMEMORY;
        }
 
@@ -103,26 +103,29 @@ namespace SREngine {
 
 
        /*Generate the attributes list*/
-       Buffer * attributes=new Buffer();
-       if(nullptr==attributes)
+       Buffer * attributes = new Buffer();
+       if(nullptr == attributes)
        {
-           Release(vertexList, true);
-           Release(indexList, true);
+           delete[] vertexList;
+           delete[] indexList;
            return OUTMEMORY;
        }
 
        /*Copy the user's attributes to the attributes list*/
-       *attributes=*pVertexAttributes;
+       *attributes = *pVertexAttributes;
 
 
        /*Generate the edge list*/
-       INT * edgeList;
+       INT ** edgeList = nullptr;
+       int edgeNumber = 0;
 
 
-       *ppOutTriangleMesh=new TriangleMesh();
-       if(nullptr==*ppOutTriangleMesh)
+
+       *ppOutTriangleMesh = new TriangleMesh();
+       if(nullptr == *ppOutTriangleMesh)
            return OUTMEMORY;
 
+       return SUCC;
     }
 
 

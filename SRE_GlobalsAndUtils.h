@@ -60,20 +60,22 @@ namespace SREngine {
     SREVAR SRE_BUFFERUSAGE_VERTEXBUFFER=0x00000072;
     SREVAR SRE_BUFFERUSAGE_ATTRIBUTEBUFFER=0x00000073;
 
+
+    /*
+      Primitive types
+      POINTLIST: a list of points
+      LINELIST: a list of lines, write a -1 means the end of a line
+      TRIANGLEFAN: a list of triangle fans, write a -1 means the end of a fan
+      TRIANGLESTRIP: a list of continuous triangles, which shared an edge with the adjacent one,
+                     write a -1 means the end of a strip.
+      TRIANGLELIST: a list of triangles
+    */
     SREVAR SRE_PRIMITIVETYPE_POINTLIST=0x00000074;
     SREVAR SRE_PRIMITIVETYPE_LINELIST=0x00000075;
     SREVAR SRE_PRIMITIVETYPE_TRIANGLEFAN=0x00000076;
     SREVAR SRE_PRIMITIVETYPE_TRIANGLESTRIP=0x00000077;
     SREVAR SRE_PRIMITIVETYPE_TRIANGLELIST=0x00000078;
 
-
-
-
-    //==============================
-    //Utility functions definitions
-    //
-    //==============================
-    void Release(void ** mem, bool array);
 
 
 

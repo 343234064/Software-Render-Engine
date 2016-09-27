@@ -20,21 +20,6 @@ namespace SREngine {
 
 
 
-    //===========================================
-	//Utility functions
-	//
-	//
-	//===========================================
-    void Release(void ** mem, bool array)
-    {
-        if(nullptr==mem) return;
-        if(nullptr!=(*mem))
-        {
-            if(array)
-                delete [] (*mem);
-            else
-                delete (*mem);
-        }
-    }
+
 
 }
