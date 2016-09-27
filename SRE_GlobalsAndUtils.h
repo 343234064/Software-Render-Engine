@@ -64,10 +64,10 @@ namespace SREngine {
     /*
       Primitive types
       POINTLIST: a list of points
-      LINELIST: a list of lines, write a -1 means the end of a line
-      TRIANGLEFAN: a list of triangle fans, write a -1 means the end of a fan
+      LINELIST: a list of lines, write a index -1 means the end of a line
+      TRIANGLEFAN: a list of triangle fans, write a index -1 means the end of a fan
       TRIANGLESTRIP: a list of continuous triangles, which shared an edge with the adjacent one,
-                     write a -1 means the end of a strip.
+                     write a index -1 means the end of a strip.
       TRIANGLELIST: a list of triangles
     */
     SREVAR SRE_PRIMITIVETYPE_POINTLIST=0x00000074;

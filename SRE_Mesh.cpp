@@ -119,11 +119,44 @@ namespace SREngine {
        INT ** edgeList = nullptr;
        int edgeNumber = 0;
 
+       if(primitiveType == SRE_PRIMITIVETYPE_POINTLIST)
+       {
+           ;
+       }
+       else if(primitiveType == SRE_PRIMITIVETYPE_LINELIST)
+       {
+           for
+
+       }
+       else if(primitiveType == SRE_PRIMITIVETYPE_TRIANGLEFAN)
+       {
+
+       }
+       else if(primitiveType == SRE_PRIMITIVETYPE_TRIANGLELIST)
+       {
+
+       }
+       else if(primitiveType == SRE_PRIMITIVETYPE_TRIANGLESTRIP)
+       {
+
+       }
+       else
+       {
+           delete[] vertexList;
+           delete[] indexList;
+           return INVALIDARG;
+       }
 
 
        *ppOutTriangleMesh = new TriangleMesh();
        if(nullptr == *ppOutTriangleMesh)
+       {
+           delete[] vertexList;
+           delete[] indexList;
+
            return OUTMEMORY;
+       }
+
 
        return SUCC;
     }

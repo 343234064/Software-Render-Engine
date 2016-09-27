@@ -216,7 +216,7 @@ namespace SREngine {
 
     protected:
         //vertexes list, every vertex is a float type data
-        FLOAT *  m_pVertiexList;
+        void *  m_pVertiexList;
         //index list
         INT  *  m_pIndexList;
         //edge list, every edge connects to 2 vertexes
