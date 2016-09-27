@@ -54,12 +54,22 @@ namespace SREngine {
 	typedef const Vector3 * CPVEC3;
 	typedef const Vector4 * CPVEC4;
 
-	typedef Vector4   COLOR3;
+	typedef Vector3   COLOR3;
 	typedef Vector4   COLOR4;
     typedef Vector3 * PCOLOR3;
 	typedef Vector4 * PCOLOR4;
 	typedef const Vector3 * CPCOLOR3;
 	typedef const Vector4 * CPCOLOR4;
+
+	typedef Vector2   VERTEX2;
+    typedef Vector3   VERTEX3;
+	typedef Vector4   VERTEX4;
+    typedef Vector2 * PVERTEX2;
+    typedef Vector3 * PVERTEX3;
+	typedef Vector4 * PVERTEX4;
+	typedef const Vector2 * CPVERTEX2;
+	typedef const Vector3 * CPVERTEX3;
+	typedef const Vector4 * CPVERTEX4;
 
 	typedef Matrix3x3 MAT33;
 	typedef Matrix4x4 MAT44;

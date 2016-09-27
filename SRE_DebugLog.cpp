@@ -29,6 +29,15 @@ namespace SREngine {
 
         switch (error)
         {
+        case SRE_ERROR_FAIL:
+            printf("  %s \n", "Function executed failed!");
+            break;
+        case SRE_ERROR_INVALIDARG:
+            printf("  %s \n", "Invalid arguments!");
+            break;
+        case SRE_ERROR_OUTOFMEMORY:
+            printf("  %s \n", "Memory is not enough!");
+            break;
         case SRE_ERROR_NULLPOINTER:
             printf("  %s \n", "There is a NULL pointer!");
             break;

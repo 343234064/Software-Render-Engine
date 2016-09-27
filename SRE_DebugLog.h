@@ -23,14 +23,18 @@ namespace SREngine{
     //Type definitions
     //
     //==============================
-    typedef const int ERROR;
+    typedef const unsigned int ERROR;
 
     //==============================
     //Error type
     //
     //==============================
-    ERROR SRE_ERROR_NULLPOINTER=128;
-    ERROR SRE_ERROR_DIVIDEBYZERO=129;
+    ERROR SRE_ERROR_FAIL=0x0000000A;
+    ERROR SRE_ERROR_INVALIDARG=0x0000000B;
+    ERROR SRE_ERROR_OUTOFMEMORY=0x0000000C;
+    ERROR SRE_ERROR_NULLPOINTER=0x0000000D;
+    ERROR SRE_ERROR_DIVIDEBYZERO=0x0000000E;
+
 
 
 

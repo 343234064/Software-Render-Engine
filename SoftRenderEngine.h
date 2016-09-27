@@ -37,7 +37,8 @@
 
 #include "SRE_GlobalsAndUtils.h"
 #include "SRE_Math.h"
-
+#include "SRE_Mesh.h"
+#include "SRE_Buffer.h"
 
 
 
