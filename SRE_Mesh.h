@@ -26,6 +26,12 @@ using namespace std;
 namespace SREngine {
 
 
+	//=============================
+	//Constant definitions
+	//
+	//=============================
+    const int INDEX_END_FLAG = -1;
+
 
 	//=============================
 	//Class definitions
@@ -173,19 +179,19 @@ namespace SREngine {
     public:
         TriangleMesh(void * vertices = nullptr,
                      INT  * indices = nullptr,
-                     INT ** edges = nullptr,
+                     INT ** faces = nullptr,
                      Buffer * attributes = nullptr,
                      SREVAR vertexformat = SRE_FORMAT_VERTEX_XYZ,
                      INT vertexNumber,
-                     INT indexNumber,
+                     INT faceNumber,
                      INT edgeNumber)
             m_pVertiexList(vertices),
-            m_pIndexList(indices),
+            m_pFaceList(faces),
             m_pEdgeList(edges),
             m_pAttributes(attributes),
             m_VertexFormat(vertexformat),
             m_vertexNumber(vertexNumber),
-            m_indexNumber(indexNumber),
+            m_faceNumber(faceNumber),
             m_edgeNumber(edgeNumber)
             {}
         TriangleMesh(const TriangleMesh & other);
@@ -193,16 +199,20 @@ namespace SREngine {
         {
             if(nullptr != m_pVertiexList)
                 delete[] m_pVertiexList;
-            if(nullptr != m_pIndexList)
-                delete[] m_pIndexList;
             if(nullptr != m_pAttributes)
                 delete[] m_pAttributes;
+            if(nullptr != m_pFaceList)
+            {
+                int i=0;
+                while(i++<m_faceNumber)
+                    delete[] m_pFaceList[i];
+                delete m_pFaceList;
+            }
             if(nullptr != m_pEdgeList)
             {
                 int i=0;
-                while((i++)<m_edgeNumber)
+                while(i++<m_edgeNumber)
                    delete[] m_pEdgeList[i];
-
                 delete m_pEdgeList;
             }
 
@@ -217,15 +227,15 @@ namespace SREngine {
     protected:
         //vertexes list, every vertex is a float type data
         void *  m_pVertiexList;
-        //index list
-        INT  *  m_pIndexList;
+        //face list, every face is adjacent with 3 vertexes
+        INT  ** m_pFaceList;
         //edge list, every edge connects to 2 vertexes
         INT  ** m_pEdgeList;
         //attributes list, which to store every vertex's attributes
         Buffer * m_pAttributes;
         SREVAR m_VertexFormat;
         int m_vertexNumber;
-        int m_indexNumber;
+        int m_faceNumber;
         int m_edgeNumber;
 
     };

@@ -37,7 +37,7 @@ namespace SREngine {
     //faceNumber: the number of face in the mesh
     //pVertices: the vertices array
     //indexNumber: the number of index
-    //pIndex: the index array
+    //pIndexes: the index array
     //primitiveType: the primitive type which to
     //               decide how the index number in
     //               the index array to construct the
@@ -48,15 +48,15 @@ namespace SREngine {
 	RESULT CreateTriangleMesh(const INT vertexNumber,
                               const SREVAR vertexFormat,
                               const void * pVertices,
-                              const INT   indexNumer,
-                              const INT * pIndex,
+                              const INT   indexNumber,
+                              const INT * pIndexes,
                               const SREVAR primitiveType,
                               const Buffer* pVertexAttributes,
                               TriangleMesh** ppOutTriangleMesh
                               )
     {
 #ifdef _SRE_DEBUG_
-       if(nullptr == pVertices || nullptr == pIndex ||
+       if(nullptr == pVertices || nullptr == pIndexes ||
           nullptr == pVertexAttributes || nullptr == ppOutTriangleMesh)
        {
            _LOG(SRE_ERROR_NULLPOINTER);
@@ -80,52 +80,53 @@ namespace SREngine {
        else
            return INVALIDARG;
 
-       /*Generate the vertex list*/
-       void * vertexList = (void*)(new FLOAT[vertexNumber*membersOfperVertex]);
-       if(nullptr == vertexList)
-           return OUTMEMORY;
-
-       /*Copy the user's vertice to the vertex list*/
-       memcpy(vertexList, pVertices, vertexNumber*membersOfperVertex*sizeof(FLOAT));
-
-
-       /*Generate the index list*/
-       INT * indexList = new INT[indexNumer];
-       if(nullptr == indexList)
-       {
-           delete[] vertexList;
-           return OUTMEMORY;
-       }
-
-
-       /*Copy the user's indexes to the index list*/
-       memcpy(indexList, pIndex, indexNumer*sizeof(INT));
-
-
-       /*Generate the attributes list*/
-       Buffer * attributes = new Buffer();
-       if(nullptr == attributes)
-       {
-           delete[] vertexList;
-           delete[] indexList;
-           return OUTMEMORY;
-       }
-
-       /*Copy the user's attributes to the attributes list*/
-       *attributes = *pVertexAttributes;
-
-
-       /*Generate the edge list*/
+       /*Generate the face list and edge list*/
        INT ** edgeList = nullptr;
+       INT ** faceList = nullptr;
+       int faceNumber = 0;
        int edgeNumber = 0;
-
+       int i = 0, j = 0;
        if(primitiveType == SRE_PRIMITIVETYPE_POINTLIST)
        {
            ;
        }
        else if(primitiveType == SRE_PRIMITIVETYPE_LINELIST)
        {
-           for
+           while(i <= indexNumber-1)
+           {
+               if(pIndexes[i] != INDEX_END_FLAG && pIndexes[i+1] != INDEX_END_FLAG)
+               {
+                   edgeNumber++;
+               }
+               i++;
+           }
+
+           if(edgeNumber > 0)
+           {
+              edgeList = new INT[edgeNumber];
+              if(nullptr == edgeList)
+                return OUTMEMORY;
+           }
+
+           i = 0;
+           while(i <= indexNumber-1)
+           {
+               if(pIndexes[i] != INDEX_END_FLAG && pIndexes[i+1] != INDEX_END_FLAG)
+               {
+                  edgeList[j] = new INT[2];
+                  if(nullptr == edgeList[j])
+                  {
+                     for(int k=0; k<j; k++)
+                        delete[] edgeList[k];
+                     delete edgeList;
+                     return OUTMEMORY;
+                  }
+                  edgeList[j][0] = pIndexes[i];
+                  edgeList[j][1] = pIndexes[i+1];
+                  j++;
+               }
+               i++;
+            }
 
        }
        else if(primitiveType == SRE_PRIMITIVETYPE_TRIANGLEFAN)
@@ -142,10 +143,27 @@ namespace SREngine {
        }
        else
        {
-           delete[] vertexList;
-           delete[] indexList;
            return INVALIDARG;
        }
+
+       /*Generate the vertex list*/
+       void * vertexList = (void*)(new FLOAT[vertexNumber*membersOfperVertex]);
+       if(nullptr == vertexList)
+           return OUTMEMORY;
+
+       /*Copy the user's vertice to the vertex list*/
+       memcpy(vertexList, pVertices, vertexNumber*membersOfperVertex*sizeof(FLOAT));
+
+       /*Generate the attributes list*/
+       Buffer * attributes = new Buffer();
+       if(nullptr == attributes)
+       {
+           delete[] vertexList;
+           return OUTMEMORY;
+       }
+
+       /*Copy the user's attributes to the attributes list*/
+       *attributes = *pVertexAttributes;
 
 
        *ppOutTriangleMesh = new TriangleMesh();
