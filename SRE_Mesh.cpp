@@ -14,6 +14,7 @@
 
 
 #include <string>
+#include <cstring>
 #include "SRE_Mesh.h"
 
 
@@ -36,7 +37,7 @@ namespace SREngine {
 	//vertexFormat: the format of vertex,
 	//             see SRE_GlobalsAndUtils.h
     //faceNumber: the number of face in the mesh
-    //pVertices: the vertices array
+    //pVertexes: the vertexes array
     //indexNumber: the number of index
     //pIndexes: the index array
     //primitiveType: the primitive type which to
@@ -46,13 +47,12 @@ namespace SREngine {
     //pVertexAttributes: the vertex attributes buffer
     //ppOutTriangleMesh: the output mesh
     //
-    //It will automatically ignores the single point
+    //It will automatically ignore the single vertex
     //or single edge
-    //
 	//===========================================
 	RESULT CreateTriangleMesh(const INT vertexNumber,
                               const SREVAR vertexFormat,
-                              const void * pVertices,
+                              const void * pVertexes,
                               const INT   indexNumber,
                               const INT * pIndexes,
                               const SREVAR primitiveType,
@@ -61,15 +61,15 @@ namespace SREngine {
                               )
     {
 #ifdef _SRE_DEBUG_
-       if(nullptr == pVertices || nullptr == pIndexes ||
+       if(nullptr == pVertexes || nullptr == pIndexes ||
           nullptr == pVertexAttributes || nullptr == ppOutTriangleMesh)
        {
            _LOG(SRE_ERROR_NULLPOINTER);
            return INVALIDARG;
        }
 
-       if(vertexNumber<=0 || indexNumber<=0)
-           return INVALIDARG;
+       if(vertexNumber <= 2 || indexNumber <= 0)
+           return FAIL;
 
 
 #endif // _SRE_DEBUG_
@@ -90,73 +90,74 @@ namespace SREngine {
        INT ** faceList = nullptr;
        int faceNumber = 0;
        int edgeNumber = 0;
+       bool *validVertexList = nullptr;
+       int  validVertexNum = 0;
        int i = 0, e = 0, f = 0;
+
+       validVertexList = new bool[vertexNumber];
+       if(nullptr == validVertexList) return OUTMEMORY;
+       memset(validVertexList, 0, vertexNumber * sizeof(bool));
 
        if(primitiveType == SRE_PRIMITIVETYPE_TRIANGLEFAN)
        {
            int count = 0;
            int group = 0;
 
-           /*Calculate the number of edges and groups*/
+           /*Calculate the number of edges and groups and valid vertexes*/
            while(i < indexNumber)
            {
-               if(pIndexes[i++] == INDEX_END_FLAG)
+               if(pIndexes[i]<0 || pIndexes[i]>=vertexNumber)
                {
                    if(count > 2)
-                     edgeNumber = edgeNumber + 2*count - 3;
-                   count = 0;
+                   {
+                      edgeNumber = edgeNumber + 2*count - 3;
+                      group++;
 
-                   group++;
+                      while(count > 0){
+                        validVertexList[pIndexes[i-count]] = true;
+                        validVertexNum++;
+                        count--;
+                      }
+                   }
+                   count = 0;
                }
                else
                    count++;
+               i++;
            }
-           if(pIndexes[0] == INDEX_END_FLAG)
-             group--;
-           if(pIndexes[indexNumber-1] == INDEX_END_FLAG)
-             group--;
-           group = group + 1;
 
            /*Calculate the number of faces*/
-           faceNumber = edgeNumber - vertexNumber + group;
+           faceNumber = edgeNumber - validVertexNum + group;
 
-           /*If we got a non-zero edge amount, then continue to generate the edge list
+           /*If we got a non-zero face amount, then continue to generate the edge list
              and face list, else , this is not a triangle mesh*/
-           if(edgeNumber > 0)
+           if(faceNumber > 0)
            {
               edgeList = new INT*[edgeNumber];
               if(nullptr == edgeList)
                  return OUTMEMORY;
 
-              if(faceNumber > 0)
-              {
-                  faceList = new INT*[faceNumber];
-                  if(nullptr == faceList)
-                    return OUTMEMORY;
-              }
+              faceList = new INT*[faceNumber];
+              if(nullptr == faceList)
+                 return OUTMEMORY;
 
-              i = 0;
+              i = 1;
               int k = 0;
+              int temp = 0;
               /*Travel down the index list and fill in the edge list and face list*/
               while(i < indexNumber)
               {
-                  if(pIndexes[i] != INDEX_END_FLAG)
+                  if(pIndexes[i]>=0 && pIndexes[i]<vertexNumber)
                   {
-                      k = i + 2;
-                      if(pIndexes[i+1] != INDEX_END_FLAG)
+                      k = i;
+                      if(pIndexes[i-1]>=0 && pIndexes[i-1]<vertexNumber)
                       {
-
-                          edgeList[j] = new INT[2];
-                          if(nullptr == edgeList[j])
-                             return OUTMEMORY;
-                          edgeList[e][0]   = pIndexes[i];
-                          edgeList[e++][1] = pIndexes[i+1];
-
-                          for(; k<indexNumber; k++)
+                          temp = e;
+                          for(k=i+1; k<indexNumber; k++)
                           {
-                             if(pIndexes[k] != INDEX_END_FLAG)
+                             if(pIndexes[k]>=0 && pIndexes[k]<vertexNumber)
                              {
-                                edgeList[e] = new INT[2];
+                                edgeList[++e] = new INT[2];
                                 if(nullptr == edgeList[e])
                                    return OUTMEMORY;
                                 edgeList[e][0]   = pIndexes[k-1];
@@ -165,32 +166,37 @@ namespace SREngine {
                                 edgeList[e] = new INT[2];
                                 if(nullptr == edgeList[e])
                                    return OUTMEMORY;
-                                edgeList[e][0]   = pIndexes[i];
+                                edgeList[e][0]   = pIndexes[i-1];
                                 edgeList[e++][1] = pIndexes[k];
 
-                                if(nullptr != faceList)
-                                {
-                                    faceList[f] = new INT[3];
-                                    if(nullptr == faceList[f])
-                                        return OUTMEMORY;
-                                    faceList[f][0] = pIndexes[i];
-                                    faceList[f][1] = pIndexes[k-1];
-                                    faceList[f++][2] = pIndexes[k];
-                                }
+                                faceList[f] = new INT[3];
+                                if(nullptr == faceList[f])
+                                   return OUTMEMORY;
+                                faceList[f][0] = pIndexes[i-1];
+                                faceList[f][1] = pIndexes[k-1];
+                                faceList[f++][2] = pIndexes[k];
+
                              }
-                             else{
-                                i = k + 1;
+                             else
                                 break;
-                             }
+                          }
+                          if(e > temp)
+                          {
+                              edgeList[temp] = new INT[2];
+                              if(nullptr == edgeList[temp])
+                                return OUTMEMORY;
+                              edgeList[temp][0] = pIndexes[i-1];
+                              edgeList[temp][1] = pIndexes[i];
                           }
                       }
-                      else
-                        i = k;
+                      i = k + 1;
                   }
                   else
                     i++;
               }
            }
+           else
+              return FAIL;
 
        }
        else if(primitiveType == SRE_PRIMITIVETYPE_TRIANGLELIST)
@@ -213,7 +219,8 @@ namespace SREngine {
            return OUTMEMORY;
 
        /*Copy the user's vertexes to the vertex list*/
-       memcpy(vertexList, pVertices, vertexNumber*membersOfperVertex*sizeof(FLOAT));
+       memcpy(vertexList, pVertexes, vertexNumber*membersOfperVertex*sizeof(FLOAT));
+       //delete validVertexList
 
        /*Generate the attributes list*/
        Buffer * attributes = new Buffer();
