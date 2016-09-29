@@ -26,6 +26,7 @@ namespace SREngine {
 	//
 	//
 	//===========================================
+
     //===========================================
 	//CreateTriangleMesh
 	//
@@ -44,6 +45,10 @@ namespace SREngine {
     //               mesh, see SRE_GlobalsAndUtils.h
     //pVertexAttributes: the vertex attributes buffer
     //ppOutTriangleMesh: the output mesh
+    //
+    //It will automatically ignores the single point
+    //or single edge
+    //
 	//===========================================
 	RESULT CreateTriangleMesh(const INT vertexNumber,
                               const SREVAR vertexFormat,
@@ -85,79 +90,54 @@ namespace SREngine {
        INT ** faceList = nullptr;
        int faceNumber = 0;
        int edgeNumber = 0;
-       int i = 0, j = 0;
-       if(primitiveType == SRE_PRIMITIVETYPE_POINTLIST)
-       {
-           /*Don not need to generate the edge list and face list*/;
-       }
-       else if(primitiveType == SRE_PRIMITIVETYPE_LINELIST)
-       {
-           /*Calculate the number of edges*/
-           while(i <= indexNumber-1)
-           {
-               if(pIndexes[i] != INDEX_END_FLAG && pIndexes[i+1] != INDEX_END_FLAG)
-               {
-                   edgeNumber++;
-               }
-               i++;
-           }
+       int i = 0, e = 0, f = 0;
 
-           /*If we got a non-zero edge amount, then travel down the index list
-             and fill in the edge list*/
-           if(edgeNumber > 0)
-           {
-              edgeList = new INT*[edgeNumber];
-              if(nullptr == edgeList)
-                 return OUTMEMORY;
-
-              i = 0;
-              while(i <= indexNumber-1)
-              {
-                 if(pIndexes[i] != INDEX_END_FLAG && pIndexes[i+1] != INDEX_END_FLAG)
-                 {
-                    edgeList[j] = new INT[2];
-                    if(nullptr == edgeList[j])
-                    {
-                       return OUTMEMORY;
-                    }
-                    edgeList[j][0] = pIndexes[i];
-                    edgeList[j][1] = pIndexes[i+1];
-                    j++;
-                 }
-                 i++;
-              }
-          }
-       }
-       else if(primitiveType == SRE_PRIMITIVETYPE_TRIANGLEFAN)
+       if(primitiveType == SRE_PRIMITIVETYPE_TRIANGLEFAN)
        {
            int count = 0;
-           /*Calculate the number of edges*/
+           int group = 0;
+
+           /*Calculate the number of edges and groups*/
            while(i < indexNumber)
            {
                if(pIndexes[i++] == INDEX_END_FLAG)
                {
-                   if(count > 1)
+                   if(count > 2)
                      edgeNumber = edgeNumber + 2*count - 3;
                    count = 0;
+
+                   group++;
                }
                else
-               {
                    count++;
-               }
            }
+           if(pIndexes[0] == INDEX_END_FLAG)
+             group--;
+           if(pIndexes[indexNumber-1] == INDEX_END_FLAG)
+             group--;
+           group = group + 1;
 
-           /*If we got a non-zero edge amount, then travel down the index list
-             and fill in the edge list*/
+           /*Calculate the number of faces*/
+           faceNumber = edgeNumber - vertexNumber + group;
+
+           /*If we got a non-zero edge amount, then continue to generate the edge list
+             and face list, else , this is not a triangle mesh*/
            if(edgeNumber > 0)
            {
-              int group = 0;
-
               edgeList = new INT*[edgeNumber];
               if(nullptr == edgeList)
                  return OUTMEMORY;
 
+              if(faceNumber > 0)
+              {
+                  faceList = new INT*[faceNumber];
+                  if(nullptr == faceList)
+                    return OUTMEMORY;
+              }
+
               i = 0;
               int k = 0;
+              /*Travel down the index list and fill in the edge list and face list*/
               while(i < indexNumber)
               {
                   if(pIndexes[i] != INDEX_END_FLAG)
@@ -165,29 +145,38 @@ namespace SREngine {
                       k = i + 2;
                       if(pIndexes[i+1] != INDEX_END_FLAG)
                       {
-                          group++;
 
                           edgeList[j] = new INT[2];
                           if(nullptr == edgeList[j])
                              return OUTMEMORY;
-                          edgeList[j][0]   = pIndexes[i];
-                          edgeList[j++][1] = pIndexes[i+1];
+                          edgeList[e][0]   = pIndexes[i];
+                          edgeList[e++][1] = pIndexes[i+1];
 
                           for(; k<indexNumber; k++)
                           {
                              if(pIndexes[k] != INDEX_END_FLAG)
                              {
-                                edgeList[j] = new INT[2];
-                                if(nullptr == edgeList[j])
+                                edgeList[e] = new INT[2];
+                                if(nullptr == edgeList[e])
                                    return OUTMEMORY;
-                                edgeList[j][0]   = pIndexes[k-1];
-                                edgeList[j++][1] = pIndexes[k];
+                                edgeList[e][0]   = pIndexes[k-1];
+                                edgeList[e++][1] = pIndexes[k];
 
-                                edgeList[j] = new INT[2];
-                                if(nullptr == edgeList[j])
+                                edgeList[e] = new INT[2];
+                                if(nullptr == edgeList[e])
                                    return OUTMEMORY;
-                                edgeList[j][0]   = pIndexes[i];
-                                edgeList[j++][1] = pIndexes[k];
+                                edgeList[e][0]   = pIndexes[i];
+                                edgeList[e++][1] = pIndexes[k];
+
+                                if(nullptr != faceList)
+                                {
+                                    faceList[f] = new INT[3];
+                                    if(nullptr == faceList[f])
+                                        return OUTMEMORY;
+                                    faceList[f][0] = pIndexes[i];
+                                    faceList[f][1] = pIndexes[k-1];
+                                    faceList[f++][2] = pIndexes[k];
+                                }
                              }
                              else{
                                 i = k + 1;
@@ -201,15 +190,12 @@ namespace SREngine {
                   else
                     i++;
               }
-
-              /*Calculate the number of faces*/
-              faceNumber =
-
            }
 
        }
        else if(primitiveType == SRE_PRIMITIVETYPE_TRIANGLELIST)
        {
+
 
        }
        else if(primitiveType == SRE_PRIMITIVETYPE_TRIANGLESTRIP)
@@ -226,15 +212,13 @@ namespace SREngine {
        if(nullptr == vertexList)
            return OUTMEMORY;
 
-       /*Copy the user's vertice to the vertex list*/
+       /*Copy the user's vertexes to the vertex list*/
        memcpy(vertexList, pVertices, vertexNumber*membersOfperVertex*sizeof(FLOAT));
 
        /*Generate the attributes list*/
        Buffer * attributes = new Buffer();
        if(nullptr == attributes)
-       {
            return OUTMEMORY;
-       }
 
        /*Copy the user's attributes to the attributes list*/
        //*attributes = *pVertexAttributes;

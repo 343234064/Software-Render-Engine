@@ -53,10 +53,17 @@ namespace SREngine {
 	//Function definitions
 	//
 	//=============================
+	RESULT CreatePointLineMesh(const INT vertexNumber,
+                              const SREVAR vertexFormat,
+                              const void * pVertices,
+                              const SREVAR primitiveType,
+                              const Buffer* pVertexAttributes,
+                              PointLineMesh** ppOutPointLineMesh
+                              )
     RESULT CreateTriangleMesh(const INT vertexNumber,
                               const SREVAR vertexFormat,
                               const void * pVertices,
-                              const SREVAR primitiveType,//can only be point or triangle list
+                              const SREVAR primitiveType,
                               const Buffer* pVertexAttributes,
                               TriangleMesh** ppOutTriangleMesh
                               );
@@ -150,7 +157,7 @@ namespace SREngine {
         virtual ~TriangleMeshManager();
 
 
-
+        //需要检查index的有效性
         void   SetMesh(TriangleMesh * mesh){this->m_pMesh = mesh;}
         void * GetVertex(INT vertexIndex);
         void * GetVertexFromFace(INT faceIndex, INT index);
