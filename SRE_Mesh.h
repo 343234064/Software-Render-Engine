@@ -72,8 +72,8 @@ namespace SREngine {
 	RESULT CreateTriangleMesh(const INT vertexNumber,
                               const SREVAR vertexFormat,
                               const void * pVertexes,
-                              const INT   indexNumer,
-                              const INT * pIndex,
+                              const INT   indexNumber,
+                              const INT * pIndexes,
                               const SREVAR primitiveType,
                               const Buffer* pVertexAttributes,
                               TriangleMesh** ppOutTriangleMesh
@@ -192,16 +192,16 @@ namespace SREngine {
                      Buffer * attributes = nullptr,
                      SREVAR vertexformat = SRE_FORMAT_VERTEX_XYZ,
                      INT vertexNumber = 0,
-                     INT faceNumber = 0,
-                     INT edgeNumber = 0):
+                     INT edgeNumber = 0,
+                     INT faceNumber = 0):
             m_pVertexList(vertexes),
             m_pEdgeList(edges),
             m_pFaceList(faces),
             m_pAttributes(attributes),
             m_VertexFormat(vertexformat),
             m_vertexNumber(vertexNumber),
-            m_faceNumber(faceNumber),
-            m_edgeNumber(edgeNumber)
+            m_edgeNumber(edgeNumber),
+            m_faceNumber(faceNumber)
             {}
         TriangleMesh(const TriangleMesh & other);
         virtual ~TriangleMesh()

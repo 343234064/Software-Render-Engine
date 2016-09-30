@@ -85,21 +85,18 @@ namespace SREngine {
         Buffer(const Buffer & other);
         virtual ~Buffer()
         {
-           if(nullptr != m_pDescript)
-                delete m_pDescript;
-
            if(nullptr != data)
-                delete[] data;
+              delete[] data;
         }
 
 
-        BufferDescript* GetDescript(){return m_pDescript;}
+        BufferDescript* GetDescript(){return &m_pDescript;}
         Buffer & operator=(const Buffer & other);
 
 
 
     protected:
-        BufferDescript* m_pDescript;
+        BufferDescript  m_pDescript;
         void* data;
 
 
