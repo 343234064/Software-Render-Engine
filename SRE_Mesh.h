@@ -154,7 +154,10 @@ namespace SREngine {
     class TriangleMeshManager: public IMeshManager
     {
     public:
-        TriangleMeshManager(TriangleMesh * mesh=nullptr):m_pMesh(mesh){}
+        TriangleMeshManager(TriangleMesh * mesh=nullptr):
+            m_pMesh(mesh),
+            IMeshManager()
+            {}
         TriangleMeshManager(const TriangleMeshManager & other);
         virtual ~TriangleMeshManager();
 
@@ -201,7 +204,8 @@ namespace SREngine {
             m_VertexFormat(vertexformat),
             m_vertexNumber(vertexNumber),
             m_edgeNumber(edgeNumber),
-            m_faceNumber(faceNumber)
+            m_faceNumber(faceNumber),
+            IMesh()
             {}
         TriangleMesh(const TriangleMesh & other);
         virtual ~TriangleMesh()
@@ -233,7 +237,7 @@ namespace SREngine {
 
     protected:
         //vertexes list, every vertex is a float type data
-        void *  m_pVertexList;
+        VERTEX2* m_pVertexList;
         //face list, every face is adjacent with 3 vertexes
         INT  ** m_pFaceList;
         //edge list, every edge connects to 2 vertexes

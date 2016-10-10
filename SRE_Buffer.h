@@ -38,7 +38,7 @@ namespace SREngine {
 	//Function definitions
 	//
 	//=============================
-	RESULT CreateBuffer(const BufferDescript* bufferDescript, Buffer** ppOutBuffer);
+	RESULT CreateBuffer(const BufferDescript* pBufferDescript, Buffer** ppOutBuffer);
 
 
 
@@ -49,21 +49,33 @@ namespace SREngine {
 	//
 	//A buffer description, which used
 	//to create a new buffer
+	//
+	//BufferSize: how many data are there
+	//            in this buffer
+	//PerDataSize: the size of each data(bit)
+	//BufferUsage: what is this buffer uses for
+	//DataFlag: data format
 	//=============================
 	class BufferDescript
 	{
     public:
-        BufferDescript():
-            BufferSize(0), PerDataSize(0), BufferUsage(0), DataFlags(0)
+        BufferDescript(INT bufferSize = 0,
+                       INT perDataSize = 0,
+                       SREVAR bufferUsage = 0,
+                       SREVAR dataFormat = 0):
+            m_BufferSize(bufferSize),
+            m_PerDataSize(perDataSize),
+            m_BufferUsage(bufferUsage),
+            m_DataFormat(dataFormat)
             {}
-        ~BufferDescript(){}
+        virtual ~BufferDescript(){}
 
 
     public:
-        INT BufferSize;
-        INT PerDataSize;
-        SREVAR BufferUsage;
-        SREVAR DataFlags;
+        INT m_BufferSize;
+        INT m_PerDataSize;
+        SREVAR m_BufferUsage;
+        SREVAR m_DataFormat;
 
 
 	};
@@ -71,33 +83,43 @@ namespace SREngine {
 
 
     //=============================
-	//Class SRE_Buffer
+	//Class Buffer
 	//
 	//
-	//Buffer
+	//Buffer which is for storing
+	//data
+	//
+	//** DO NOT STORE POINTER TYPE DATA **
 	//=============================
 	class Buffer: public IContainer
 	{
     public:
-        Buffer():
-            m_pDescript(nullptr), data(nullptr)
-            {}
+        Buffer(BufferDescript* pBufferDescript):
+               m_pDescript(pBufferDescript),
+               m_data(nullptr),
+               IContainer()
+               {}
         Buffer(const Buffer & other);
         virtual ~Buffer()
         {
-           if(nullptr != data)
-              delete[] data;
+           if(nullptr != m_pDescript)
+              delete m_pDescript;
+           if(nullptr != m_data)
+              delete[] m_data;
         }
 
 
-        BufferDescript* GetDescript(){return &m_pDescript;}
+        void  SetData(INT pos, void* data);
+        const void* GetData(INT pos);
+        BufferDescript* GetDescript(){return m_pDescript;}
+        void Clear();
         Buffer & operator=(const Buffer & other);
 
-
+        friend RESULT CreateBuffer(const BufferDescript* pBufferDescript, Buffer** ppOutBuffer);
 
     protected:
-        BufferDescript  m_pDescript;
-        void* data;
+        BufferDescript*  m_pDescript;
+        unsigned char* m_data;
 
 
 

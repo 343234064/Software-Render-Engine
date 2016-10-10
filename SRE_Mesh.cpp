@@ -69,7 +69,10 @@ namespace SREngine {
        }
 
        if(vertexNumber <= 2 || indexNumber <= 0)
+       {
+           _LOG(SRE_ERROR_FAIL);
            return FAIL;
+       }
 
 
 #endif // _SRE_DEBUG_
@@ -424,7 +427,7 @@ namespace SREngine {
        validVertexList = nullptr;
 
        /*Generate the attributes list*/
-       Buffer * attributes = new Buffer();
+       Buffer* attributes = nullptr;
        if(nullptr == attributes)
            return OUTMEMORY;
 
