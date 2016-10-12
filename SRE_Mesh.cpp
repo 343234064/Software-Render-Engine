@@ -11,11 +11,10 @@
 //
 //
 //*****************************************************
-
-
 #include <string>
 #include <cstring>
-#include "SRE_Mesh.h"
+
+#include "SRE_Math.h"
 
 
 namespace SREngine {
@@ -419,7 +418,7 @@ namespace SREngine {
        {
            if(validVertexList[p])
            {
-              memcpy(vertexList++, pVertexes+p, membersOfperVertex*sizeof(FLOAT));
+              //memcpy(vertexList++, pVertexes+p, membersOfperVertex*sizeof(FLOAT));
            }
            p++;
        }
@@ -435,7 +434,7 @@ namespace SREngine {
        /*Copy the user's attributes to the attributes list*/
        //*attributes = *pVertexAttributes;
 
-       /*Generate the triangle mesh*/
+       /*Generate the triangle mesh
        *ppOutTriangleMesh = new TriangleMesh(vertexes,
                                              edgeList,
                                              faceList,
@@ -443,7 +442,7 @@ namespace SREngine {
                                              vertexFormat,
                                              validVertexNum,
                                              edgeNumber,
-                                             faceNumber);
+                                             faceNumber);*/
        if(nullptr == *ppOutTriangleMesh)
           return OUTMEMORY;
 

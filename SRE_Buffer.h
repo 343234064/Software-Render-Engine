@@ -1,4 +1,3 @@
-#pragma once
 //*****************************************************
 //
 // Software Render Engine
@@ -16,23 +15,9 @@
 #ifndef _SRE_BUFFER_
 #define _SRE_BUFFER_
 
-
-#include "SoftRenderEngine.h"
-
+#include "SRE_GlobalsAndUtils.h"
 
 namespace SREngine {
-
-
-    //=============================
-	//Class definitions
-	//
-	//=============================
-	class BufferDescript;
-	class Buffer;
-
-
-
-
 
     //=============================
 	//Function definitions
@@ -94,10 +79,10 @@ namespace SREngine {
 	class Buffer: public IContainer
 	{
     public:
-        Buffer(BufferDescript* pBufferDescript):
+        Buffer(BufferDescript* pBufferDescript = nullptr):
+               IContainer(),
                m_pDescript(pBufferDescript),
-               m_data(nullptr),
-               IContainer()
+               m_data(nullptr)
                {}
         Buffer(const Buffer & other);
         virtual ~Buffer()
@@ -111,8 +96,8 @@ namespace SREngine {
 
         void  SetData(INT pos, void* data);
         const void* GetData(INT pos);
-        BufferDescript* GetDescript(){return m_pDescript;}
-        void Clear();
+        BufferDescript* GetDescript();
+        void Clear(){}
         Buffer & operator=(const Buffer & other);
 
         friend RESULT CreateBuffer(const BufferDescript* pBufferDescript, Buffer** ppOutBuffer);

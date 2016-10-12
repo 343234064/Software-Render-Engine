@@ -1,4 +1,3 @@
-#pragma once
 //*****************************************************
 //
 // Software Render Engine
@@ -16,39 +15,10 @@
 #ifndef _SRE_MESH_
 #define _SRE_MESH_
 
-
-#include "SoftRenderEngine.h"
 #include <string>
-
-using namespace std;
-
+#include "SRE_GlobalsAndUtils.h"
 
 namespace SREngine {
-
-
-	//=============================
-	//Constant definitions
-	//
-	//=============================
-    const int INDEX_END_FLAG = -1;
-
-
-	//=============================
-	//Class definitions
-	//
-	//=============================
-	class Buffer;
-	class IMesh;
-	class IMeshManager;
-	class TriangleMeshManager;
-    class TriangleMesh;
-
-
-
-
-
-
-
     //=============================
 	//Function definitions
 	//
@@ -62,18 +32,19 @@ namespace SREngine {
                               PointLineMesh** ppOutPointLineMesh
                               )
     */
-    RESULT CreateTriangleMesh(const INT vertexNumber,
-                              const SREVAR vertexFormat,
-                              const void * pVertexes,
-                              const SREVAR primitiveType,
-                              const Buffer* pVertexAttributes,
-                              TriangleMesh** ppOutTriangleMesh
-                              );
 	RESULT CreateTriangleMesh(const INT vertexNumber,
                               const SREVAR vertexFormat,
                               const void * pVertexes,
                               const INT   indexNumber,
                               const INT * pIndexes,
+                              const SREVAR primitiveType,
+                              const Buffer* pVertexAttributes,
+                              TriangleMesh** ppOutTriangleMesh
+                              );
+    /*
+    RESULT CreateTriangleMesh(const INT vertexNumber,
+                              const SREVAR vertexFormat,
+                              const void * pVertexes,
                               const SREVAR primitiveType,
                               const Buffer* pVertexAttributes,
                               TriangleMesh** ppOutTriangleMesh
@@ -84,7 +55,7 @@ namespace SREngine {
                               const SREVAR primitiveType,
                               const SREVAR dataFlags,
                               TriangleMesh** ppOutTriangleMesh
-                              );
+                              );*/
     RESULT CreateTriangleMeshFromObj();
     RESULT CreateTriangleMeshFromPmx();
 
@@ -102,16 +73,16 @@ namespace SREngine {
     {
     public:
         IMesh():name("\0"){}
-        IMesh(string _name):name(_name){}
+        IMesh(std::string _name):name(_name){}
         virtual ~IMesh(){}
 
 
-        void    SetName(string _name){name=_name;}
-        string  getName(){return name;}
+        void    SetName(std::string _name){name=_name;}
+        std::string  getName(){return name;}
 
 
     protected:
-        string  name;
+        std::string  name;
         friend class IMeshManager;
 
     };
@@ -155,8 +126,8 @@ namespace SREngine {
     {
     public:
         TriangleMeshManager(TriangleMesh * mesh=nullptr):
-            m_pMesh(mesh),
-            IMeshManager()
+            IMeshManager(),
+            m_pMesh(mesh)
             {}
         TriangleMeshManager(const TriangleMeshManager & other);
         virtual ~TriangleMeshManager();
@@ -189,7 +160,7 @@ namespace SREngine {
     class TriangleMesh : public IMesh
     {
     public:
-        TriangleMesh(void * vertexes = nullptr,
+        TriangleMesh(VERTEX4 * vertexes = nullptr,
                      INT ** edges = nullptr,
                      INT ** faces = nullptr,
                      Buffer * attributes = nullptr,
@@ -197,6 +168,7 @@ namespace SREngine {
                      INT vertexNumber = 0,
                      INT edgeNumber = 0,
                      INT faceNumber = 0):
+            IMesh(),
             m_pVertexList(vertexes),
             m_pEdgeList(edges),
             m_pFaceList(faces),
@@ -204,8 +176,7 @@ namespace SREngine {
             m_VertexFormat(vertexformat),
             m_vertexNumber(vertexNumber),
             m_edgeNumber(edgeNumber),
-            m_faceNumber(faceNumber),
-            IMesh()
+            m_faceNumber(faceNumber)
             {}
         TriangleMesh(const TriangleMesh & other);
         virtual ~TriangleMesh()
@@ -219,14 +190,14 @@ namespace SREngine {
                 int i=0;
                 while(i++<m_faceNumber)
                     delete[] m_pFaceList[i];
-                delete m_pFaceList;
+                delete[] m_pFaceList;
             }
             if(nullptr != m_pEdgeList)
             {
                 int i=0;
                 while(i++<m_edgeNumber)
                    delete[] m_pEdgeList[i];
-                delete m_pEdgeList;
+                delete[] m_pEdgeList;
             }
         }
 
@@ -237,17 +208,17 @@ namespace SREngine {
 
     protected:
         //vertexes list, every vertex is a float type data
-        VERTEX2* m_pVertexList;
-        //face list, every face is adjacent with 3 vertexes
-        INT  ** m_pFaceList;
+        VERTEX4 * m_pVertexList;
         //edge list, every edge connects to 2 vertexes
         INT  ** m_pEdgeList;
+        //face list, every face is adjacent with 3 vertexes
+        INT  ** m_pFaceList;
         //attributes list, which to store every vertex's attributes
         Buffer * m_pAttributes;
         SREVAR m_VertexFormat;
-        int m_vertexNumber;
-        int m_faceNumber;
-        int m_edgeNumber;
+        INT m_vertexNumber;
+        INT m_edgeNumber;
+        INT m_faceNumber;
 
     };
 
