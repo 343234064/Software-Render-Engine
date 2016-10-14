@@ -14,7 +14,7 @@
 #include <string>
 #include <cstring>
 
-#include "SRE_Math.h"
+#include "SRE_Mesh.h"
 
 
 namespace SREngine {
@@ -35,6 +35,7 @@ namespace SREngine {
 	//vertexSize: the size of each vertex, in byte
 	//vertexFormat: the format of vertex,
 	//             see SRE_GlobalsAndUtils.h
+	//vertexStructSize: the size of the struct of vertex
     //faceNumber: the number of face in the mesh
     //pVertexes: the vertexes array
     //indexNumber: the number of index
@@ -43,7 +44,6 @@ namespace SREngine {
     //               decide how the index number in
     //               the index array to construct the
     //               mesh, see SRE_GlobalsAndUtils.h
-    //pVertexAttributes: the vertex attributes buffer
     //ppOutTriangleMesh: the output mesh
     //
     //It will automatically ignore the single vertex
@@ -51,17 +51,17 @@ namespace SREngine {
 	//===========================================
 	RESULT CreateTriangleMesh(const INT vertexNumber,
                               const SREVAR vertexFormat,
+                              const INT vertexStructSize,
                               const void * pVertexes,
                               const INT   indexNumber,
                               const INT * pIndexes,
                               const SREVAR primitiveType,
-                              const Buffer* pVertexAttributes,
                               TriangleMesh** ppOutTriangleMesh
                               )
     {
 #ifdef _SRE_DEBUG_
        if(nullptr == pVertexes || nullptr == pIndexes ||
-          nullptr == pVertexAttributes || nullptr == ppOutTriangleMesh)
+          nullptr == ppOutTriangleMesh)
        {
            _LOG(SRE_ERROR_NULLPOINTER);
            return INVALIDARG;
@@ -73,25 +73,19 @@ namespace SREngine {
            return FAIL;
        }
 
+       if(vertexStructSize <= 0 && vertexStructSize%sizeof(FLOAT) != 0)
+       {
+           _LOG(SRE_ERROR_INVALIDARG);
+           return INVALIDARG;
+       }
 
 #endif // _SRE_DEBUG_
-
-       /*Make sure how many members in each vertex*/
-       INT membersOfperVertex = 0;
-       if(vertexFormat == SRE_FORMAT_VERTEX_XY)
-           membersOfperVertex = 2;
-       else if(vertexFormat == SRE_FORMAT_VERTEX_XYZ)
-           membersOfperVertex = 3;
-       else if(vertexFormat == SRE_FORMAT_VERTEX_XYZW)
-           membersOfperVertex = 4;
-       else
-           return INVALIDARG;
 
        /*Generate the face list and edge list*/
        INT ** edgeList = nullptr;
        INT ** faceList = nullptr;
-       int faceNumber = 0;
-       int edgeNumber = 0;
+       INT faceNumber = 0;
+       INT edgeNumber = 0;
        bool *validVertexList = nullptr;
        int   validVertexNum = 0;
        int i = 0, e = 0, f = 0;
@@ -406,43 +400,60 @@ namespace SREngine {
            return INVALIDARG;
        }
 
-       /*Generate the vertex list*/
-       void * vertexList = (void*)(new FLOAT[validVertexNum*membersOfperVertex]);
+
+
+       int vmembers = 0;
+       int sfloat = sizeof(FLOAT);
+       int sVertex4 = sizeof(VERTEX4);
+
+       if((vertexFormat & SRE_FORMAT_VERTEX_XYZW) == SRE_FORMAT_VERTEX_XYZW)
+          vmembers = 4;
+       else if((vertexFormat & SRE_FORMAT_VERTEX_XYZ) == SRE_FORMAT_VERTEX_XYZ)
+          vmembers = 3;
+       else if((vertexFormat & SRE_FORMAT_VERTEX_XY) == SRE_FORMAT_VERTEX_XY)
+          vmembers = 2;
+       else
+          return INVALIDARG;
+
+       BYTE * vertexData = (BYTE*)pVertexes;
+       INT perAttrSize = vertexStructSize-sfloat*vmembers;
+
+       /*Generate the vertex list and attributes list*/
+       VERTEX4 * vertexList = new VERTEX4[validVertexNum];
        if(nullptr == vertexList)
            return OUTMEMORY;
+       BYTE * attributesList = new BYTE[validVertexNum*perAttrSize];
+       if(nullptr == attributesList)
+           return OUTMEMORY;
 
-       /*Copy the user's vertexes to the vertex list*/
-       int p = 0;
-       void * vertexes = vertexList;
+       /*Copy user's vertexes and attributes to the vertex list and attributes list*/
+       int p = 0, q = 0;
+       int attributesSize = vertexStructSize - vmembers * sfloat;
+       int vSize = sfloat * vmembers;
        while(p < vertexNumber)
        {
            if(validVertexList[p])
            {
-              //memcpy(vertexList++, pVertexes+p, membersOfperVertex*sizeof(FLOAT));
+               memcpy(vertexList+q*sVertex4, vertexData+p*vertexStructSize, vSize);
+               memcpy(attributesList+q*attributesSize, vertexData+p*vertexStructSize+vSize, attributesSize);
            }
            p++;
+           q++;
        }
        delete[] validVertexList;
        validVertexList = nullptr;
 
-       /*Generate the attributes list*/
-       Buffer* attributes = nullptr;
-       if(nullptr == attributes)
-           return OUTMEMORY;
 
-       //memcpy(attributes, pVertexAttributes, pVertexAttributes->m_pDescript->BufferSize*);
-       /*Copy the user's attributes to the attributes list*/
-       //*attributes = *pVertexAttributes;
-
-       /*Generate the triangle mesh
-       *ppOutTriangleMesh = new TriangleMesh(vertexes,
+       /*Generate the triangle mesh*/
+       *ppOutTriangleMesh = new TriangleMesh(vertexList,
                                              edgeList,
                                              faceList,
-                                             attributes,
+                                             attributesList,
                                              vertexFormat,
                                              validVertexNum,
                                              edgeNumber,
-                                             faceNumber);*/
+                                             faceNumber,
+                                             perAttrSize);
        if(nullptr == *ppOutTriangleMesh)
           return OUTMEMORY;
 
@@ -452,9 +463,113 @@ namespace SREngine {
 
 
 
+    //===========================================
+	//Class TriangleMesh functions
+	//
+	//
+	//===========================================
+	TriangleMesh::TriangleMesh(const TriangleMesh & other):
+	        IMesh(other.name),
+            m_pVertexList(nullptr),
+            m_pEdgeList(nullptr),
+            m_pFaceList(nullptr),
+            m_pAttributes(nullptr),
+            m_vertexFormat(other.m_vertexFormat),
+            m_vertexNumber(other.m_vertexNumber),
+            m_edgeNumber(other.m_edgeNumber),
+            m_faceNumber(other.m_faceNumber),
+            m_perAttrSize(other.m_perAttrSize)
+	{
 
+        m_pVertexList = new VERTEX4[m_vertexNumber];
+        memcpy(m_pVertexList, other.m_pVertexList, sizeof(VERTEX4)*m_vertexNumber);
 
+        m_pAttributes = new BYTE[m_vertexNumber*m_perAttrSize];
+        memcpy(m_pAttributes, other.m_pAttributes, m_vertexNumber*m_perAttrSize);
 
+        int i=0;
+        m_pFaceList = new INT*[m_faceNumber];
+        while(i<m_faceNumber)
+        {
+            m_pFaceList[i] = new INT[3];
+            m_pFaceList[i][0] = other.m_pFaceList[i][0];
+            m_pFaceList[i][1] = other.m_pFaceList[i][1];
+            m_pFaceList[i][2] = other.m_pFaceList[i][2];
+            i++;
+        }
+
+        i=0;
+        m_pEdgeList = new INT*[m_edgeNumber];
+        while(i<m_edgeNumber)
+        {
+            m_pEdgeList[i] = new INT[2];
+            m_pEdgeList[i][0] = other.m_pEdgeList[i][0];
+            m_pEdgeList[i][1] = other.m_pEdgeList[i][1];
+            i++;
+        }
+
+	}
+
+    TriangleMesh & TriangleMesh::operator=(const TriangleMesh & other)
+    {
+        if(this == &other)
+          return *this;
+
+        if(nullptr != m_pVertexList)
+          delete[] m_pVertexList;
+        if(nullptr != m_pAttributes)
+          delete[] m_pAttributes;
+        if(nullptr != m_pFaceList)
+        {
+          int i=0;
+          while(i++<m_faceNumber)
+              delete[] m_pFaceList[i];
+          delete[] m_pFaceList;
+        }
+        if(nullptr != m_pEdgeList)
+        {
+          int i=0;
+          while(i++<m_edgeNumber)
+              delete[] m_pEdgeList[i];
+          delete[] m_pEdgeList;
+        }
+
+        this->name = other.name;
+        this->m_vertexFormat = other.m_vertexFormat;
+        this->m_vertexNumber = other.m_vertexNumber;
+        this->m_edgeNumber = other.m_edgeNumber;
+        this->m_faceNumber = other.m_faceNumber;
+        this->m_perAttrSize = other.m_perAttrSize;
+
+        m_pVertexList = new VERTEX4[m_vertexNumber];
+        memcpy(m_pVertexList, other.m_pVertexList, sizeof(VERTEX4)*m_vertexNumber);
+
+        m_pAttributes = new BYTE[m_vertexNumber*m_perAttrSize];
+        memcpy(m_pAttributes, other.m_pAttributes, m_vertexNumber*m_perAttrSize);
+
+        int i=0;
+        m_pFaceList = new INT*[m_faceNumber];
+        while(i<m_faceNumber)
+        {
+            m_pFaceList[i] = new INT[3];
+            m_pFaceList[i][0] = other.m_pFaceList[i][0];
+            m_pFaceList[i][1] = other.m_pFaceList[i][1];
+            m_pFaceList[i][2] = other.m_pFaceList[i][2];
+            i++;
+        }
+
+        i=0;
+        m_pEdgeList = new INT*[m_edgeNumber];
+        while(i<m_edgeNumber)
+        {
+            m_pEdgeList[i] = new INT[2];
+            m_pEdgeList[i][0] = other.m_pEdgeList[i][0];
+            m_pEdgeList[i][1] = other.m_pEdgeList[i][1];
+            i++;
+        }
+
+        return *this;
+    }
 
 
 

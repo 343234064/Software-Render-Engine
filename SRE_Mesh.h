@@ -17,6 +17,7 @@
 
 #include <string>
 #include "SRE_GlobalsAndUtils.h"
+#include "SRE_Math.h"
 
 namespace SREngine {
     //=============================
@@ -34,11 +35,11 @@ namespace SREngine {
     */
 	RESULT CreateTriangleMesh(const INT vertexNumber,
                               const SREVAR vertexFormat,
+                              const INT vertexStructSize,
                               const void * pVertexes,
                               const INT   indexNumber,
                               const INT * pIndexes,
                               const SREVAR primitiveType,
-                              const Buffer* pVertexAttributes,
                               TriangleMesh** ppOutTriangleMesh
                               );
     /*
@@ -163,20 +164,22 @@ namespace SREngine {
         TriangleMesh(VERTEX4 * vertexes = nullptr,
                      INT ** edges = nullptr,
                      INT ** faces = nullptr,
-                     Buffer * attributes = nullptr,
+                     BYTE * attributes = nullptr,
                      SREVAR vertexformat = SRE_FORMAT_VERTEX_XYZ,
                      INT vertexNumber = 0,
                      INT edgeNumber = 0,
-                     INT faceNumber = 0):
+                     INT faceNumber = 0,
+                     INT perAttrSize = 0):
             IMesh(),
             m_pVertexList(vertexes),
             m_pEdgeList(edges),
             m_pFaceList(faces),
             m_pAttributes(attributes),
-            m_VertexFormat(vertexformat),
+            m_vertexFormat(vertexformat),
             m_vertexNumber(vertexNumber),
             m_edgeNumber(edgeNumber),
-            m_faceNumber(faceNumber)
+            m_faceNumber(faceNumber),
+            m_perAttrSize(perAttrSize)
             {}
         TriangleMesh(const TriangleMesh & other);
         virtual ~TriangleMesh()
@@ -214,11 +217,12 @@ namespace SREngine {
         //face list, every face is adjacent with 3 vertexes
         INT  ** m_pFaceList;
         //attributes list, which to store every vertex's attributes
-        Buffer * m_pAttributes;
-        SREVAR m_VertexFormat;
+        BYTE * m_pAttributes;
+        SREVAR m_vertexFormat;
         INT m_vertexNumber;
         INT m_edgeNumber;
         INT m_faceNumber;
+        INT m_perAttrSize;
 
     };
 

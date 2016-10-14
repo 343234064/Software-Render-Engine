@@ -140,7 +140,7 @@ namespace SREngine {
 	//==============================
 	//1D Vector
 	//
-	//32bit
+	//
 	//==============================
 	class Vector {
 	public:
@@ -148,7 +148,7 @@ namespace SREngine {
 		Vector(const VEC & vector):x(vector.x) {}
 
 
-		virtual ~Vector() {};
+		~Vector() {};
 
 		bool   operator == (const VEC &) const;
 		bool   operator != (const VEC &) const;
@@ -160,7 +160,6 @@ namespace SREngine {
 
 	public:
 		FLOAT x ;
-		FLOAT & r = x;
 
 	};
 
@@ -168,7 +167,7 @@ namespace SREngine {
 	//==============================
 	//2D Vector
 	//
-	//32bit-32bit
+	//
 	//==============================
 	class Vector2:public Vector {
 	public:
@@ -178,7 +177,7 @@ namespace SREngine {
 		Vector2(const VEC2 & vector):Vector(vector.x), y(vector.y) {}
 
 
-		virtual ~Vector2() {};
+		~Vector2() {};
 
 
 		bool    operator == (const VEC2 &) const;
@@ -191,7 +190,6 @@ namespace SREngine {
 
 	public:
 		FLOAT y;
-		FLOAT & g = y;
 
 
 	};
@@ -215,7 +213,7 @@ namespace SREngine {
 		     z(vector.z)
 		{}
 
-		virtual ~Vector3() {};
+		~Vector3() {};
 
 
 		bool    operator == (const VEC3 &) const;
@@ -228,8 +226,6 @@ namespace SREngine {
 
 	public:
 		FLOAT z;
-		FLOAT & b = z;
-
 
 	};
 
@@ -238,7 +234,7 @@ namespace SREngine {
 	//==============================
 	//4D Vector
 	//
-	//32bit-32bit-32bit-32bit
+	//
 	//==============================
 	class Vector4 :public Vector3 {
 	public:
@@ -267,8 +263,6 @@ namespace SREngine {
 
 	public:
 		FLOAT w;
-		FLOAT & a = w;
-
 
 	};
 
@@ -280,7 +274,7 @@ namespace SREngine {
 	//==============================
 	//3x3 Matrix
 	//
-	//32bit per data
+	//
 	//==============================
 	class Matrix3x3
 	{
@@ -328,7 +322,7 @@ namespace SREngine {
     //==============================
 	//4x4 Matrix
 	//
-	//32bit per data
+	//
 	//==============================
 	class Matrix4x4 {
 	public:
@@ -382,7 +376,7 @@ namespace SREngine {
     //==============================
 	//Quaternion
 	//
-	//32bit per data
+	//
 	//==============================
 	class Quaternion
 	{

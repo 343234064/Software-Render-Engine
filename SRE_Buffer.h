@@ -46,11 +46,11 @@ namespace SREngine {
     public:
         BufferDescript(INT bufferSize = 0,
                        INT perDataSize = 0,
-                       SREVAR bufferUsage = 0,
+                       SREVAR bufferType = 0,
                        SREVAR dataFormat = 0):
             m_BufferSize(bufferSize),
             m_PerDataSize(perDataSize),
-            m_BufferUsage(bufferUsage),
+            m_BufferType(bufferType),
             m_DataFormat(dataFormat)
             {}
         virtual ~BufferDescript(){}
@@ -59,7 +59,7 @@ namespace SREngine {
     public:
         INT m_BufferSize;
         INT m_PerDataSize;
-        SREVAR m_BufferUsage;
+        SREVAR m_BufferType;
         SREVAR m_DataFormat;
 
 

@@ -48,7 +48,7 @@ namespace SREngine {
 
        BufferDescript* bd = new BufferDescript(pBufferDescript->m_BufferSize,
                                                pBufferDescript->m_PerDataSize,
-                                               pBufferDescript->m_BufferUsage,
+                                               pBufferDescript->m_BufferType,
                                                pBufferDescript->m_DataFormat);
        if(nullptr == bd)
          return OUTMEMORY;

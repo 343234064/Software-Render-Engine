@@ -40,13 +40,17 @@ namespace SREngine {
 	class TriangleMeshManager;
     class TriangleMesh;
 
+    class Color3;
+    class Color4;
+
     //==============================
     //Type definitions
     //
     //==============================
     typedef float         FLOAT;
     typedef int             INT;
-    typedef unsigned int SREVAR;
+    typedef unsigned int  SREVAR;
+    typedef unsigned char BYTE;
 
     typedef Vector    VEC;
 	typedef Vector2   VEC2;
@@ -60,13 +64,6 @@ namespace SREngine {
 	typedef const Vector2 * CPVEC2;
 	typedef const Vector3 * CPVEC3;
 	typedef const Vector4 * CPVEC4;
-
-	typedef Vector3   COLOR3;
-	typedef Vector4   COLOR4;
-    typedef Vector3 * PCOLOR3;
-	typedef Vector4 * PCOLOR4;
-	typedef const Vector3 * CPCOLOR3;
-	typedef const Vector4 * CPCOLOR4;
 
 	typedef Vector2 VERTEX2;
     typedef Vector3 VERTEX3;
@@ -101,30 +98,67 @@ namespace SREngine {
 
     enum RESULT { SUCC=1, FAIL=0, INVALIDARG=-1, OUTMEMORY=-2 };
 
-    /*each vertex has x and y member, ,this format will be treated as
+    //===========================================================
+    //Vertex format
+    //The program will read user-defined vertex data in this order:
+    //position > normal > diffuse > specular > bi-normal >
+    //tangent > texcoord(1-4)
+    //===========================================================
+    /*
+      Each vertex has x and y member, ,this format will be treated as
     a screen position of the vertex, that's say, a vertex which uses this
-    format will be directly delivered to screen transform part. FLOAT FLOAT*/
-    const SREVAR SRE_FORMAT_VERTEX_XY=0x00000065;
-    /*each vertex has x ,y and z member. FLOAT FLOAT FLOAT*/
-    const SREVAR SRE_FORMAT_VERTEX_XYZ=0x00000066;
-    /*each vertex has x ,y ,z and w member, this format will be treated as
-    a transformed and clipped vertex. FLOAT FLOAT FLOAT FLOAT*/
-    const SREVAR SRE_FORMAT_VERTEX_XYZW=0x00000067;
+    format will be directly delivered to screen transform part.
+      It must includes 2 floating point data
+    */
+    const SREVAR SRE_FORMAT_VERTEX_XY=0x00000001;
+    /*
+      Each vertex has x ,y and z member., this format will be treated as
+    a non-transformed vertex.
+      It must be a 3 floating point data
+    */
+    const SREVAR SRE_FORMAT_VERTEX_XYZ=0x00000003;
+    /*
+      Each vertex has x ,y ,z and w member, this format will be treated as
+    a transformed vertex.
+      It must be a 4 floating point data
+    */
+    const SREVAR SRE_FORMAT_VERTEX_XYZW=0x00000007;
 
-    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORD_1=0x00000068;
-    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORD_2=0x00000069;
-    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORD_3=0x0000006A;
-    const SREVAR SRE_FORMAT_ATTRIBUTE_NORMAL=0x0000006B;
-    const SREVAR SRE_FORMAT_ATTRIBUTE_DIFFUSE=0x0000006C;
-    const SREVAR SRE_FORMAT_ATTRIBUTE_SPECULAR=0x0000006D;
-    const SREVAR SRE_FORMAT_ATTRIBUTE_BINORMAL=0x0000006E;
-    const SREVAR SRE_FORMAT_ATTRIBUTE_TANGENT=0x0000006F;
+    /*
+      Vertex normal, 3 floating point data
+    */
+    const SREVAR SRE_FORMAT_ATTRIBUTE_NORMAL=0x00000008;
+    /*
+      Vertex diffuse color, in ARGB order,3 floating point data
+    */
+    const SREVAR SRE_FORMAT_ATTRIBUTE_DIFFUSE=0x00000010;
+    /*
+      Vertex specular color, in ARGB order,3 floating point data
+    */
+    const SREVAR SRE_FORMAT_ATTRIBUTE_SPECULAR=0x00000020;
+    /*
+      Vertex bi-normal, 3 floating point data
+    */
+    const SREVAR SRE_FORMAT_ATTRIBUTE_BINORMAL=0x00000040;
+    /*
+      Vertex tangent, 3 floating point data
+    */
+    const SREVAR SRE_FORMAT_ATTRIBUTE_TANGENT=0x00000080;
+    /*
+      Vertex texture coordinate set , in UV order
+    */
+    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORD1=0x00000100;
+    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORD2=0x00000200;
+    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORD3=0x00000400;
+    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORD4=0x00000800;
+    //===========================================================
+    //===========================================================
 
-    const SREVAR SRE_FORMAT_PIXEL_R8G8B8A8=0x00000070;
-    const SREVAR SRE_FORMAT_PIXEL_R8G8B8=0x00000071;
 
-    const SREVAR SRE_BUFFERUSAGE_ATTRIBUTEBUFFER=0x00000072;
-    const SREVAR SRE_BUFFERUSAGE_RENDERBUFFER=0x00000073;
+    const SREVAR SRE_FORMAT_PIXEL_R8G8B8A8=0x00000100;
+    const SREVAR SRE_FORMAT_PIXEL_R8G8B8=0x00000101;
+
+    const SREVAR SRE_BUFFERTYPE_RENDERBUFFER=0x00000200;
 
 
 
@@ -137,11 +171,11 @@ namespace SREngine {
                      write a index -1 means the end of a strip.
       TRIANGLELIST: a list of triangles
     */
-    const SREVAR SRE_PRIMITIVETYPE_POINTLIST=0x00000074;
-    const SREVAR SRE_PRIMITIVETYPE_LINELIST=0x00000075;
-    const SREVAR SRE_PRIMITIVETYPE_TRIANGLEFAN=0x00000076;
-    const SREVAR SRE_PRIMITIVETYPE_TRIANGLESTRIP=0x00000077;
-    const SREVAR SRE_PRIMITIVETYPE_TRIANGLELIST=0x00000078;
+    const SREVAR SRE_PRIMITIVETYPE_POINTLIST=0x00000300;
+    const SREVAR SRE_PRIMITIVETYPE_LINELIST=0x00000301;
+    const SREVAR SRE_PRIMITIVETYPE_TRIANGLEFAN=0x00000302;
+    const SREVAR SRE_PRIMITIVETYPE_TRIANGLESTRIP=0x00000303;
+    const SREVAR SRE_PRIMITIVETYPE_TRIANGLELIST=0x00000304;
 
 
     //SREVAR SRE_DRAWPIMITIVETYPE_POINT;
