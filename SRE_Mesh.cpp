@@ -16,6 +16,9 @@
 
 #include "SRE_Mesh.h"
 
+#include <iostream>
+using  std::cout;
+using  std::endl;
 
 namespace SREngine {
 
@@ -100,9 +103,9 @@ namespace SREngine {
            int group = 0;
 
            /*Calculate the number of edges and groups and valid vertexes*/
-           while(i < indexNumber)
+           while(i <= indexNumber)
            {
-               if(pIndexes[i]<0 || pIndexes[i]>=vertexNumber)
+               if(i==indexNumber || pIndexes[i]<0 || pIndexes[i]>=vertexNumber )
                {
                    if(count > 2)
                    {
@@ -204,9 +207,9 @@ namespace SREngine {
            int group = 0;
 
            /*Calculate the number of edges and groups and valid vertexes*/
-           while(i < indexNumber)
+           while(i <= indexNumber)
            {
-               if(pIndexes[i]<0 || pIndexes[i]>=vertexNumber)
+               if(i==indexNumber || pIndexes[i]<0 || pIndexes[i]>=vertexNumber)
                {
                    if(count > 2)
                    {
@@ -294,9 +297,9 @@ namespace SREngine {
            int group = 0;
 
            /*Calculate the number of edges and groups and valid vertexes*/
-           while(i < indexNumber)
+           while(i <= indexNumber)
            {
-               if(pIndexes[i]<0 || pIndexes[i]>=vertexNumber)
+               if(i==indexNumber || pIndexes[i]<0 || pIndexes[i]>=vertexNumber)
                {
                    if(count > 2)
                    {
@@ -400,7 +403,14 @@ namespace SREngine {
            return INVALIDARG;
        }
 
-
+///////////////////////////
+for(int i=0; i<faceNumber;i++)
+    cout<<faceList[i][0]<<faceList[i][1]<<faceList[i][2]<<" ";
+cout<<endl;
+for(int i=0; i<edgeNumber;i++)
+    cout<<edgeList[i][0]<<edgeList[i][1]<<" ";
+cout<<endl;
+//////////////////////////
 
        int vmembers = 0;
        int sfloat = sizeof(FLOAT);
@@ -416,7 +426,8 @@ namespace SREngine {
           return INVALIDARG;
 
        BYTE * vertexData = (BYTE*)pVertexes;
-       INT perAttrSize = vertexStructSize-sfloat*vmembers;
+       int perAttrSize = vertexStructSize-sfloat*vmembers;
+       int perVerSize = vertexStructSize - perAttrSize;
 
        /*Generate the vertex list and attributes list*/
        VERTEX4 * vertexList = new VERTEX4[validVertexNum];
@@ -428,14 +439,12 @@ namespace SREngine {
 
        /*Copy user's vertexes and attributes to the vertex list and attributes list*/
        int p = 0, q = 0;
-       int attributesSize = vertexStructSize - vmembers * sfloat;
-       int vSize = sfloat * vmembers;
        while(p < vertexNumber)
        {
            if(validVertexList[p])
            {
-               memcpy(vertexList+q*sVertex4, vertexData+p*vertexStructSize, vSize);
-               memcpy(attributesList+q*attributesSize, vertexData+p*vertexStructSize+vSize, attributesSize);
+               memcpy(vertexList+q*sVertex4, vertexData+p*vertexStructSize, perVerSize);
+               memcpy(attributesList+q*perAttrSize, vertexData+p*vertexStructSize+perVerSize, perAttrSize);
            }
            p++;
            q++;
@@ -454,8 +463,8 @@ namespace SREngine {
                                              edgeNumber,
                                              faceNumber,
                                              perAttrSize);
-       if(nullptr == *ppOutTriangleMesh)
-          return OUTMEMORY;
+       //if(nullptr == *ppOutTriangleMesh)
+       //   return OUTMEMORY;
 
        return SUCC;
     }

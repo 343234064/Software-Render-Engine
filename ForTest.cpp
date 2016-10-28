@@ -10,31 +10,41 @@ using  std::endl;
 
 struct vv
 {
-    float x,y,z,w;
+    float x,y,z;
+    float nx,ny,nz;
+    float a,r,g,b;
 };
 
 int main()
 {
+  int vnum = 8;
+  vv* vlist = new vv[vnum];
 
-  vv* vl = new vv[2];
-  vl[0].x = 1.0;
-  vl[0].y = 2.0;
-  vl[0].z = 3.0;
-  vl[0].w = 4.0;
+  int value = 1;
+  for(int i = 0; i<vnum; i++)
+  {
+  vlist[i].x = value++;
+  vlist[i].y = value++;
+  vlist[i].z = value++;
+  vlist[i].nx = value++;
+  vlist[i].ny = value++;
+  vlist[i].nz = value++;
+  vlist[i].r = value++;
+  vlist[i].g = value++;
+  vlist[i].b = value++;
+  }
 
-  vl[1].x = 5.0;
-  vl[1].y = 6.0;
-  vl[1].z = 7.0;
-  vl[1].w = 8.0;
+  int inum = 9;
+  int index[] = {0,1,2,-1,3,4,5,6,7};
+  TriangleMesh* triangle;
 
-  VERTEX4* vl2 = new VERTEX4[2];
-  memcpy(vl2, vl, sizeof(vv)*2);
+  //RESULT result =
+  CreateTriangleMesh(vnum, SRE_FORMAT_VERTEX_XYZ | SRE_FORMAT_ATTRIBUTE_NORMAL | SRE_FORMAT_ATTRIBUTE_DIFFUSE,
+                     sizeof(vv), (void*)vlist, inum, index, SRE_PRIMITIVETYPE_TRIANGLEFAN, &triangle);
 
-  cout<<vl2[0].x<<" "<<vl2[0].y<<" "<<vl2[0].z<<" "<<vl2[0].w<<endl;
-  cout<<vl2[1].x<<" "<<vl2[1].y<<" "<<vl2[1].z<<" "<<vl2[1].w<<endl;
+ // if(result != SUCC)
+ //   cout<<"error"<<endl;
 
-  delete[] vl;
-  delete[] vl2;
 
  return 0;
 }

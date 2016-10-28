@@ -22,9 +22,9 @@ namespace SREngine {
     //Output error message
     //
     //==============================
+
     void LOG(const char * filename, const int line, ERROR error)
     {
-
         printf("Log: %s, Line:%d :\n", filename, line);
 
         switch (error)

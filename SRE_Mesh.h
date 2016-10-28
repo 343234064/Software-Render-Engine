@@ -209,7 +209,7 @@ namespace SREngine {
 
 
 
-    protected:
+    public:
         //vertexes list, every vertex is a float type data
         VERTEX4 * m_pVertexList;
         //edge list, every edge connects to 2 vertexes

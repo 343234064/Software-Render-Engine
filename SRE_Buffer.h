@@ -104,7 +104,7 @@ namespace SREngine {
 
     protected:
         BufferDescript*  m_pDescript;
-        unsigned char* m_data;
+        BYTE* m_data;
 
 
 
