@@ -22,7 +22,7 @@ struct v2
 };
 int main()
 {
-  int vnum = 11;
+  int vnum = 2;
   vv* vlist = new vv[vnum];
 
   int value = 1;
@@ -40,16 +40,17 @@ int main()
   vlist[i].b = value++;
   }
 
-  int inum = 17;
-  int index[] = {2,3,4,5,6,7,-1,0,1,2,-1,3,-1,-1,0,1,2};
+  int inum = 9;
+  int index[] = {2,3,4,5,6,7,0,1,2};
   TriangleMesh* ptriangle;
 
   RESULT result =
   CreateTriangleMesh(vnum, SRE_FORMAT_VERTEX_XYZ | SRE_FORMAT_ATTRIBUTE_NORMAL | SRE_FORMAT_ATTRIBUTE_DIFFUSE,
-                     sizeof(vv), (void*)vlist, inum, index, SRE_PRIMITIVETYPE_TRIANGLESTRIP, &ptriangle);
+                     sizeof(vv), (void*)vlist, inum, index, SRE_PRIMITIVETYPE_TRIANGLELIST, &ptriangle);
 
  if(result != SUCC)
     cout<<"error"<<endl;
+  else{
 
   TriangleMesh* tri = ptriangle;
   cout<<"Edge Number:"<<tri->m_edgeNumber<<endl;
@@ -69,6 +70,6 @@ int main()
           <<attrilist[i].nx<<","<<attrilist[i].ny<<","<<attrilist[i].nz<<" "
           <<attrilist[i].a<<","<<attrilist[i].r<<","<<attrilist[i].g<<","<<attrilist[i].b<<endl;
 
-
+   }
  return 0;
 }

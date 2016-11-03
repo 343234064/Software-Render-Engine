@@ -243,8 +243,8 @@ namespace SREngine {
                       while(count > 0){
                         if(!validVertexList[pIndexes[i-count]])
                         {
-                            validVertexNum++;
-                            validVertexList[pIndexes[i-count]] = true;
+                          validVertexNum++;
+                          validVertexList[pIndexes[i-count]] = true;
                         }
                         count--;
                       }
@@ -257,7 +257,7 @@ namespace SREngine {
            }
 
            /*Calculate the number of faces*/
-           faceNumber = edgeNumber - validVertexNum + group;
+           faceNumber = edgeNumber / 3;
 
            /*If we got a non-zero face amount, then continue to generate the edge list
              and face list, else , this is not a triangle mesh*/
@@ -308,6 +308,8 @@ namespace SREngine {
 
                           i+=3;
                       }
+                      else
+                        i++;
                   }
                   else
                      i++;
@@ -437,20 +439,6 @@ namespace SREngine {
            return INVALIDARG;
        }
 
-///////////////////////////
-for(int i=0; i<faceNumber;i++)
-    cout<<faceList[i][0]<<faceList[i][1]<<faceList[i][2]<<" ";
-cout<<endl;
-for(int i=0; i<edgeNumber;i++)
-    cout<<edgeList[i][0]<<edgeList[i][1]<<" ";
-cout<<endl;
-for(int i=0; i<vertexNumber; i++)
-   if(validVertexList[i])
-      cout<<i<<" ";
-cout<<endl;
-cout<<endl;
-
-//////////////////////////
 
        int sfloat = sizeof(FLOAT);
        int sVertex4 = sizeof(VERTEX4);
