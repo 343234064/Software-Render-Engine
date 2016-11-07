@@ -14,9 +14,22 @@
 #ifndef _SRE_GLOBALSANDUTILS_
 #define _SRE_GLOBALSANDUTILS_
 
-
+#include <memory>
+using std::unique_ptr;
+using std::shared_ptr;
 
 namespace SREngine {
+    //==============================
+    //Deleter
+    //
+    //Use for smart pointer
+    //==============================
+    template<class T>
+    struct array_deleter
+    {
+        void operator()(T* &x) const { delete[] x; }
+    };
+
     //==============================
     //Classes definitions
     //
@@ -87,6 +100,11 @@ namespace SREngine {
     typedef const Quaternion * CPQUAT;
 
 
+    typedef unique_ptr<VERTEX4, array_deleter<VERTEX4>> unique_vertex4_array;
+    typedef unique_ptr<INT, array_deleter<INT>>         unique_int_array;
+    typedef unique_ptr<BYTE, array_deleter<BYTE>>       unique_byte_array;
+    typedef unique_ptr<unique_int_array, array_deleter<unique_int_array>> unique_int_matrix;
+
     //==============================
     //Global variables
     //
@@ -96,7 +114,7 @@ namespace SREngine {
 
     const int INDEX_END_FLAG = -1;
 
-    enum RESULT { SUCC=1, FAIL=0, INVALIDARG=-1, OUTMEMORY=-2 };
+    enum class RESULT { SUCC, FAIL, INVALIDARG, OUTMEMORY };
 
     //===========================================================
     //Vertex format
@@ -181,12 +199,6 @@ namespace SREngine {
     //SREVAR SRE_DRAWPIMITIVETYPE_POINT;
     //SREVAR SRE_DRAWPIMITIVETYPE_LINE;
     //SREVAR SRE_DRAWPIMITIVETYPE_FACE;
-
-
-
-
-
-
 
 
 

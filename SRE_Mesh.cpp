@@ -16,9 +16,6 @@
 
 #include "SRE_Mesh.h"
 
-#include <iostream>
-using  std::cout;
-using  std::endl;
 
 namespace SREngine {
 
@@ -67,19 +64,19 @@ namespace SREngine {
           nullptr == ppOutTriangleMesh)
        {
            _LOG(SRE_ERROR_NULLPOINTER);
-           return INVALIDARG;
+           return RESULT::INVALIDARG;
        }
 
        if(vertexNumber <= 2 || indexNumber <= 0)
        {
            _LOG(SRE_ERROR_FAIL);
-           return FAIL;
+           return RESULT::FAIL;
        }
 
        if(vertexStructSize <= 0 && vertexStructSize%sizeof(FLOAT) != 0)
        {
            _LOG(SRE_ERROR_INVALIDARG);
-           return INVALIDARG;
+           return RESULT::INVALIDARG;
        }
 
 #endif // _SRE_DEBUG_
@@ -101,10 +98,10 @@ namespace SREngine {
        else if((vertexFormat & SRE_FORMAT_VERTEX_XY) == SRE_FORMAT_VERTEX_XY)
           vmembers = 2;
        else
-          return INVALIDARG;
+          return RESULT::INVALIDARG;
 
        validVertexList = new bool[vertexNumber];
-       if(nullptr == validVertexList) return OUTMEMORY;
+       if(nullptr == validVertexList) return RESULT::OUTMEMORY;
        memset(validVertexList, 0, vertexNumber * sizeof(bool));
 
        if(primitiveType == SRE_PRIMITIVETYPE_TRIANGLEFAN)
@@ -152,11 +149,11 @@ namespace SREngine {
            {
               edgeList = new INT*[edgeNumber];
               if(nullptr == edgeList)
-                 return OUTMEMORY;
+                 return RESULT::OUTMEMORY;
 
               faceList = new INT*[faceNumber];
               if(nullptr == faceList)
-                 return OUTMEMORY;
+                 return RESULT::OUTMEMORY;
 
               i = startPos;
               int k = 0;
@@ -177,19 +174,19 @@ namespace SREngine {
                              {
                                 edgeList[e] = new INT[2];
                                 if(nullptr == edgeList[e])
-                                   return OUTMEMORY;
+                                   return RESULT::OUTMEMORY;
                                 edgeList[e][0]   = pIndexes[k-1];
                                 edgeList[e++][1] = pIndexes[k];
 
                                 edgeList[e] = new INT[2];
                                 if(nullptr == edgeList[e])
-                                   return OUTMEMORY;
+                                   return RESULT::OUTMEMORY;
                                 edgeList[e][0]   = pIndexes[i-1];
                                 edgeList[e++][1] = pIndexes[k];
 
                                 faceList[f] = new INT[3];
                                 if(nullptr == faceList[f])
-                                   return OUTMEMORY;
+                                   return RESULT::OUTMEMORY;
                                 faceList[f][0] = pIndexes[i-1];
                                 faceList[f][1] = pIndexes[k-1];
                                 faceList[f++][2] = pIndexes[k];
@@ -202,7 +199,7 @@ namespace SREngine {
                           {
                               edgeList[temp] = new INT[2];
                               if(nullptr == edgeList[temp])
-                                return OUTMEMORY;
+                                return RESULT::OUTMEMORY;
                               edgeList[temp][0] = pIndexes[i-1];
                               edgeList[temp][1] = pIndexes[i];
                           }
@@ -217,7 +214,7 @@ namespace SREngine {
            }
            else{
               delete[] validVertexList;
-              return FAIL;
+              return RESULT::FAIL;
            }
 
        }
@@ -265,11 +262,11 @@ namespace SREngine {
            {
               edgeList = new INT*[edgeNumber];
               if(nullptr == edgeList)
-                 return OUTMEMORY;
+                 return RESULT::OUTMEMORY;
 
               faceList = new INT*[faceNumber];
               if(nullptr == faceList)
-                 return OUTMEMORY;
+                 return RESULT::OUTMEMORY;
 
               i = startPos;
 
@@ -283,25 +280,25 @@ namespace SREngine {
                       {
                           edgeList[e] = new INT[2];
                           if(nullptr == edgeList[e])
-                            return OUTMEMORY;
+                            return RESULT::OUTMEMORY;
                           edgeList[e][0] = pIndexes[i-2];
                           edgeList[e++][1] = pIndexes[i-1];
 
                           edgeList[e] = new INT[2];
                           if(nullptr == edgeList[e])
-                            return OUTMEMORY;
+                            return RESULT::OUTMEMORY;
                           edgeList[e][0] = pIndexes[i-1];
                           edgeList[e++][1] = pIndexes[i];
 
                           edgeList[e] = new INT[2];
                           if(nullptr == edgeList[e])
-                            return OUTMEMORY;
+                            return RESULT::OUTMEMORY;
                           edgeList[e][0] = pIndexes[i];
                           edgeList[e++][1] = pIndexes[i-2];
 
                           faceList[f] = new INT[3];
                           if(nullptr == faceList[f])
-                            return OUTMEMORY;
+                            return RESULT::OUTMEMORY;
                           faceList[f][0] = pIndexes[i-2];
                           faceList[f][1] = pIndexes[i-1];
                           faceList[f++][2] = pIndexes[i];
@@ -317,7 +314,7 @@ namespace SREngine {
            }
            else{
               delete[] validVertexList;
-              return FAIL;
+              return RESULT::FAIL;
            }
 
        }
@@ -365,11 +362,11 @@ namespace SREngine {
            {
               edgeList = new INT*[edgeNumber];
               if(nullptr == edgeList)
-                 return OUTMEMORY;
+                 return RESULT::OUTMEMORY;
 
               faceList = new INT*[faceNumber];
               if(nullptr == faceList)
-                 return OUTMEMORY;
+                 return RESULT::OUTMEMORY;
 
               i = startPos;
               int k = 0;
@@ -390,19 +387,19 @@ namespace SREngine {
                              {
                                  edgeList[e] = new INT[2];
                                  if(nullptr == edgeList[e])
-                                    return OUTMEMORY;
+                                    return RESULT::OUTMEMORY;
                                  edgeList[e][0] = pIndexes[k-2];
                                  edgeList[e++][1] = pIndexes[k];
 
                                  edgeList[e] = new INT[2];
                                  if(nullptr == edgeList[e])
-                                    return OUTMEMORY;
+                                    return RESULT::OUTMEMORY;
                                  edgeList[e][0] = pIndexes[k-1];
                                  edgeList[e++][1] = pIndexes[k];
 
                                  faceList[f] = new INT[3];
                                  if(nullptr == faceList[f])
-                                    return OUTMEMORY;
+                                    return RESULT::OUTMEMORY;
                                  faceList[f][0] = pIndexes[k-2];
                                  faceList[f][1] = pIndexes[k-1];
                                  faceList[f++][2] = pIndexes[k];
@@ -415,7 +412,7 @@ namespace SREngine {
                          {
                              edgeList[temp] = new INT[2];
                              if(nullptr == edgeList[temp])
-                                return OUTMEMORY;
+                                return RESULT::OUTMEMORY;
                              edgeList[temp][0] = pIndexes[i-1];
                              edgeList[temp][1] = pIndexes[i];
                          }
@@ -430,19 +427,17 @@ namespace SREngine {
            }
            else{
               delete[] validVertexList;
-              return FAIL;
+              return RESULT::FAIL;
            }
        }
        else
        {
            delete[] validVertexList;
-           return INVALIDARG;
+           return RESULT::INVALIDARG;
        }
 
 
        int sfloat = sizeof(FLOAT);
-       int sVertex4 = sizeof(VERTEX4);
-
        BYTE * vertexData = (BYTE*)pVertexes;
        int perAttrSize = vertexStructSize-sfloat*vmembers;
        int perVerSize = vertexStructSize - perAttrSize;
@@ -450,10 +445,10 @@ namespace SREngine {
        /*Generate the vertex list and attributes list*/
        VERTEX4 * vertexList = new VERTEX4[validVertexNum];
        if(nullptr == vertexList)
-           return OUTMEMORY;
+           return RESULT::OUTMEMORY;
        BYTE * attributesList = new BYTE[validVertexNum*perAttrSize];
        if(nullptr == attributesList)
-           return OUTMEMORY;
+           return RESULT::OUTMEMORY;
 
        /*Copy user's vertexes and attributes to the vertex list and attributes list*/
        int p = 0, q = 0;
@@ -483,10 +478,10 @@ namespace SREngine {
                                              faceNumber,
                                              perAttrSize);
        if(nullptr == triangle)
-          return OUTMEMORY;
+          return RESULT::OUTMEMORY;
        *ppOutTriangleMesh = triangle;
 
-       return SUCC;
+       return RESULT::SUCC;
     }
 
 
@@ -497,6 +492,16 @@ namespace SREngine {
 	//
 	//
 	//===========================================
+	//Release
+	void TriangleMesh::Release()
+	{
+        m_pVertexList.reset(nullptr);
+        m_pFaceList.reset(nullptr);
+        m_pEdgeList.reset(nullptr);
+        m_pAttributes.reset(nullptr);
+	}
+
+	//copy constructor
 	TriangleMesh::TriangleMesh(const TriangleMesh & other):
 	        IMesh(other.name),
             m_pVertexList(nullptr),
@@ -510,58 +515,47 @@ namespace SREngine {
             m_perAttrSize(other.m_perAttrSize)
 	{
 
-        m_pVertexList = new VERTEX4[m_vertexNumber];
-        memcpy(m_pVertexList, other.m_pVertexList, sizeof(VERTEX4)*m_vertexNumber);
+        if(m_vertexNumber>0)
+        {
+           m_pVertexList.reset(new VERTEX4[m_vertexNumber]);
+           VERTEX4* source_1 = other.m_pVertexList.get();
+           VERTEX4* dest_1 = m_pVertexList.get();
+           std::copy(source_1, source_1 + m_vertexNumber, dest_1);
 
-        m_pAttributes = new BYTE[m_vertexNumber*m_perAttrSize];
-        memcpy(m_pAttributes, other.m_pAttributes, m_vertexNumber*m_perAttrSize);
+           m_pAttributes.reset(new BYTE[m_vertexNumber*m_perAttrSize]);
+           BYTE* source_2 = other.m_pAttributes.get();
+           BYTE* dest_2 = m_pAttributes.get();
+           std::copy(source_2, source_2 + m_vertexNumber*m_perAttrSize, dest_2);
+        }
 
         int i=0;
-        m_pFaceList = new INT*[m_faceNumber];
-        while(i<m_faceNumber)
+        m_pEdgeList.reset(new unique_int_array[m_edgeNumber]);
+        while(i<m_edgeNumber)
         {
-            m_pFaceList[i] = new INT[3];
-            m_pFaceList[i][0] = other.m_pFaceList[i][0];
-            m_pFaceList[i][1] = other.m_pFaceList[i][1];
-            m_pFaceList[i][2] = other.m_pFaceList[i][2];
+            m_pEdgeList.get()[i].reset(new int[2]);
+            m_pEdgeList.get()[i].get()[0] = other.m_pEdgeList.get()[i].get()[0];
+            m_pEdgeList.get()[i].get()[1] = other. m_pEdgeList.get()[i].get()[1];
             i++;
         }
 
         i=0;
-        m_pEdgeList = new INT*[m_edgeNumber];
-        while(i<m_edgeNumber)
+        m_pFaceList.reset(new unique_int_array[m_faceNumber]);
+        while(i<m_faceNumber)
         {
-            m_pEdgeList[i] = new INT[2];
-            m_pEdgeList[i][0] = other.m_pEdgeList[i][0];
-            m_pEdgeList[i][1] = other.m_pEdgeList[i][1];
+            m_pFaceList.get()[i].reset(new int[3]);
+            m_pFaceList.get()[i].get()[0] = other.m_pFaceList.get()[i].get()[0];
+            m_pFaceList.get()[i].get()[1] = other.m_pFaceList.get()[i].get()[1];
+            m_pFaceList.get()[i].get()[2] = other.m_pFaceList.get()[i].get()[2];
             i++;
         }
 
 	}
 
+    //assignment operator
     TriangleMesh & TriangleMesh::operator=(const TriangleMesh & other)
     {
         if(this == &other)
           return *this;
-
-        if(nullptr != m_pVertexList)
-          delete[] m_pVertexList;
-        if(nullptr != m_pAttributes)
-          delete[] m_pAttributes;
-        if(nullptr != m_pFaceList)
-        {
-          int i=0;
-          while(i++<m_faceNumber)
-              delete[] m_pFaceList[i];
-          delete[] m_pFaceList;
-        }
-        if(nullptr != m_pEdgeList)
-        {
-          int i=0;
-          while(i++<m_edgeNumber)
-              delete[] m_pEdgeList[i];
-          delete[] m_pEdgeList;
-        }
 
         this->name = other.name;
         this->m_vertexFormat = other.m_vertexFormat;
@@ -570,37 +564,95 @@ namespace SREngine {
         this->m_faceNumber = other.m_faceNumber;
         this->m_perAttrSize = other.m_perAttrSize;
 
-        m_pVertexList = new VERTEX4[m_vertexNumber];
-        memcpy(m_pVertexList, other.m_pVertexList, sizeof(VERTEX4)*m_vertexNumber);
+        m_pVertexList.reset(nullptr);
+        m_pFaceList.reset(nullptr);
+        m_pEdgeList.reset(nullptr);
+        m_pAttributes.reset(nullptr);
 
-        m_pAttributes = new BYTE[m_vertexNumber*m_perAttrSize];
-        memcpy(m_pAttributes, other.m_pAttributes, m_vertexNumber*m_perAttrSize);
+        if(m_vertexNumber>0)
+        {
+           m_pVertexList.reset(new VERTEX4[m_vertexNumber]);
+           VERTEX4* source_1 = other.m_pVertexList.get();
+           VERTEX4* dest_1 = m_pVertexList.get();
+           std::copy(source_1, source_1 + m_vertexNumber, dest_1);
+
+           m_pAttributes.reset(new BYTE[m_vertexNumber*m_perAttrSize]);
+           BYTE* source_2 = other.m_pAttributes.get();
+           BYTE* dest_2 = m_pAttributes.get();
+           std::copy(source_2, source_2 + m_vertexNumber*m_perAttrSize, dest_2);
+        }
 
         int i=0;
-        m_pFaceList = new INT*[m_faceNumber];
-        while(i<m_faceNumber)
+        m_pEdgeList.reset(new unique_int_array[m_edgeNumber]);
+        while(i<m_edgeNumber)
         {
-            m_pFaceList[i] = new INT[3];
-            m_pFaceList[i][0] = other.m_pFaceList[i][0];
-            m_pFaceList[i][1] = other.m_pFaceList[i][1];
-            m_pFaceList[i][2] = other.m_pFaceList[i][2];
+            m_pEdgeList.get()[i].reset(new int[2]);
+            m_pEdgeList.get()[i].get()[0] = other.m_pEdgeList.get()[i].get()[0];
+            m_pEdgeList.get()[i].get()[1] = other. m_pEdgeList.get()[i].get()[1];
             i++;
         }
 
         i=0;
-        m_pEdgeList = new INT*[m_edgeNumber];
-        while(i<m_edgeNumber)
+        m_pFaceList.reset(new unique_int_array[m_faceNumber]);
+        while(i<m_faceNumber)
         {
-            m_pEdgeList[i] = new INT[2];
-            m_pEdgeList[i][0] = other.m_pEdgeList[i][0];
-            m_pEdgeList[i][1] = other.m_pEdgeList[i][1];
+            m_pFaceList.get()[i].reset(new int[3]);
+            m_pFaceList.get()[i].get()[0] = other.m_pFaceList.get()[i].get()[0];
+            m_pFaceList.get()[i].get()[1] = other.m_pFaceList.get()[i].get()[1];
+            m_pFaceList.get()[i].get()[2] = other.m_pFaceList.get()[i].get()[2];
             i++;
         }
 
         return *this;
     }
 
+    //move constructor
+    TriangleMesh::TriangleMesh(TriangleMesh && other):
+            IMesh(std::move(other.name)),
+            m_pVertexList(std::move(other.m_pVertexList)),
+            m_pEdgeList(std::move(other.m_pEdgeList)),
+            m_pFaceList(std::move(other.m_pFaceList)),
+            m_pAttributes(std::move(other.m_pAttributes)),
+            m_vertexFormat(other.m_vertexFormat),
+            m_vertexNumber(other.m_vertexNumber),
+            m_edgeNumber(other.m_edgeNumber),
+            m_faceNumber(other.m_faceNumber),
+            m_perAttrSize(other.m_perAttrSize)
+    {
+        other.m_pVertexList = nullptr;
+        other.m_pEdgeList = nullptr;
+        other.m_pFaceList = nullptr;
+        other.m_pAttributes = nullptr;
+    }
 
+    //move assignment
+    TriangleMesh & TriangleMesh::operator=(TriangleMesh && other)
+    {
+        if(this != &other)
+        {
+           m_pVertexList = nullptr;
+           m_pFaceList = nullptr;
+           m_pEdgeList = nullptr;
+           m_pAttributes = nullptr;
 
+           name = std::move(other.name);
+           m_vertexFormat = other.m_vertexFormat;
+           m_vertexNumber = other.m_vertexNumber;
+           m_edgeNumber = other.m_edgeNumber;
+           m_faceNumber = other.m_faceNumber;
+           m_perAttrSize = other.m_perAttrSize;
+           m_pVertexList = std::move(other.m_pVertexList);
+           m_pFaceList = std::move(other.m_pFaceList);
+           m_pEdgeList = std::move(other.m_pEdgeList);
+           m_pAttributes = std::move(other.m_pAttributes);
+
+           other.m_pVertexList = nullptr;
+           other.m_pEdgeList = nullptr;
+           other.m_pFaceList = nullptr;
+           other.m_pAttributes = nullptr;
+        }
+
+        return *this;
+    }
 
 }

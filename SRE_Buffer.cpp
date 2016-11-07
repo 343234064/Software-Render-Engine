@@ -51,17 +51,17 @@ namespace SREngine {
                                                pBufferDescript->m_BufferType,
                                                pBufferDescript->m_DataFormat);
        if(nullptr == bd)
-         return OUTMEMORY;
+         return RESULT::OUTMEMORY;
 
        Buffer* pOutBuffer = new Buffer(bd);
 
        pOutBuffer->m_data =new unsigned char[bd->m_BufferSize * bd->m_PerDataSize];
        if(nullptr == pOutBuffer->m_data)
-         return OUTMEMORY;
+         return RESULT::OUTMEMORY;
 
        *ppOutBuffer = pOutBuffer;
 
-       return SUCC;
+       return RESULT::SUCC;
     }
 
 

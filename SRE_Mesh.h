@@ -77,10 +77,8 @@ namespace SREngine {
         IMesh(std::string _name):name(_name){}
         virtual ~IMesh(){}
 
-
-        void    SetName(std::string _name){name=_name;}
+        void         SetName(std::string _name){name=_name;}
         std::string  getName(){return name;}
-
 
     protected:
         std::string  name;
@@ -109,7 +107,7 @@ namespace SREngine {
         virtual void * GetFaceFromEdge(INT edgeIndex, INT index)=0;
         virtual void * GetEdgeFromVertex(INT vertexIndex, INT index)=0;
         virtual void * GetAttribute(INT vertexIndex)=0;
-
+        virtual void   ReleaseMesh()=0;
 
 
     };
@@ -126,28 +124,29 @@ namespace SREngine {
     class TriangleMeshManager: public IMeshManager
     {
     public:
-        TriangleMeshManager(TriangleMesh * mesh=nullptr):
+        TriangleMeshManager(TriangleMesh ** mesh=nullptr):
             IMeshManager(),
-            m_pMesh(mesh)
+            m_ppMesh(mesh)
             {}
         TriangleMeshManager(const TriangleMeshManager & other);
         virtual ~TriangleMeshManager();
 
 
         //需要检查index的有效性
-        void   SetMesh(TriangleMesh * mesh){this->m_pMesh = mesh;}
+        void   SetMesh(TriangleMesh ** mesh);
         void * GetVertex(INT vertexIndex);
         void * GetVertexFromFace(INT faceIndex, INT index);
         void * GetVertexFromEdge(INT edgeIndex, INT index);
-        void * GetFaceFromEdge(INT edgeIndex, INT index);
-        void * GetEdgeFromVertex(INT vertexIndex, INT index);
+        void * GetFaceFromEdge(INT edgeIndex, INT index){}
+        void * GetEdgeFromVertex(INT vertexIndex, INT index){}
         void * GetAttribute(INT vertexIndex);
+        void   ReleaseMesh();
 
-
-        TriangleMeshManager & operator=(const TriangleMeshManager & other);
+        TriangleMeshManager& operator=(const TriangleMeshManager & other);
 
     protected:
-        TriangleMesh * m_pMesh;
+        TriangleMesh ** m_ppMesh;//测试引用
+
 
     };
 
@@ -172,52 +171,81 @@ namespace SREngine {
                      INT perAttrSize = 0):
             IMesh(),
             m_pVertexList(vertexes),
-            m_pEdgeList(edges),
-            m_pFaceList(faces),
+            m_pEdgeList(nullptr),
+            m_pFaceList(nullptr),
             m_pAttributes(attributes),
             m_vertexFormat(vertexformat),
             m_vertexNumber(vertexNumber),
             m_edgeNumber(edgeNumber),
             m_faceNumber(faceNumber),
             m_perAttrSize(perAttrSize)
+            {
+                if(edgeNumber>0)
+                {
+                    m_pEdgeList.reset(new unique_int_array[edgeNumber]);
+                    for(int i=0; i<edgeNumber; i++)
+                    {
+                        m_pEdgeList.get()[i].reset(edges[i]);
+                    }
+                    delete[] edges;
+                }
+                if(faceNumber>0)
+                {
+                    m_pFaceList.reset(new unique_int_array[faceNumber]);
+                    for(int i=0; i<faceNumber; i++)
+                    {
+                         m_pFaceList.get()[i].reset(faces[i]);
+                    }
+                    delete[] faces;
+                }
+            }
+        TriangleMesh(unique_vertex4_array vertexes = nullptr,
+                     unique_int_matrix edges = nullptr,
+                     unique_int_matrix faces = nullptr,
+                     unique_byte_array attributes = nullptr,
+                     SREVAR vertexformat = SRE_FORMAT_VERTEX_XYZ,
+                     INT vertexNumber = 0,
+                     INT edgeNumber = 0,
+                     INT faceNumber = 0,
+                     INT perAttrSize = 0):
+            IMesh(),
+            m_pVertexList(std::move(vertexes)),
+            m_pEdgeList(std::move(edges)),
+            m_pFaceList(std::move(faces)),
+            m_pAttributes(std::move(attributes)),
+            m_vertexFormat(vertexformat),
+            m_vertexNumber(vertexNumber),
+            m_edgeNumber(edgeNumber),
+            m_faceNumber(faceNumber),
+            m_perAttrSize(perAttrSize)
             {}
+
         TriangleMesh(const TriangleMesh & other);
+        TriangleMesh(TriangleMesh && other);
+
         virtual ~TriangleMesh()
         {
-            if(nullptr != m_pVertexList)
-                delete[] m_pVertexList;
-            if(nullptr != m_pAttributes)
-                delete[] m_pAttributes;
-            if(nullptr != m_pFaceList)
-            {
-                int i=0;
-                while(i++<m_faceNumber)
-                    delete[] m_pFaceList[i];
-                delete[] m_pFaceList;
-            }
-            if(nullptr != m_pEdgeList)
-            {
-                int i=0;
-                while(i++<m_edgeNumber)
-                   delete[] m_pEdgeList[i];
-                delete[] m_pEdgeList;
-            }
+            m_pVertexList.reset(nullptr);
+            m_pEdgeList.reset(nullptr);
+            m_pFaceList.reset(nullptr);
+            m_pAttributes.reset(nullptr);
         }
 
+        void Release();
 
         TriangleMesh & operator=(const TriangleMesh & other);
+        TriangleMesh & operator=(TriangleMesh && other);
 
 
-
-    public:
+    protected:
         //vertexes list, every vertex is a float type data
-        VERTEX4 * m_pVertexList;
+        unique_vertex4_array m_pVertexList;
         //edge list, every edge connects to 2 vertexes
-        INT  ** m_pEdgeList;
+        unique_int_matrix m_pEdgeList;
         //face list, every face is adjacent with 3 vertexes
-        INT  ** m_pFaceList;
+        unique_int_matrix m_pFaceList;
         //attributes list, which to store every vertex's attributes
-        BYTE * m_pAttributes;
+        unique_byte_array m_pAttributes;
         SREVAR m_vertexFormat;
         INT m_vertexNumber;
         INT m_edgeNumber;
