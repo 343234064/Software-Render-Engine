@@ -655,4 +655,60 @@ namespace SREngine {
         return *this;
     }
 
+
+
+    //===========================================
+	//Class TriangleMeshManager functions
+	//
+	//
+	//===========================================
+	//assignment operator
+	TriangleMeshManager & TriangleMeshManager::operator=(const TriangleMeshManager & other)
+	{
+	    if(this != &other)
+        {
+            this->m_ppMesh = other.m_ppMesh;
+        }
+
+        return *this;
+	}
+
+
+	void TriangleMeshManager::SetMesh(TriangleMesh ** mesh)
+	{
+        this->m_ppMesh = mesh;
+	}
+
+	void TriangleMeshManager::ReleaseMesh()
+	{
+	    if(nullptr != *m_ppMesh)
+        {
+            delete *m_ppMesh;
+            *m_ppMesh = nullptr;
+        }
+	}
+
+	INT TriangleMeshManager::GetVertexNumber()
+	{
+	    return (*m_ppMesh)->m_vertexNumber;
+	}
+
+	INT TriangleMeshManager::GetEdgeNumber()
+	{
+	    return (*m_ppMesh)->m_edgeNumber;
+	}
+
+	INT TriangleMeshManager::GetFaceNumber()
+	{
+	    return (*m_ppMesh)->m_faceNumber;
+	}
+
+    void * TriangleMeshManager::GetVertex(INT vertexIndex)
+    {
+        if(nullptr == m_ppMesh || nullptr == *m_ppMesh) return nullptr;
+        if(vertexIndex < 0 || vertexIndex >= (*m_ppMesh)->m_vertexNumber) return nullptr;
+
+        return (void*)(&((*m_ppMesh)->m_pVertexList.get()[vertexIndex]));
+    }
+
 }

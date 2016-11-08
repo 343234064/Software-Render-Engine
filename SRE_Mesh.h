@@ -16,8 +16,9 @@
 #define _SRE_MESH_
 
 #include <string>
-#include "SRE_GlobalsAndUtils.h"
 #include "SRE_Math.h"
+#include "SRE_GlobalsAndUtils.h"
+
 
 namespace SREngine {
     //=============================
@@ -83,70 +84,6 @@ namespace SREngine {
     protected:
         std::string  name;
         friend class IMeshManager;
-
-    };
-
-
-
-    //=============================
-	//Class IMeshManager
-	//
-	//Mesh class visit layer
-	//Basic class
-	//=============================
-    class IMeshManager
-    {
-    public:
-        IMeshManager(){}
-        virtual ~IMeshManager(){}
-
-
-        virtual void * GetVertex(INT vertexIndex)=0;
-        virtual void * GetVertexFromFace(INT faceIndex, INT index)=0;
-        virtual void * GetVertexFromEdge(INT edgeIndex, INT index)=0;
-        virtual void * GetFaceFromEdge(INT edgeIndex, INT index)=0;
-        virtual void * GetEdgeFromVertex(INT vertexIndex, INT index)=0;
-        virtual void * GetAttribute(INT vertexIndex)=0;
-        virtual void   ReleaseMesh()=0;
-
-
-    };
-
-
-
-
-    //=============================
-	//Class TriangleMeshManager
-	//
-	//
-	//Mesh class visit layer
-	//=============================
-    class TriangleMeshManager: public IMeshManager
-    {
-    public:
-        TriangleMeshManager(TriangleMesh ** mesh=nullptr):
-            IMeshManager(),
-            m_ppMesh(mesh)
-            {}
-        TriangleMeshManager(const TriangleMeshManager & other);
-        virtual ~TriangleMeshManager();
-
-
-        //需要检查index的有效性
-        void   SetMesh(TriangleMesh ** mesh);
-        void * GetVertex(INT vertexIndex);
-        void * GetVertexFromFace(INT faceIndex, INT index);
-        void * GetVertexFromEdge(INT edgeIndex, INT index);
-        void * GetFaceFromEdge(INT edgeIndex, INT index){}
-        void * GetEdgeFromVertex(INT vertexIndex, INT index){}
-        void * GetAttribute(INT vertexIndex);
-        void   ReleaseMesh();
-
-        TriangleMeshManager& operator=(const TriangleMeshManager & other);
-
-    protected:
-        TriangleMesh ** m_ppMesh;//测试引用
-
 
     };
 
@@ -252,7 +189,91 @@ namespace SREngine {
         INT m_faceNumber;
         INT m_perAttrSize;
 
+        friend class TriangleMeshManager;
     };
+
+
+
+    //=============================
+	//Class IMeshManager
+	//
+	//Mesh class visit layer
+	//Basic class
+	//=============================
+    class IMeshManager
+    {
+    public:
+        IMeshManager(){}
+        virtual ~IMeshManager(){}
+
+
+        virtual void * GetVertex(INT vertexIndex)=0;
+        virtual void * GetVertexFromFace(INT faceIndex, INT index)=0;
+        virtual void * GetVertexFromEdge(INT edgeIndex, INT index)=0;
+        virtual void * GetFaceFromEdge(INT edgeIndex, INT index)=0;
+        virtual void * GetEdgeFromVertex(INT vertexIndex, INT index)=0;
+        virtual void * GetAttribute(INT vertexIndex)=0;
+        virtual INT    GetVertexNumber()=0;
+        virtual INT    GetEdgeNumber()=0;
+        virtual INT    GetFaceNumber()=0;
+        virtual void   ReleaseMesh()=0;
+
+
+    };
+
+
+
+
+    //=============================
+	//Class TriangleMeshManager
+	//
+	//
+	//Mesh class visit layer
+	//=============================
+    class TriangleMeshManager: public IMeshManager
+    {
+    public:
+        TriangleMeshManager(TriangleMesh ** mesh=nullptr):
+            IMeshManager(),
+            m_ppMesh(mesh)
+            {}
+        TriangleMeshManager(const TriangleMeshManager & other):
+            IMeshManager(),
+	        m_ppMesh(other.m_ppMesh)
+	    {}
+        virtual ~TriangleMeshManager()
+        {
+            if(nullptr != *m_ppMesh)
+            {
+                delete *m_ppMesh;
+                *m_ppMesh = nullptr;
+            }
+        }
+
+
+        //需要检查index的有效性
+        void   SetMesh(TriangleMesh ** mesh);
+        void   ReleaseMesh();
+        void * GetVertex(INT vertexIndex);
+        void * GetVertexFromFace(INT faceIndex, INT index){}
+        void * GetVertexFromEdge(INT edgeIndex, INT index){}
+        void * GetFaceFromEdge(INT edgeIndex, INT index){}
+        void * GetEdgeFromVertex(INT vertexIndex, INT index){}
+        void * GetAttribute(INT vertexIndex){}
+        INT    GetVertexNumber();
+        INT    GetEdgeNumber();
+        INT    GetFaceNumber();
+
+        TriangleMeshManager& operator=(const TriangleMeshManager & other);
+
+    public:
+        TriangleMesh ** m_ppMesh;//测试引用
+
+
+    };
+
+
+
 
 
 

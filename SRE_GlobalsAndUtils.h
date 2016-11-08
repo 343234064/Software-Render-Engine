@@ -18,6 +18,9 @@
 using std::unique_ptr;
 using std::shared_ptr;
 
+#include <iostream>
+using std::cout;
+using std::endl;
 namespace SREngine {
     //==============================
     //Deleter
@@ -49,9 +52,9 @@ namespace SREngine {
 	class Buffer;
 
     class IMesh;
+    class TriangleMesh;
 	class IMeshManager;
 	class TriangleMeshManager;
-    class TriangleMesh;
 
     class Color3;
     class Color4;

@@ -22,7 +22,7 @@ struct v2
     float nx,ny,nz;
     float a,r,g,b;
 };
-  /*
+
 int main()
 {
   int vnum = 8;
@@ -54,10 +54,10 @@ int main()
  if(result != RESULT::SUCC)
     cout<<"error"<<endl;
   else{
+/*
 
-  TriangleMesh* tri = ptriangle;
-  cout<<"Edge Number:"<<tri->m_edgeNumber<<endl;
-  for(int i=0;i<tri->m_edgeNumber; i++)
+  cout<<"Edge Number:"<<tri.GetEdgeNumber()<<endl;
+  for(int i=0;i<tri.GetEdgeNumber(); i++)
       cout<<tri->m_pEdgeList.get()[i].get()[0]<<tri->m_pEdgeList.get()[i].get()[1]<<" ";
   cout<<endl;
 
@@ -66,41 +66,43 @@ int main()
       cout<<tri->m_pFaceList.get()[i].get()[0]<<tri->m_pFaceList.get()[i].get()[1]<<tri->m_pFaceList.get()[i].get()[2]<<" ";
   cout<<endl;
 
-  cout<<"Vertex Number:"<<tri->m_vertexNumber<<endl;
+  cout<<"Vertex Number:"<<tri.GetVertexNumber()<<endl;
   v2* attrilist = (v2*)tri->m_pAttributes.get();
   for(int i=0;i<tri->m_vertexNumber;i++)
       cout<<tri->m_pVertexList.get()[i].x<<","<<tri->m_pVertexList.get()[i].y<<","<<tri->m_pVertexList.get()[i].z<<","<<tri->m_pVertexList.get()[i].w<<" "
           <<attrilist[i].nx<<","<<attrilist[i].ny<<","<<attrilist[i].nz<<" "
           <<attrilist[i].a<<","<<attrilist[i].r<<","<<attrilist[i].g<<","<<attrilist[i].b<<endl;
+*/
+   TriangleMeshManager manager(&ptriangle);
+   TriangleMeshManager manager2 = manager;
+
+   cout<<"Vertex Number:"<<manager.GetVertexNumber()<<endl;
+   cout<<manager.GetVertexNumber()<<endl;
+   for(int i=0;i<manager.GetVertexNumber();i++)
+   {
+       VERTEX4 * ver = (VERTEX4*)(manager.GetVertex(i));
+       ver->x = 223;
+       cout<<ver->x<<","<<ver->y<<","<<ver->z<<","<<ver->w<<endl;
+       cout<<((VERTEX4*)(manager.GetVertex(i)))->x<<endl;
 
    }
 
-   cout<<"constructor test=============================="<<endl;
-   TriangleMesh another = *ptriangle;
-   TriangleMesh another2(another);
+   cout<<manager.m_ppMesh<<endl;
+   cout<<manager2.m_ppMesh<<endl;
 
-   another.m_pVertexList.get()[0].x = 100;
-   another2.m_pVertexList.get()[0].x = 200;
+   manager.ReleaseMesh();
+   manager2.ReleaseMesh();
 
-    for(int i=0;i<another.m_vertexNumber;i++)
-      cout<<another.m_pVertexList.get()[i].x<<","<<another.m_pVertexList.get()[i].y
-          <<","<<another.m_pVertexList.get()[i].z<<","<<another.m_pVertexList.get()[i].w<<endl;
-    cout<<endl;
-    for(int i=0;i<another2.m_vertexNumber;i++)
-      cout<<another2.m_pVertexList.get()[i].x<<","<<another2.m_pVertexList.get()[i].y
-          <<","<<another2.m_pVertexList.get()[i].z<<","<<another2.m_pVertexList.get()[i].w<<endl;
-    cout<<endl;
-    for(int i=0;i<ptriangle->m_vertexNumber;i++)
-      cout<<ptriangle->m_pVertexList.get()[i].x<<","<<ptriangle->m_pVertexList.get()[i].y
-          <<","<<ptriangle->m_pVertexList.get()[i].z<<","<<ptriangle->m_pVertexList.get()[i].w<<endl;
-    ptriangle->~TriangleMesh();
+   }
+
+
 
  return 0;
-} */
+}
 
 
 
-
+/*
 class aa
 {
 public:
@@ -117,7 +119,7 @@ typedef unique_ptr<unique_array, array_deleter<unique_array>> pArray;
 int main()
 {
     int row = 10;
-    /*
+
     pArray array(new unique_array[row]);
     for(int i=0; i<row; i++)
     {
@@ -128,11 +130,11 @@ int main()
     }
     cout<<"end init"<<endl;
     array.reset(nullptr);
-    */
+
     aa* a=new aa();
     a->v = 10;
 
     delete a;
 
-}
+}*/
 
