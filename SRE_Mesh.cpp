@@ -705,10 +705,44 @@ namespace SREngine {
 
     void * TriangleMeshManager::GetVertex(INT vertexIndex)
     {
+#ifdef _SRE_DEBUG_
         if(nullptr == m_ppMesh || nullptr == *m_ppMesh) return nullptr;
         if(vertexIndex < 0 || vertexIndex >= (*m_ppMesh)->m_vertexNumber) return nullptr;
-
+#endif
         return (void*)(&((*m_ppMesh)->m_pVertexList.get()[vertexIndex]));
+    }
+
+    void * TriangleMeshManager::GetVertexFromEdge(INT edgeIndex, INT vertexIndex)
+    {
+#ifdef _SRE_DEBUG_
+        if(nullptr == m_ppMesh || nullptr == *m_ppMesh) return nullptr;
+        if(edgeIndex < 0 || edgeIndex >= (*m_ppMesh)->m_edgeNumber) return nullptr;
+        if(vertexIndex < 0 || vertexIndex > 2) return nullptr;
+#endif
+
+        return (void*)(&((*m_ppMesh)->m_pEdgeList.get()[edgeIndex].get()[vertexIndex]));
+    }
+
+
+    void * TriangleMeshManager::GetVertexFromFace(INT faceIndex, INT vertexIndex)
+    {
+#ifdef _SRE_DEBUG_
+        if(nullptr == m_ppMesh || nullptr == *m_ppMesh) return nullptr;
+        if(faceIndex < 0 || faceIndex >= (*m_ppMesh)->m_faceNumber) return nullptr;
+        if(vertexIndex < 0 || vertexIndex > 3) return nullptr;
+#endif
+
+        return (void*)(&((*m_ppMesh)->m_pFaceList.get()[faceIndex].get()[vertexIndex]));
+    }
+
+    void * TriangleMeshManager::GetAttribute(INT vertexIndex)
+    {
+#ifdef _SRE_DEBUG_
+        if(nullptr == m_ppMesh || nullptr == *m_ppMesh) return nullptr;
+        if(vertexIndex < 0 || vertexIndex >= (*m_ppMesh)->m_vertexNumber) return nullptr;
+#endif
+        BYTE* attribute = (*m_ppMesh)->m_pAttributes.get();
+        return  (void*)(attribute + vertexIndex * (*m_ppMesh)->m_perAttrSize);
     }
 
 }
