@@ -28,38 +28,33 @@ namespace SREngine {
 	//
 	//
 	//===========================================
-    RESULT CreateBuffer(const BufferDescript* pBufferDescript, Buffer** ppOutBuffer)
+	template <typename T>
+    RESULT CreateBuffer(const BufferDescript* pBufferDescript, Buffer<T>** ppOutBuffer)
     {
 #ifdef _SRE_DEBUG_
        if(nullptr == pBufferDescript || nullptr == ppOutBuffer)
        {
            _LOG(SRE_ERROR_NULLPOINTER);
-           return INVALIDARG;
+           return RESULT::INVALIDARG;
        }
 
-       if(pBufferDescript->m_BufferSize <=0 || pBufferDescript->m_PerDataSize<=0)
+       if(pBufferDescript->m_BufferSize <=0)
        {
            _LOG(SRE_ERROR_INVALIDARG);
-           return INVALIDARG;
+           return RESULT::INVALIDARG;
        }
 
 #endif // _SRE_DEBUG_
 
+       BufferDescript * pBdes = new BufferDescript(pBufferDescript->m_BufferSize,
+                                                   pBufferDescript->m_BufferType,
+                                                   pBufferDescript->m_DataFormat);
+       if(nullptr = pBdes) return RESULT::OUTMEMORY;
 
-       BufferDescript* bd = new BufferDescript(pBufferDescript->m_BufferSize,
-                                               pBufferDescript->m_PerDataSize,
-                                               pBufferDescript->m_BufferType,
-                                               pBufferDescript->m_DataFormat);
-       if(nullptr == bd)
-         return RESULT::OUTMEMORY;
+       Buffer<T> * pbuffer = new Buffer<T>(pBdes);
+       pbuffer->m_data.reset(new T[pBdes->m_BufferSize]);
 
-       Buffer* pOutBuffer = new Buffer(bd);
-
-       pOutBuffer->m_data =new unsigned char[bd->m_BufferSize * bd->m_PerDataSize];
-       if(nullptr == pOutBuffer->m_data)
-         return RESULT::OUTMEMORY;
-
-       *ppOutBuffer = pOutBuffer;
+       *ppOutBuffer = pbuffer;
 
        return RESULT::SUCC;
     }
@@ -72,7 +67,46 @@ namespace SREngine {
 	//
 	//
 	//=============================
-    void Buffer::SetData(INT pos, void* data)
+	template <typename T>
+	Buffer<T>::Buffer(const Buffer & other)
+	{
+	    this->m_pDescript = new BufferDescript(other.m_pDescript->m_BufferSize,
+                                               other.m_pDescript->m_BufferType,
+                                               other.m_pDescript->m_DataFormat);
+        this->m_data.reset(new T[this->m_pDescript->m_BufferSize]);
+        T * source = other.m_data.get();
+        T * dest = this->m_data.get();
+	    std::copy(source, source + this->m_pDescript->m_BufferSize, dest);
+	}
+
+	template <typename T>
+	Buffer<T> & Buffer<T>::operator=(const Buffer & other)
+	{
+	    if(this != &other)
+        {
+           if(this->m_pDescript == nullptr) this->m_pDescript = new BufferDescript();
+
+           this->m_pDescript->m_BufferSize = other.m_pDescript->m_BufferSize;
+           this->m_pDescript->m_BufferType = other.m_pDescript->m_BufferType;
+           this->m_pDescript->m_DataFormat = other.m_pDescript->m_DataFormat;
+
+           this->m_data.reset(new T[this->m_pDescript->m_BufferSize]);
+           T * source = other.m_data.get();
+           T * dest = this->m_data.get();
+	       std::copy(source, source + this->m_pDescript->m_BufferSize, dest);
+        }
+
+	    return *this;
+	}
+
+	template <typename T>
+	BufferDescript * Buffer<T>::GetDescript()
+	{
+	    return this->m_pDescript;
+	}
+
+	template <typename T>
+    void Buffer<T>::SetData(INT pos, const T & data)
     {
 #ifdef _SRE_DEBUG_
        if(nullptr == data)
@@ -81,7 +115,7 @@ namespace SREngine {
            return;
        }
 
-       if(nullptr == this->m_pDescript || nullptr == this->m_data)
+       if(nullptr == this->m_data)
        {
            _LOG(SRE_ERROR_FAIL);
            return;
@@ -92,21 +126,18 @@ namespace SREngine {
            _LOG(SRE_ERROR_INVALIDARG);
            return;
        }
-
-
 #endif // _SRE_DEBUG_
 
-
-       memcpy(this->m_data+pos, data, this->m_pDescript->m_PerDataSize);
+       this->m_data.get()[pos] = data;
 
        return;
     }
 
-
-    const void* Buffer::GetData(INT pos)
+    template <typename T>
+    T Buffer<T>::GetData(INT pos)
     {
 #ifdef _SRE_DEBUG_
-       if(nullptr == this->m_pDescript || nullptr == this->m_data)
+       if(nullptr == this->m_data)
        {
            _LOG(SRE_ERROR_FAIL);
            return nullptr;
@@ -118,12 +149,9 @@ namespace SREngine {
            return nullptr;
        }
 
-
 #endif // _SRE_DEBUG_
 
-       const void* pData = (const void*)(this->m_data+pos);
-
-       return pData;
+       return this->m_data.get()[pos];
 
     }
 

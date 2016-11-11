@@ -23,7 +23,8 @@ namespace SREngine {
 	//Function definitions
 	//
 	//=============================
-	RESULT CreateBuffer(const BufferDescript* pBufferDescript, Buffer** ppOutBuffer);
+	template <typename T>
+	RESULT CreateBuffer(const BufferDescript* pBufferDescript, Buffer<T>** ppOutBuffer);
 
 
 
@@ -45,11 +46,9 @@ namespace SREngine {
 	{
     public:
         BufferDescript(INT bufferSize = 0,
-                       INT perDataSize = 0,
                        SREVAR bufferType = 0,
                        SREVAR dataFormat = 0):
             m_BufferSize(bufferSize),
-            m_PerDataSize(perDataSize),
             m_BufferType(bufferType),
             m_DataFormat(dataFormat)
             {}
@@ -58,7 +57,6 @@ namespace SREngine {
 
     public:
         INT m_BufferSize;
-        INT m_PerDataSize;
         SREVAR m_BufferType;
         SREVAR m_DataFormat;
 
@@ -71,42 +69,39 @@ namespace SREngine {
 	//Class Buffer
 	//
 	//
-	//Buffer which is for storing
-	//data
+	//Buffer which is for storing data
 	//
-	//** DO NOT STORE POINTER TYPE DATA **
 	//=============================
+	template <typename T>
 	class Buffer: public IContainer
 	{
     public:
-        Buffer(BufferDescript* pBufferDescript = nullptr):
-               IContainer(),
-               m_pDescript(pBufferDescript),
-               m_data(nullptr)
-               {}
         Buffer(const Buffer & other);
         virtual ~Buffer()
         {
            if(nullptr != m_pDescript)
               delete m_pDescript;
-           if(nullptr != m_data)
-              delete[] m_data;
+
+           m_data.reset(nullptr);
         }
 
-
-        void  SetData(INT pos, void* data);
-        const void* GetData(INT pos);
-        BufferDescript* GetDescript();
-        void Clear(){}
+        void  SetData(INT pos, const T & data);
+        T     GetData(INT pos);
+        BufferDescript * GetDescript();
         Buffer & operator=(const Buffer & other);
 
-        friend RESULT CreateBuffer(const BufferDescript* pBufferDescript, Buffer** ppOutBuffer);
 
     protected:
+        Buffer(BufferDescript* pBufferDescript = nullptr):
+               IContainer(),
+               m_pDescript(pBufferDescript),
+               m_data(nullptr)
+        {}
+
         BufferDescript*  m_pDescript;
-        BYTE* m_data;
+        unique_ptr<T[]>  m_data;
 
-
+        friend RESULT CreateBuffer<>(const BufferDescript* pBufferDescript, Buffer<T>** ppOutBuffer);
 
 	};
 

@@ -49,6 +49,8 @@ namespace SREngine {
     class Quaternion;
 
     class BufferDescript;
+
+    template <typename T>
 	class Buffer;
 
     class IMesh;
@@ -67,7 +69,7 @@ namespace SREngine {
     typedef int             INT;
     typedef unsigned int  SREVAR;
     typedef unsigned char BYTE;
-    //考虑添加short int来作为索引数据类型
+
     typedef Vector    VEC;
 	typedef Vector2   VEC2;
 	typedef Vector3   VEC3;
@@ -215,7 +217,7 @@ namespace SREngine {
     public:
         IContainer(){}
         virtual ~IContainer(){}
-        virtual void Clear() = 0;
+        //virtual void Clear() = 0;
 
     };
 
