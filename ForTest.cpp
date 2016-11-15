@@ -136,27 +136,28 @@ int main()
 {
     int row = 10;
 
-    aa list[10];
-    for(int i=0; i<row; i++)
-    {
-       list[i].v = i++;
-    }
-    cout<<"end init"<<endl;
-
+    aa a1, a2;
+    a1.v = 1024;
+    a2.v = 213213;
     Buffer<aa> * buffer;
     BufferDescript bDes(row, 300, 400);
     RESULT result = CreateBuffer(&bDes, &buffer);
     if(result == RESULT::SUCC)
     {
-        Buffer<aa> buffer2(*buffer);
-        Buffer<aa> buffer3 = buffer2;
+        buffer->Reset(a1);
 
-        cout<<(buffer->GetData(0)).v<<endl;
-        cout<<(buffer2.GetData(0)).v<<endl;
-        cout<<(buffer3.GetData(0)).v<<endl;
+        cout<<buffer->m_data.get()[1].v<<endl;
+        cout<<buffer->m_data.get()[4].v<<endl;
+        //Buffer<aa> buffer3 = buffer2;
+
+
     }
     else
         cout<<"error"<<endl;
+
+    delete buffer;
+
+    return 0;
 
 }
 
