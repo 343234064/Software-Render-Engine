@@ -3,11 +3,11 @@
 // Software Render Engine
 // Version 0.01
 //
-// File: SRE_Buffer.h
+// File: SRE_Resources.h
 // Date: 2016/6/17
 // Description:
 //       Defines resources relative classes and functions,
-//       including sampler, texture, buffer.
+//       including sampler, texture, buffer, color.
 //
 //
 //
@@ -28,6 +28,43 @@ namespace SREngine {
 	RESULT CreateBuffer(const BufferDescript* pBufferDescript, Buffer<T>** ppOutBuffer);
 
 
+
+    //=============================
+	//Class Color
+	//
+	//=============================
+    class Color3
+    {
+    public:
+        Color3(const BYTE & r, const BYTE & g, const BYTE & b)
+        {
+            rgb[0]=r;
+            rgb[1]=g;
+            rgb[2]=b;
+        }
+
+        ~Color3(){}
+
+    public:
+        BYTE rgb[3];
+
+    };
+
+    class Color4
+    {
+    public:
+        Color4(const BYTE & a, const BYTE & r, const BYTE & g, const BYTE & b)
+        {
+            argb[0]=a;
+            argb[1]=r;
+            argb[2]=g;
+            argb[3]=b;
+        }
+        ~Color4();
+
+    public:
+        BYTE argb[4];
+    };
 
 
 
@@ -74,7 +111,7 @@ namespace SREngine {
 	//
 	//=============================
 	template <typename T>
-	class Buffer: public IContainer
+	class Buffer: public BaseContainer
 	{
     public:
         Buffer(const Buffer & other);
@@ -97,11 +134,12 @@ namespace SREngine {
 
     protected:
         Buffer(BufferDescript* pBufferDescript = nullptr):
-               IContainer(),
+               BaseContainer(),
                m_pDescript(pBufferDescript),
                m_data(nullptr)
         {}
 
+    protected:
         BufferDescript*  m_pDescript;
 
 
@@ -163,6 +201,7 @@ namespace SREngine {
 	//=============================
 	template <typename T>
 	Buffer<T>::Buffer(const Buffer & other):
+	    BaseContainer(),
 	    m_pDescript(new BufferDescript(other.m_pDescript->m_BufferSize,
                                        other.m_pDescript->m_BufferType,
                                        other.m_pDescript->m_DataFormat)),

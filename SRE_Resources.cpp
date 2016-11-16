@@ -3,16 +3,16 @@
 // Software Render Engine
 // Version 0.01
 //
-// File: SRE_Buffer.cpp
+// File: SRE_Resources.cpp
 // Date: 2016/10/10
 // Description:
 //       Implements of buffer functions and classes which declared
-//       in SRE_Buffer.h
+//       in SRE_Resources.h
 //
 //
 //*****************************************************
-#include<cstring>
-#include "SRE_Buffer.h"
+
+#include "SRE_Resources.h"
 
 
 namespace SREngine {

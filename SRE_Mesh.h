@@ -66,17 +66,17 @@ namespace SREngine {
 
 
     //=============================
-	//Class IMesh
+	//Class BaseMesh
 	//
 	//Mesh class
 	//Basic class
 	//=============================
-    class IMesh
+    class BaseMesh
     {
     public:
-        IMesh():name("\0"){}
-        IMesh(std::string _name):name(_name){}
-        virtual ~IMesh(){}
+        BaseMesh():name("\0"){}
+        BaseMesh(std::string _name):name(_name){}
+        virtual ~BaseMesh(){}
 
         void         SetName(std::string _name){name=_name;}
         std::string  getName(){return name;}
@@ -94,7 +94,7 @@ namespace SREngine {
 	//
 	//Concrete Mesh class
 	//=============================
-    class TriangleMesh : public IMesh
+    class TriangleMesh : public BaseMesh
     {
     public:
         TriangleMesh(VERTEX4 * vertexes = nullptr,
@@ -106,7 +106,7 @@ namespace SREngine {
                      INT edgeNumber = 0,
                      INT faceNumber = 0,
                      INT perAttrSize = 0):
-            IMesh(),
+            BaseMesh(),
             m_pVertexList(vertexes),
             m_pEdgeList(nullptr),
             m_pFaceList(nullptr),
@@ -145,7 +145,7 @@ namespace SREngine {
                      INT edgeNumber = 0,
                      INT faceNumber = 0,
                      INT perAttrSize = 0):
-            IMesh(),
+            BaseMesh(),
             m_pVertexList(std::move(vertexes)),
             m_pEdgeList(std::move(edges)),
             m_pFaceList(std::move(faces)),
@@ -200,22 +200,22 @@ namespace SREngine {
 	//Mesh class visit layer
 	//Basic class
 	//=============================
-    class IMeshManager
+    class BaseMeshManager
     {
     public:
-        IMeshManager(){}
-        virtual ~IMeshManager(){}
+        BaseMeshManager(){}
+        virtual ~BaseMeshManager(){}
 
 
         virtual void * GetVertex(INT vertexIndex)=0;
-        virtual void * GetVertexFromFace(INT faceIndex, INT index){}
-        virtual void * GetVertexFromEdge(INT edgeIndex, INT index){}
-        virtual void * GetFaceFromEdge(INT edgeIndex, INT index){}
-        virtual void * GetEdgeFromVertex(INT vertexIndex, INT index){}
-        virtual void * GetAttribute(INT vertexIndex){}
+        virtual void * GetVertexFromFace(INT faceIndex, INT index){return nullptr;}
+        virtual void * GetVertexFromEdge(INT edgeIndex, INT index){return nullptr;}
+        virtual void * GetFaceFromEdge(INT edgeIndex, INT index){return nullptr;}
+        virtual void * GetEdgeFromVertex(INT vertexIndex, INT index){return nullptr;}
+        virtual void * GetAttribute(INT vertexIndex){return nullptr;}
         virtual INT    GetVertexNumber()=0;
-        virtual INT    GetEdgeNumber(){}
-        virtual INT    GetFaceNumber(){}
+        virtual INT    GetEdgeNumber(){return 0;}
+        virtual INT    GetFaceNumber(){return 0;}
         virtual void   ReleaseMesh()=0;
 
 
@@ -230,15 +230,15 @@ namespace SREngine {
 	//
 	//Mesh class visit layer
 	//=============================
-    class TriangleMeshManager: public IMeshManager
+    class TriangleMeshManager: public BaseMeshManager
     {
     public:
         TriangleMeshManager(TriangleMesh ** mesh=nullptr):
-            IMeshManager(),
+            BaseMeshManager(),
             m_ppMesh(mesh)
         {}
         TriangleMeshManager(const TriangleMeshManager & other):
-            IMeshManager(),
+            BaseMeshManager(),
 	        m_ppMesh(other.m_ppMesh)
         {}
         virtual ~TriangleMeshManager()

@@ -503,7 +503,7 @@ namespace SREngine {
 
 	//copy constructor
 	TriangleMesh::TriangleMesh(const TriangleMesh & other):
-	        IMesh(other.name),
+	        BaseMesh(other.name),
             m_pVertexList(nullptr),
             m_pEdgeList(nullptr),
             m_pFaceList(nullptr),
@@ -608,7 +608,7 @@ namespace SREngine {
 
     //move constructor
     TriangleMesh::TriangleMesh(TriangleMesh && other):
-            IMesh(std::move(other.name)),
+            BaseMesh(std::move(other.name)),
             m_pVertexList(std::move(other.m_pVertexList)),
             m_pEdgeList(std::move(other.m_pEdgeList)),
             m_pFaceList(std::move(other.m_pFaceList)),

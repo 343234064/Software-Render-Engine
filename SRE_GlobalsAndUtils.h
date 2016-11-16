@@ -18,9 +18,7 @@
 using std::unique_ptr;
 using std::shared_ptr;
 
-#include <iostream>
-using std::cout;
-using std::endl;
+
 namespace SREngine {
     //==============================
     //Deleter
@@ -37,7 +35,8 @@ namespace SREngine {
     //Classes definitions
     //
     //==============================
-    class IContainer;
+    class BaseContainer;
+    class BaseTask;
 
 	class Vector;
 	class Vector2;
@@ -53,13 +52,18 @@ namespace SREngine {
     template <typename T>
 	class Buffer;
 
-    class IMesh;
+    class BaseMesh;
     class TriangleMesh;
-	class IMeshManager;
+	class BaseMeshManager;
 	class TriangleMeshManager;
 
     class Color3;
     class Color4;
+
+    class RenderStates;
+    class RunTimeData;
+    class Technique;
+    class RenderPass;
 
     //==============================
     //Type definitions
@@ -178,10 +182,25 @@ namespace SREngine {
     //===========================================================
 
 
-    const SREVAR SRE_FORMAT_PIXEL_R8G8B8A8=0x00000100;
-    const SREVAR SRE_FORMAT_PIXEL_R8G8B8=0x00000101;
+    const SREVAR SRE_TRUE=0x10000000;
+    const SREVAR SRE_FALSE=0x10000001;
 
-    const SREVAR SRE_BUFFERTYPE_RENDERBUFFER=0x00000200;
+    const SREVAR SRE_FILLMODE_POINT=0x10000002;
+    const SREVAR SRE_FILLMODE_FRAME=0x10000003;
+    const SREVAR SRE_FILLMODE_SOLID=0x10000004;
+
+    const SREVAR SRE_CULLMODE_CW=0x10000010;
+    const SREVAR SRE_CULLMODE_CCW=0x10000011;
+
+    const SREVAR SRE_FORMAT_PIXEL_R8G8B8A8=0x10000020;
+    const SREVAR SRE_FORMAT_PIXEL_R8G8B8=0x10000021;
+
+    const SREVAR SRE_BUFFERTYPE_RENDERBUFFER=0x10000030;
+
+
+
+
+
 
 
 
@@ -208,19 +227,33 @@ namespace SREngine {
 
 
     //==============================
-    //Class IContainer
+    //Class BaseContainer
     //
-    //Basic class
+    //Base class
     //==============================
-    class IContainer
+    class BaseContainer
     {
     public:
-        IContainer(){}
-        virtual ~IContainer(){}
+        BaseContainer(){}
+        virtual ~BaseContainer(){}
         //virtual void Clear() = 0;
 
     };
 
+
+    //==============================
+    //Class BaseTask
+    //
+    //Base class
+    //==============================
+    class BaseTask
+    {
+    public:
+        BaseTask(){}
+        virtual ~BaseTask(){}
+
+        void Run()=0;
+    };
 
 
 
