@@ -64,12 +64,10 @@ namespace SREngine {
 
 
 
-
     //=============================
 	//Class BaseMesh
 	//
-	//Mesh class
-	//Basic class
+	//Base class
 	//=============================
     class BaseMesh
     {
@@ -83,7 +81,6 @@ namespace SREngine {
 
     protected:
         std::string  name;
-        friend class IMeshManager;
 
     };
 

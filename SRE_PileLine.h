@@ -16,8 +16,9 @@
 #define _SRE_PILELINE_
 
 #include <string>
+#include <map>
 #include "SRE_GlobalsAndUtils.h"
-
+using std::map;
 
 namespace SREngine {
     //=============================
@@ -54,17 +55,37 @@ namespace SREngine {
     public:
         RunTimeData():
             BaseContainer(),
-            m_MeshListSize(0),
-            m_pMeshList(nullptr),
-            m_pRenderState(nullptr)
+            m_pRenderState(new RenderStates()),
+            m_MeshList()
         {}
 
-        virtual ~RunTimeData();
+        virtual ~RunTimeData()
+        {
+            if(nullptr != m_pRenderState)
+                delete m_pRenderState;
+
+            map<INT, BaseMesh* >::iterator it;
+            BaseMesh * mesh;
+            for(it=m_MeshList.begin(); it!=m_MeshList.end(); it++)
+            {
+                mesh = it->second;
+                delete mesh;
+            }
+            m_MeshList.clear();
+        }
+
+        void       AddMesh(BaseMesh * mesh, INT key);
+        void       RemoveMesh(INT key);
+        BaseMesh * GetMesh(INT key);
+        INT        GetMeshCount();
+
+        void       SetRenderState(SREVAR renderState, SREVAR value);
 
     protected:
-        INT m_MeshListSize;
-        BaseMesh * m_pMeshList;
         RenderStates * m_pRenderState;
+        map<INT, BaseMesh* >
+                       m_MeshList;
+
 
     };
 
@@ -81,7 +102,6 @@ namespace SREngine {
         Technique();
         virtual ~Technique();
 
-
         void Run();
         void SetName(std::string name);
         std::string GetName();
@@ -91,8 +111,8 @@ namespace SREngine {
         INT  GetRenderPassNumber();
 
     protected:
-        std::string m_name;
-        INT m_RenderPassNumber;
+        std::string  m_name;
+        INT          m_RenderPassNumber;
         RenderPass * m_pPassList;
 
     };
@@ -109,6 +129,7 @@ namespace SREngine {
     public:
         RenderPass();
         virtual ~RenderPass();
+
 
 	};
 }
