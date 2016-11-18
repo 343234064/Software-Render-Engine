@@ -262,6 +262,55 @@ namespace SREngine {
 
 
 
+    //=============================
+	//Class BaseMesh
+	//
+	//Base class
+	//=============================
+    class BaseMesh
+    {
+    public:
+        BaseMesh():name("\0"){}
+        BaseMesh(std::string _name):name(_name){}
+        virtual ~BaseMesh(){}
+
+        void         SetName(std::string _name){name=_name;}
+        std::string  getName(){return name;}
+
+    protected:
+        std::string  name;
+
+    };
+
+
+
+
+    //=============================
+	//Class IMeshManager
+	//
+	//Mesh class visit layer
+	//Basic class
+	//=============================
+    class BaseMeshManager
+    {
+    public:
+        BaseMeshManager(){}
+        virtual ~BaseMeshManager(){}
+
+
+        virtual void * GetVertex(INT vertexIndex)=0;
+        virtual void * GetVertexFromFace(INT faceIndex, INT index){return nullptr;}
+        virtual void * GetVertexFromEdge(INT edgeIndex, INT index){return nullptr;}
+        virtual void * GetFaceFromEdge(INT edgeIndex, INT index){return nullptr;}
+        virtual void * GetEdgeFromVertex(INT vertexIndex, INT index){return nullptr;}
+        virtual void * GetAttribute(INT vertexIndex){return nullptr;}
+        virtual INT    GetVertexNumber()=0;
+        virtual INT    GetEdgeNumber(){return 0;}
+        virtual INT    GetFaceNumber(){return 0;}
+        virtual void   ReleaseMesh()=0;
+
+
+    };
 
 }
 

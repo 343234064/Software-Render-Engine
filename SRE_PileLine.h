@@ -17,8 +17,10 @@
 
 #include <string>
 #include <map>
+#include <list>
 #include "SRE_GlobalsAndUtils.h"
 using std::map;
+using std::list;
 
 namespace SREngine {
     //=============================
@@ -35,6 +37,23 @@ namespace SREngine {
             CullMode(SRE_CULLMODE_CCW),
             ZEnable(SRE_TRUE)
         {}
+        RenderStates(const RenderStates & other):
+            FillMode(other.FillMode),
+            CullMode(other.CullMode),
+            ZEnable(other.ZEnable)
+        {}
+
+        RenderStates & operator=(const RenderStates & other)
+        {
+            if(this != &other)
+            {
+                this->FillMode = other.FillMode;
+                this->CullMode = other.CullMode;
+                this->ZEnable = other.ZEnable;
+            }
+
+            return *this;
+        }
         ~RenderStates(){}
 
     public:
@@ -58,20 +77,15 @@ namespace SREngine {
             m_pRenderState(new RenderStates()),
             m_MeshList()
         {}
+        RunTimeData(const RunTimeData & other);
 
         virtual ~RunTimeData()
         {
             if(nullptr != m_pRenderState)
                 delete m_pRenderState;
 
-            map<INT, BaseMesh* >::iterator it;
-            BaseMesh * mesh;
-            for(it=m_MeshList.begin(); it!=m_MeshList.end(); it++)
-            {
-                mesh = it->second;
-                delete mesh;
-            }
-            m_MeshList.clear();
+             m_MeshList.clear();
+            //ReleaseMeshList();
         }
 
         void       AddMesh(BaseMesh * mesh, INT key);
@@ -79,11 +93,14 @@ namespace SREngine {
         BaseMesh * GetMesh(INT key);
         INT        GetMeshCount();
 
+        void       ReleaseMeshList();
         void       SetRenderState(SREVAR renderState, SREVAR value);
+
+        RunTimeData & operator=(const RunTimeData & other);
 
     protected:
         RenderStates * m_pRenderState;
-        map<INT, BaseMesh* >
+        map<INT, BaseMesh*>
                        m_MeshList;
 
 
@@ -99,21 +116,43 @@ namespace SREngine {
     class Technique:public BaseTask
     {
     public:
-        Technique();
-        virtual ~Technique();
+        Technique(std::string name="\0"):
+            BaseTask(),
+            m_name(name),
+            m_PassList()
+        {}
 
-        void Run();
-        void SetName(std::string name);
-        std::string GetName();
+        Technique(const Technique & other):
+            BaseTask(),
+            m_name(other.m_name),
+            m_PassList()
+        {}
 
-        void AddRenderPass();
-        void GetRenderPassByIndex(INT index);
-        INT  GetRenderPassNumber();
+        virtual ~Technique()
+        {
+            //
+            m_PassList.clear();
+        }
+
+        void         Run();
+        void         SetName(std::string name);
+        std::string  GetName();
+
+        void         AddRenderPass(RenderPass * renderPass, INT index);
+        void         AddRenderPassBack(RenderPass * renderPass);
+        void         RemoveRenderPassByIndex(INT index);
+        void         RemoveRenderPassByName(INT index);
+        void         ReleasePassList();
+        INT          GetRenderPassNumber();
+        RenderPass * GetRenderPassByIndex(INT index);
+        RenderPass * GetRenderPassByName(std::string name);
+
+
+        Technique &  operator=(const Technique & other);
 
     protected:
-        std::string  m_name;
-        INT          m_RenderPassNumber;
-        RenderPass * m_pPassList;
+        std::string        m_name;
+        list<RenderPass*>  m_PassList;
 
     };
 
@@ -129,6 +168,13 @@ namespace SREngine {
     public:
         RenderPass();
         virtual ~RenderPass();
+
+        void Run();
+        void SetName(std::string name);
+        std::string GetName();
+
+    protected:
+        std::string m_name;
 
 
 	};
