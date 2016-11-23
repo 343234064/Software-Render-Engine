@@ -28,8 +28,9 @@ namespace SREngine {
     template<class T>
     struct array_deleter
     {
-        void operator()(T* &x) const { delete[] x; }
+        void operator()(T* & x) const { delete[] x; }
     };
+
 
     //==============================
     //Classes definitions
@@ -61,10 +62,19 @@ namespace SREngine {
     class Color4;
 
     class RenderStates;
+    class VariableBuffer;
     class RunTimeData;
     class Technique;
     class RenderPass;
 
+    class PileLineBuilder;
+    class InputAssembler;
+    class VertexPostProcesser;
+    class Rasterizer;
+    class OutputMerger;
+
+    class VertexShader;
+    class PixelShader;
     //==============================
     //Type definitions
     //
@@ -108,11 +118,12 @@ namespace SREngine {
     typedef Quaternion * PQUAT;
     typedef const Quaternion * CPQUAT;
 
-
     typedef unique_ptr<VERTEX4, array_deleter<VERTEX4>> unique_vertex4_array;
     typedef unique_ptr<INT, array_deleter<INT>>         unique_int_array;
     typedef unique_ptr<BYTE, array_deleter<BYTE>>       unique_byte_array;
     typedef unique_ptr<unique_int_array, array_deleter<unique_int_array>> unique_int_matrix;
+
+
 
     //==============================
     //Global variables
@@ -124,6 +135,7 @@ namespace SREngine {
     const int INDEX_END_FLAG = -1;
 
     enum class RESULT { SUCC, FAIL, INVALIDARG, OUTMEMORY };
+
 
     //===========================================================
     //Vertex format
@@ -199,7 +211,18 @@ namespace SREngine {
     const SREVAR SRE_FORMAT_PIXEL_R8G8B8A8=0x10000040;
     const SREVAR SRE_FORMAT_PIXEL_R8G8B8=0x10000041;
 
-    const SREVAR SRE_BUFFERTYPE_RENDERBUFFER=0x10000050;
+    const SREVAR SRE_BUFFERTYPE_RENDERBUFFER=0x10000060;
+
+    const SREVAR SRE_MATRIXTYPE_WORLD=0x10000070;
+    const SREVAR SRE_MATRIXTYPE_VIEW=0x10000071;
+    const SREVAR SRE_MATRIXTYPE_PROJECT=0x10000072;
+    const SREVAR SRE_MATRIXTYPE_WORLDVIEW=0x10000073;
+    const SREVAR SRE_MATRIXTYPE_VIEWPROJECT=0x10000074;
+    const SREVAR SRE_MATRIXTYPE_WORLDVIEWPROJECT=0x10000075;
+
+
+
+
 
 
 

@@ -38,7 +38,7 @@ namespace SREngine {
 
 	RunTimeData::RunTimeData(const RunTimeData & other):
 	    BaseContainer(),
-	    m_pRenderState(new RenderStates(*(other.m_pRenderState))),
+	    m_pVarBuffer(new VariableBuffer(*(other.m_pVarBuffer))),
 	    m_MeshList(other.m_MeshList)
 	{}
 
@@ -47,13 +47,13 @@ namespace SREngine {
 	{
 	    if(this != &other)
         {
-            if(nullptr != this->m_pRenderState)
+            if(nullptr != this->m_pVarBuffer)
             {
-                *(this->m_pRenderState) = *(other.m_pRenderState);
+                *(this->m_pVarBuffer) = *(other.m_pVarBuffer);
             }
             else
             {
-                this->m_pRenderState = new RenderStates(*(other.m_pRenderState));
+                this->m_pVarBuffer = new VariableBuffer(*(other.m_pVarBuffer));
             }
 
             //ReleaseMeshList();
@@ -99,13 +99,35 @@ namespace SREngine {
         switch (renderState)
         {
         case SRE_RENDERSTATE_CULLMODE:
-            this->m_pRenderState->CullMode=value;break;
+            this->m_pVarBuffer->renderStates->CullMode=value;break;
         case SRE_RENDERSTATE_FILLMODE:
-            this->m_pRenderState->FillMode=value;break;
+            this->m_pVarBuffer->renderStates->FillMode=value;break;
         case SRE_RENDERSTATE_ZENABLE:
-            this->m_pRenderState->ZEnable=value;break;
+            this->m_pVarBuffer->renderStates->ZEnable=value;break;
         default:break;
         }
+    }
+
+
+    void RunTimeData::SetMatrix(SREVAR matrixType, const MAT44 & matrix)
+    {
+        switch (matrixType)
+        {
+        case SRE_MATRIXTYPE_WORLD:
+            this->m_pVarBuffer->World=matrix;break;
+        case SRE_MATRIXTYPE_VIEW:
+            this->m_pVarBuffer->View=matrix;break;
+        case SRE_MATRIXTYPE_PROJECT:
+            this->m_pVarBuffer->Project=matrix;break;
+        case SRE_MATRIXTYPE_WORLDVIEW:
+            this->m_pVarBuffer->WorldView=matrix;break;
+        case SRE_MATRIXTYPE_VIEWPROJECT:
+            this->m_pVarBuffer->ViewProj=matrix;break;
+        case SRE_MATRIXTYPE_WORLDVIEWPROJECT:
+            this->m_pVarBuffer->WorldViewProj=matrix;break;
+        default:break;
+        }
+
     }
 
 
@@ -131,12 +153,12 @@ namespace SREngine {
     {
         list<RenderPass*>::iterator it;
         RenderPass * pass;
-        for(it=m_PassList.begin(); it!=m_PassList.end(); it++)
+        for(it=m_PassList.begin(); it!=m_PassList.end();)
         {
             pass = (*it);
             delete pass;
+            m_PassList.erase(it++);
         }
-        m_PassList.clear();
     }
 
 
@@ -163,7 +185,8 @@ namespace SREngine {
         if(nullptr == renderPass) return;
 
         list<RenderPass*>::iterator it;
-        for(INT i=0, it=m_PassList.begin(); it!=m_PassList.end(); it++, i++)
+        INT i=0;
+        for(it=m_PassList.begin(); it!=m_PassList.end(); it++, i++)
         {
             if(i==index)
             {
@@ -179,6 +202,74 @@ namespace SREngine {
         if(nullptr == renderPass) return;
 
         m_PassList.push_back(renderPass);
+    }
+
+
+    void Technique::RemoveRenderPassByIndex(INT index)
+    {
+        list<RenderPass*>::iterator it;
+        INT i=0;
+        for(it=m_PassList.begin(); it!=m_PassList.end(); it++, i++)
+        {
+            if(i==index)
+            {
+                it=m_PassList.erase(it);
+                break;
+            }
+        }
+    }
+
+
+    void Technique::RemoveRenderPassByName(std::string name)
+    {
+        list<RenderPass*>::iterator it;
+        for(it=m_PassList.begin(); it!=m_PassList.end(); it++)
+        {
+            if(name==(*it)->GetName())
+            {
+                it=m_PassList.erase(it);
+                break;
+            }
+        }
+    }
+
+
+    RenderPass * Technique::GetRenderPassByIndex(INT index)
+    {
+        list<RenderPass*>::iterator it;
+        INT i=0;
+        for(it=m_PassList.begin(); it!=m_PassList.end(); it++, i++)
+        {
+            if(i==index)
+            {
+                return (*it);
+            }
+        }
+
+    }
+
+
+    RenderPass * Technique::GetRenderPassByName(std::string name)
+    {
+        list<RenderPass*>::iterator it;
+        for(it=m_PassList.begin(); it!=m_PassList.end(); it++)
+        {
+            if(name==(*it)->GetName())
+            {
+                return (*it);
+            }
+        }
+    }
+
+
+    void Technique::Run()
+    {
+        list<RenderPass*>::iterator it;
+        for(it=m_PassList.begin(); it!=m_PassList.end(); it++)
+        {
+            (*it)->Run();
+        }
+
     }
 
 

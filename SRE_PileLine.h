@@ -37,23 +37,7 @@ namespace SREngine {
             CullMode(SRE_CULLMODE_CCW),
             ZEnable(SRE_TRUE)
         {}
-        RenderStates(const RenderStates & other):
-            FillMode(other.FillMode),
-            CullMode(other.CullMode),
-            ZEnable(other.ZEnable)
-        {}
 
-        RenderStates & operator=(const RenderStates & other)
-        {
-            if(this != &other)
-            {
-                this->FillMode = other.FillMode;
-                this->CullMode = other.CullMode;
-                this->ZEnable = other.ZEnable;
-            }
-
-            return *this;
-        }
         ~RenderStates(){}
 
     public:
@@ -62,6 +46,32 @@ namespace SREngine {
         SREVAR ZEnable;
 	};
 
+
+    //=============================
+	//Class VariableBuffer
+	//
+	//
+	//
+	//=============================
+    class VariableBuffer
+    {
+    public:
+        VariableBuffer():
+            RenderStates()
+        {}
+        virtual ~VariableBuffer(){}
+
+    public:
+        RenderStates renderStates;
+        VEC2   ViewportSize;
+        MAT44  WorldViewProj;
+        MAT44  WorldView;
+        MAT44  ViewProj;
+        MAT44  World;
+        MAT44  View;
+        MAT44  Project;
+
+    };
 
     //=============================
 	//Class RunTimeData
@@ -74,15 +84,15 @@ namespace SREngine {
     public:
         RunTimeData():
             BaseContainer(),
-            m_pRenderState(new RenderStates()),
+            m_pVarBuffer(new VariableBuffer()),
             m_MeshList()
         {}
         RunTimeData(const RunTimeData & other);
 
         virtual ~RunTimeData()
         {
-            if(nullptr != m_pRenderState)
-                delete m_pRenderState;
+            if(nullptr != m_pVarBuffer)
+                delete m_pVarBuffer;
 
              m_MeshList.clear();
             //ReleaseMeshList();
@@ -95,16 +105,18 @@ namespace SREngine {
 
         void       ReleaseMeshList();
         void       SetRenderState(SREVAR renderState, SREVAR value);
+        void       SetMatrix(SREVAR matrixType, SREVAR matrix);
 
         RunTimeData & operator=(const RunTimeData & other);
 
     protected:
-        RenderStates * m_pRenderState;
+        VariableBuffer * m_pVarBuffer;
         map<INT, BaseMesh*>
-                       m_MeshList;
+                         m_MeshList;
 
 
     };
+
 
 
     //=============================
@@ -141,7 +153,7 @@ namespace SREngine {
         void         AddRenderPass(RenderPass * renderPass, INT index);
         void         AddRenderPassBack(RenderPass * renderPass);
         void         RemoveRenderPassByIndex(INT index);
-        void         RemoveRenderPassByName(INT index);
+        void         RemoveRenderPassByName(std::string name);
         void         ReleasePassList();
         INT          GetRenderPassNumber();
         RenderPass * GetRenderPassByIndex(INT index);
@@ -157,6 +169,7 @@ namespace SREngine {
     };
 
 
+
     //=============================
 	//Class RenderPass
 	//
@@ -169,12 +182,24 @@ namespace SREngine {
         RenderPass();
         virtual ~RenderPass();
 
-        void Run();
-        void SetName(std::string name);
+        void        Run();
+        void        SetName(std::string name);
         std::string GetName();
 
+        void        SetVertexShader(const VertexShader * vs);
+        void        SetPixelShader(const PixelShader * ps);
+
+        void        SetOutputTarget();
+
+
     protected:
-        std::string m_name;
+        void        StartPileLine();
+
+
+    protected:
+        std::string     m_name;
+        VertexShader *  m_VShader;
+        PixelShader  *  m_PShader;
 
 
 	};
