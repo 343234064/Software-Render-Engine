@@ -73,6 +73,8 @@ namespace SREngine {
     class Rasterizer;
     class OutputMerger;
 
+    class BasicVSInput;
+    class BasicVSOutput;
     class VertexShader;
     class PixelShader;
     //==============================
@@ -123,7 +125,7 @@ namespace SREngine {
     typedef unique_ptr<BYTE, array_deleter<BYTE>>       unique_byte_array;
     typedef unique_ptr<unique_int_array, array_deleter<unique_int_array>> unique_int_matrix;
 
-
+    typedef BasicVSOutput* (CallBackVShader)(const BasicVSInput &);
 
     //==============================
     //Global variables

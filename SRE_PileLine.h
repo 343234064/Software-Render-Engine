@@ -56,9 +56,7 @@ namespace SREngine {
     class VariableBuffer
     {
     public:
-        VariableBuffer():
-            RenderStates()
-        {}
+        VariableBuffer(){}
         virtual ~VariableBuffer(){}
 
     public:
@@ -179,8 +177,22 @@ namespace SREngine {
 	class RenderPass:public BaseTask
 	{
     public:
-        RenderPass();
-        virtual ~RenderPass();
+        RenderPass():
+            BaseTask(),
+            m_pVShader(nullptr),
+            m_pPShader(nullptr)
+        {}
+        virtual ~RenderPass()
+        {
+            /*
+            if(nullptr != m_pVShader)
+                delete m_pVShader;
+            if(nullptr != m_pPShader)
+                delete m_pPShader;
+            */
+        }
+
+        RenderPass(const RenderPass &);
 
         void        Run();
         void        SetName(std::string name);
@@ -188,9 +200,13 @@ namespace SREngine {
 
         void        SetVertexShader(const VertexShader * vs);
         void        SetPixelShader(const PixelShader * ps);
-
+        void        SetRenderState();
+        void        SetMatrix();
         void        SetOutputTarget();
+        //void        SetInputTarget();
+        void        SetRenderMesh();
 
+        RenderPass & operator=(const RenderPass &);
 
     protected:
         void        StartPileLine();
@@ -198,8 +214,8 @@ namespace SREngine {
 
     protected:
         std::string     m_name;
-        VertexShader *  m_VShader;
-        PixelShader  *  m_PShader;
+        VertexShader *  m_pVShader;
+        PixelShader  *  m_pPShader;
 
 
 	};
