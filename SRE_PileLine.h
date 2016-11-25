@@ -18,11 +18,169 @@
 #include <string>
 #include <map>
 #include <list>
+#include "SRE_Math.h"
 #include "SRE_GlobalsAndUtils.h"
 using std::map;
 using std::list;
 
 namespace SREngine {
+    //=============================
+	//Class BasicInput
+	//
+	//
+	//User defines what need to be output
+	//Need to be inherited
+	//=============================
+	class BasicInput:public BaseContainer
+	{
+    public:
+        BasicInput();
+        virtual ~BasicInput();
+
+	};
+
+
+
+    //=============================
+	//Class BasicOutput
+	//
+	//
+	//User defines what need to be output
+	//Need to be inherited
+	//=============================
+	class BasicOutput:public BaseContainer
+	{
+    public:
+        BasicVSOutput();
+        virtual ~BasicVSOutput();
+
+	};
+
+
+
+    //=============================
+	//Class BasicProcessor
+	//
+	//
+	//=============================
+	class BasicProcessor:public BaseTask
+	{
+    public:
+        BasicProcessor(){}
+        virtual ~BasicProcessor(){}
+
+        virtual void NextStage()=0;
+
+    protected:
+        BasicProcessor * nextStage;
+
+        friend class BasePileLineBuilder;
+	};
+
+
+
+    //=============================
+	//Class BaseLineBuilder
+	//
+	//
+	//
+	//=============================
+	class BasePileLineBuilder
+	{
+    public:
+        BasePileLineBuilder():
+            m_pPileLine(nullptr)
+        {}
+        virtual ~BasePileLineBuilder(){}
+
+        virtual BasicProcessor* BuildPileLine()=0;
+        virtual void            AddProcessor(INT index, const BasicProcessor * processor)=0;
+        virtual void            RemoveProcessor(INT index)=0;
+
+    protected:
+        BasicProcessor * m_pPileLine;
+
+	};
+
+
+
+
+
+    //=============================
+	//Class InputAssembler
+	//
+	//
+	//
+	//=============================
+	class InputAssembler:public BasicProcessor
+	{
+    public:
+        InputAssembler():
+            BasicProcessor()
+        {}
+        virtual ~InputAssembler(){}
+
+
+	};
+
+
+
+    //=============================
+	//Class VertexPostProcesser
+	//
+	//
+	//
+	//=============================
+    class VertexPostProcesser:public BasicProcessor
+    {
+    public:
+        VertexPostProcesser():
+            BasicProcessor()
+        {}
+        virtual ~VertexPostProcesser();
+
+    };
+
+
+
+    //=============================
+	//Class Rasterizer
+	//
+	//
+	//
+	//=============================
+    class Rasterizer:public BasicProcessor
+    {
+    public:
+        Rasterizer():
+            BasicProcessor()
+        {}
+        virtual ~Rasterizer();
+
+    };
+
+
+
+    //=============================
+	//Class OutputMerger
+	//
+	//
+	//
+	//=============================
+    class OutputMerger:public BasicProcessor
+    {
+    public:
+        OutputMerger():
+            BasicProcessor()
+        {}
+        virtual ~OutputMerger();
+
+    };
+
+
+
+
+
     //=============================
 	//Class RenderStates
 	//
@@ -103,7 +261,7 @@ namespace SREngine {
 
         void       ReleaseMeshList();
         void       SetRenderState(SREVAR renderState, SREVAR value);
-        void       SetMatrix(SREVAR matrixType, SREVAR matrix);
+        void       SetMatrix(SREVAR matrixType, const MAT44 & matrix);
 
         RunTimeData & operator=(const RunTimeData & other);
 
@@ -218,7 +376,13 @@ namespace SREngine {
         PixelShader  *  m_pPShader;
 
 
+
 	};
+
+
+
+
+
 }
 
 #endif // SRE_PILELINE_H_INCLUDED

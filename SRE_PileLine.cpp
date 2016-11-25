@@ -99,11 +99,11 @@ namespace SREngine {
         switch (renderState)
         {
         case SRE_RENDERSTATE_CULLMODE:
-            this->m_pVarBuffer->renderStates->CullMode=value;break;
+            this->m_pVarBuffer->renderStates.CullMode=value;break;
         case SRE_RENDERSTATE_FILLMODE:
-            this->m_pVarBuffer->renderStates->FillMode=value;break;
+            this->m_pVarBuffer->renderStates.FillMode=value;break;
         case SRE_RENDERSTATE_ZENABLE:
-            this->m_pVarBuffer->renderStates->ZEnable=value;break;
+            this->m_pVarBuffer->renderStates.ZEnable=value;break;
         default:break;
         }
     }
@@ -275,6 +275,18 @@ namespace SREngine {
 
 
 
+
+
+
+    //===========================================
+	//Class RenderPass functions
+	//
+	//
+	//===========================================
+    std::string RenderPass::GetName()
+    {
+        return this->m_name;
+    }
 
 
 

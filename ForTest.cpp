@@ -110,28 +110,11 @@ int main()
     cout<<"end"<<endl;
     return 0;
     */
-    list<aa*> li;
     aa* a1=new aa();
-    aa* a2=new aa();
-    aa* a3=new aa();
-    a1->v=23;
-    a2->v=24;
-    list<aa*>::iterator it;
+    a1->v = 2;
 
-    li.push_back(a1);
-    li.push_back(a2);
-
-    //li.insert(it++, a1);
-    //li.insert(it++, a2);
-    it = li.begin();
-    it++;
-    li.insert(it, a3);
-
-    for(it=li.begin(); it!=li.end(); it++)
-        cout<<(*it)->v<<endl;
-
-    delete a1;
-    delete a2;
-    delete a3;
+    shared_ptr<aa> p(a1);
+    shared_ptr<aa> p2=p;
+    cout<<p.use_count()<<endl;
 }
 
