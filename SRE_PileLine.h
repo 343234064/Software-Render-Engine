@@ -51,8 +51,8 @@ namespace SREngine {
 	class BasicOutput:public BaseContainer
 	{
     public:
-        BasicVSOutput();
-        virtual ~BasicVSOutput();
+        BasicOutput();
+        virtual ~BasicOutput();
 
 	};
 
@@ -66,7 +66,10 @@ namespace SREngine {
 	class BasicProcessor:public BaseTask
 	{
     public:
-        BasicProcessor(){}
+        BasicProcessor():
+            BaseTask(),
+            nextStage(nullptr)
+        {}
         virtual ~BasicProcessor(){}
 
         virtual void NextStage()=0;
@@ -80,7 +83,7 @@ namespace SREngine {
 
 
     //=============================
-	//Class BaseLineBuilder
+	//Class BasePileLineBuilder
 	//
 	//
 	//
@@ -91,16 +94,63 @@ namespace SREngine {
         BasePileLineBuilder():
             m_pPileLine(nullptr)
         {}
+        BasePileLineBuilder(const BasePileLineBuilder & other)
+        {
+            this->m_pPileLine = other.m_pPileLine;
+        }
+
         virtual ~BasePileLineBuilder(){}
 
+
         virtual BasicProcessor* BuildPileLine()=0;
-        virtual void            AddProcessor(INT index, const BasicProcessor * processor)=0;
+        virtual void            AddProcessor(INT index, BasicProcessor * processor)=0;
         virtual void            RemoveProcessor(INT index)=0;
+
+        BasicProcessor ** GetNextStage(BasicProcessor * processor)
+        {
+            return &(processor->nextStage);
+        }
+
+        BasePileLineBuilder & operator=(const BasePileLineBuilder & other)
+        {
+            if(this != &other)
+            {
+               this->m_pPileLine = other.m_pPileLine;
+            }
+            return *this;
+        }
 
     protected:
         BasicProcessor * m_pPileLine;
 
 	};
+
+
+
+
+    //=============================
+	//Class PileLineBuilder
+	//
+	//
+	//
+	//=============================
+	class PileLineBuilder:public BasePileLineBuilder
+	{
+    public:
+        PileLineBuilder():
+            BasePileLineBuilder()
+        {}
+
+        virtual ~PileLineBuilder(){}
+
+        BasicProcessor* BuildPileLine();
+        void            AddProcessor(INT index, BasicProcessor * processor);
+        void            RemoveProcessor(INT index);
+
+
+	};
+
+
 
 
 

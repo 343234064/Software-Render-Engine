@@ -45,76 +45,48 @@ public:
 
 };
 
+class pro:public BasicProcessor
+{
+public:
+    pro(int _v):v(_v){cout<<"pro constructor!"<<endl;}
+    ~pro(){cout<<"pro destructor!"<<endl;}
+    int v;
+
+    void Run()
+    {
+        cout<<v<<endl;
+        NextStage();
+    }
+
+    void NextStage()
+    {
+        if(this->nextStage != nullptr)
+           this->nextStage->Run();
+    }
+};
 
 
 int main()
 {
-    /*
-    int vnum=10;
-    int value=0;
-    vv* vlist=new vv[vnum];
-    for(int i=0;i<vnum;i++)
-    {
-        vlist[i].x=value++;
-        vlist[i].y=value++;
-        vlist[i].z=value++;
-        vlist[i].nx=value++;
-        vlist[i].ny=value++;
-        vlist[i].nz=value++;
-        vlist[i].a=value++;
-        vlist[i].r=value++;
-        vlist[i].g=value++;
-        vlist[i].b=value++;
+    PileLineBuilder builder;
+    pro p1(1);
+    pro p2(2);
+    pro p3(3);
+    pro p4(4);
 
-    }
+    builder.AddProcessor(0,(BasicProcessor*)&p1);
+    builder.AddProcessor(1,(BasicProcessor*)&p2);
+    builder.AddProcessor(2,(BasicProcessor*)&p3);
+    builder.AddProcessor(0,(BasicProcessor*)&p4);
+    BasicProcessor * my = builder.BuildPileLine();
+    pro * pp = (pro*)my;
+    pp->Run();
+    cout<<endl;
 
-    int inum = 5;
-    int index[5]={0,1,2,3,4};
+    builder.RemoveProcessor(6);
+    my = builder.BuildPileLine();
+    pp = (pro*)my;
+    pp->Run();
 
-    TriangleMesh *ptriangle;
-    RESULT re=
-    CreateTriangleMesh(vnum, SRE_FORMAT_VERTEX_XYZ | SRE_FORMAT_ATTRIBUTE_NORMAL | SRE_FORMAT_ATTRIBUTE_DIFFUSE,
-                       sizeof(vv), (void*)vlist, inum, index, SRE_PRIMITIVETYPE_TRIANGLELIST, &ptriangle);
-
-    int inum2 = 5;
-    int index2[5]={5,6,7,8,9};
-
-    TriangleMesh *ptriangle2;
-    RESULT re2=
-    CreateTriangleMesh(vnum, SRE_FORMAT_VERTEX_XYZ | SRE_FORMAT_ATTRIBUTE_NORMAL | SRE_FORMAT_ATTRIBUTE_DIFFUSE,
-                       sizeof(vv), (void*)vlist, inum2, index2, SRE_PRIMITIVETYPE_TRIANGLELIST, &ptriangle2);
-
-    if(re!=RESULT::SUCC)
-       cout<<"error"<<endl;
-
-    RunTimeData rta;
-    rta.AddMesh((BaseMesh*)ptriangle, 1);
-    rta.AddMesh((BaseMesh*)ptriangle2, 2);
-
-    TriangleMeshManager triman1, triman2;
-    TriangleMesh * tri=(TriangleMesh*)(rta.GetMesh(1));
-    TriangleMesh * tri2=(TriangleMesh*)(rta.GetMesh(2));
-
-    triman1.SetMesh(&tri);
-    triman2.SetMesh(&tri2);
-
-    cout<<"Mesh count:"<<rta.GetMeshCount()<<endl;
-    cout<<"Mesh 1"<<endl;
-    cout<<((VERTEX4*)(triman1.GetVertex(0)))->x<<" "<<((VERTEX4*)(triman1.GetVertex(0)))->y<<" "<<((VERTEX4*)(triman1.GetVertex(0)))->z<<endl;
-
-    cout<<"Mesh 2"<<endl;
-    cout<<((VERTEX4*)(triman2.GetVertex(0)))->x<<" "<<((VERTEX4*)(triman2.GetVertex(0)))->y<<" "<<((VERTEX4*)(triman2.GetVertex(0)))->z<<endl;
-
-
-    rta.ReleaseMeshList();
-    cout<<"end"<<endl;
-    return 0;
-    */
-    aa* a1=new aa();
-    a1->v = 2;
-
-    shared_ptr<aa> p(a1);
-    shared_ptr<aa> p2=p;
-    cout<<p.use_count()<<endl;
 }
 

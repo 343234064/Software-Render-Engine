@@ -16,6 +16,85 @@
 
 
 namespace SREngine {
+    //===========================================
+	//Class PileLineBuilder functions
+	//
+	//
+	//===========================================
+	BasicProcessor * PileLineBuilder::BuildPileLine()
+	{
+	    if(nullptr != this->m_pPileLine)
+	    return this->m_pPileLine;
+	}
+
+	void PileLineBuilder::AddProcessor(INT index, BasicProcessor * processor)
+	{
+	    if(nullptr != this->m_pPileLine)
+        {
+            if(index == 0)
+            {
+                *(GetNextStage(processor)) = this->m_pPileLine;
+                this->m_pPileLine = processor;
+            }
+            else
+            {
+                INT i=1;
+                BasicProcessor * curr = this->m_pPileLine;
+                BasicProcessor ** next;
+                while(true)
+                {
+                    next = GetNextStage(curr);
+                    if(i == index)
+                    {
+                        *(GetNextStage(processor)) = *next;
+                        *next = processor;
+                        break;
+                    }
+                    else
+                    {
+                        i++;
+                        if(*next != nullptr)
+                            curr = *next;
+                        else
+                            break;
+                    }
+                }
+            }
+        }
+        else
+            this->m_pPileLine = processor;
+	}
+
+	void PileLineBuilder::RemoveProcessor(INT index)
+	{
+	    if(nullptr == this->m_pPileLine)
+            return;
+	    else if(index == 0)
+        {
+            this->m_pPileLine = *(GetNextStage(this->m_pPileLine));
+        }
+        else
+        {
+            INT i=1;
+            BasicProcessor * curr = this->m_pPileLine;
+            BasicProcessor ** next = GetNextStage(curr);
+            while(*next != nullptr)
+            {
+                if(i == index)
+                {
+                    *(GetNextStage(curr)) = *(GetNextStage(*next));
+                    break;
+                }
+                else
+                {
+                    i++;
+                    curr = *next;
+                    next = GetNextStage(curr);
+                }
+            }
+        }
+
+	}
 
     //===========================================
 	//Class RunTimeData functions
