@@ -68,14 +68,26 @@ namespace SREngine {
     public:
         BasicProcessor():
             BaseTask(),
-            nextStage(nullptr)
+            m_pNextStage(nullptr),
+            m_pRunTimeData(nullptr)
         {}
         virtual ~BasicProcessor(){}
 
         virtual void NextStage()=0;
+        virtual void SetRunTimeData(const RunTimeData * runtimedata)
+        {
+            this->m_pRunTimeData = runtimedata;
+        }
+        virtual void SetRunTimeDataChain(const RunTimeData * runtimedata)
+        {
+            this->m_pRunTimeData = runtimedata;
+            if(nullptr != m_pNextStage)
+                m_pNextStage->SetRunTimeData(runtimedata);
+        }
 
     protected:
-        BasicProcessor * nextStage;
+        BasicProcessor * m_pNextStage;
+        RunTimeData    * m_pRunTimeData;
 
         friend class BasePileLineBuilder;
 	};
@@ -108,7 +120,7 @@ namespace SREngine {
 
         BasicProcessor ** GetNextStage(BasicProcessor * processor)
         {
-            return &(processor->nextStage);
+            return &(processor->m_pNextStage);
         }
 
         BasePileLineBuilder & operator=(const BasePileLineBuilder & other)
@@ -122,6 +134,7 @@ namespace SREngine {
 
     protected:
         BasicProcessor * m_pPileLine;
+
 
 	};
 
@@ -154,8 +167,6 @@ namespace SREngine {
 
 
 
-
-
     //=============================
 	//Class InputAssembler
 	//
@@ -170,8 +181,30 @@ namespace SREngine {
         {}
         virtual ~InputAssembler(){}
 
+        void Run();
+        void NextStage();
+
+    protected:
+
 
 	};
+
+
+
+    //=============================
+	//Class VertexProcesser
+	//
+	//
+	//
+	//=============================
+    class VertexPostProcesser:public BasicProcessor
+    {
+    public:
+        VertexPostProcesser():
+            BasicProcessor()
+        {}
+        virtual ~VertexPostProcesser();
+    };
 
 
 
@@ -209,6 +242,20 @@ namespace SREngine {
 
     };
 
+
+
+    //=============================
+	//Class PixelProcesser
+	//
+	//
+	//
+	//=============================
+    class PixelProcesser:public BasicProcessor
+    {
+    public:
+        PixelProcesser();
+        virtual ~PixelProcesser();
+    };
 
 
     //=============================
@@ -308,6 +355,7 @@ namespace SREngine {
         void       RemoveMesh(INT key);
         BaseMesh * GetMesh(INT key);
         INT        GetMeshCount();
+        VariableBuffer * GetVaribleBuffer();
 
         void       ReleaseMeshList();
         void       SetRenderState(SREVAR renderState, SREVAR value);
@@ -388,7 +436,8 @@ namespace SREngine {
         RenderPass():
             BaseTask(),
             m_pVShader(nullptr),
-            m_pPShader(nullptr)
+            m_pPShader(nullptr),
+            m_pPileLine(nullptr)
         {}
         virtual ~RenderPass()
         {
@@ -397,6 +446,8 @@ namespace SREngine {
                 delete m_pVShader;
             if(nullptr != m_pPShader)
                 delete m_pPShader;
+            if(nullptr != m_pPileLine)
+                delete m_pPileLine;
             */
         }
 
@@ -424,6 +475,7 @@ namespace SREngine {
         std::string     m_name;
         VertexShader *  m_pVShader;
         PixelShader  *  m_pPShader;
+        BasicProcessor * m_pPileLine;
 
 
 

@@ -173,6 +173,12 @@ namespace SREngine {
 	}
 
 
+	VariableBuffer* RunTimeData::GetVaribleBuffer()
+	{
+	    return this->m_pVarBuffer;
+	}
+
+
     void RunTimeData::SetRenderState(SREVAR renderState, SREVAR value)
     {
         switch (renderState)
