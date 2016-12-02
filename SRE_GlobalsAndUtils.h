@@ -69,8 +69,10 @@ namespace SREngine {
 
     class PileLineBuilder;
     class InputAssembler;
+    class VertexProcesser;
     class VertexPostProcesser;
     class Rasterizer;
+    class PixelProcesser;
     class OutputMerger;
 
 
@@ -83,6 +85,8 @@ namespace SREngine {
     class VSInput;
     class VertexShader;
     class PixelShader;
+
+
     //==============================
     //Type definitions
     //
@@ -221,8 +225,6 @@ namespace SREngine {
     const SREVAR SRE_FORMAT_PIXEL_R8G8B8A8=0x10000040;
     const SREVAR SRE_FORMAT_PIXEL_R8G8B8=0x10000041;
 
-    const SREVAR SRE_BUFFERTYPE_RENDERBUFFER=0x10000060;
-
     const SREVAR SRE_MATRIXTYPE_WORLD=0x10000070;
     const SREVAR SRE_MATRIXTYPE_VIEW=0x10000071;
     const SREVAR SRE_MATRIXTYPE_PROJECT=0x10000072;
@@ -230,8 +232,10 @@ namespace SREngine {
     const SREVAR SRE_MATRIXTYPE_VIEWPROJECT=0x10000074;
     const SREVAR SRE_MATRIXTYPE_WORLDVIEWPROJECT=0x10000075;
 
-
-
+    const SREVAR SRE_USAGE_NEXTINPUT=0x10000090;
+    const SREVAR SRE_USAGE_VSHADER=0x10000091;
+    const SREVAR SRE_USAGE_PSHADER=0x10000092;
+    const SREVAR SRE_USAGE_RENDERBUFFER=0x10000093;
 
 
 

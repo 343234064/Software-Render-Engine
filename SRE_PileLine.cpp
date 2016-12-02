@@ -24,7 +24,9 @@ namespace SREngine {
 	BasicProcessor * PileLineBuilder::BuildPileLine()
 	{
 	    if(nullptr != this->m_pPileLine)
-	    return this->m_pPileLine;
+	       return this->m_pPileLine;
+        else
+           return nullptr;
 	}
 
 	void PileLineBuilder::AddProcessor(INT index, BasicProcessor * processor)
@@ -96,6 +98,49 @@ namespace SREngine {
 
 	}
 
+
+    //===========================================
+	//Class InputAssembler functions
+	//
+	//
+	//===========================================
+    void InputAssembler::Run()
+    {
+        this->NextStage();
+    }
+
+
+    void InputAssembler::NextStage()
+    {
+        if(nullptr != this->m_pNextStage)
+           this->m_pNextStage.Run();
+    }
+
+
+    void InputAssembler::PassArgument(SREVAR usage, void * argu)
+    {
+#ifdef _SRE_DEBUG_
+        if(nullptr == argu)
+        {
+            _LOG(SRE_ERROR_NULLPOINTER);
+            return;
+        }
+#endif
+        if(usage == SRE_USAGE_NEXTINPUT)
+        {
+            if(nullptr != this->m_pRunTimeData)
+            {
+                TriangleMesh * pTriangle = new TriangleMesh((TriangleMesh)(*argu));
+                this->m_pRunTimeData.AddMesh((BaseMesh*)pTriangle, this->m_pRunTimeData.GetMeshCount()+1);
+            }
+        }
+        else
+            if(nullptr != this->m_pNextStage)
+               this->m_pNextStage.PassArgument(usage, argu);
+
+    }
+
+
     //===========================================
 	//Class RunTimeData functions
 	//
@@ -148,6 +193,13 @@ namespace SREngine {
 	    if(nullptr != mesh)
         {
             this->m_MeshList.insert(map<INT, BaseMesh*>::value_type(key, mesh));
+        }
+        else
+        {
+#ifdef _SRE_DEBUG_
+            _LOG(SRE_ERROR_NULLPOINTER);
+#endif
+            return;
         }
 	}
 
@@ -267,8 +319,13 @@ namespace SREngine {
 
     void Technique::AddRenderPass(RenderPass * renderPass, INT index)
     {
-        if(nullptr == renderPass) return;
-
+        if(nullptr == renderPass)
+        {
+#ifdef _SRE_DEBUG_
+            _LOG(SRE_ERROR_NULLPOINTER);
+#endif
+            return;
+        }
         list<RenderPass*>::iterator it;
         INT i=0;
         for(it=m_PassList.begin(); it!=m_PassList.end(); it++, i++)
@@ -284,7 +341,13 @@ namespace SREngine {
 
     void Technique::AddRenderPassBack(RenderPass * renderPass)
     {
-        if(nullptr == renderPass) return;
+        if(nullptr == renderPass)
+        {
+#ifdef _SRE_DEBUG_
+            _LOG(SRE_ERROR_NULLPOINTER);
+#endif
+            return;
+        }
 
         m_PassList.push_back(renderPass);
     }
@@ -331,6 +394,8 @@ namespace SREngine {
             }
         }
 
+        return nullptr;
+
     }
 
 
@@ -344,6 +409,8 @@ namespace SREngine {
                 return (*it);
             }
         }
+
+        return nullptr;
     }
 
 

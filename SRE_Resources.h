@@ -84,10 +84,10 @@ namespace SREngine {
 	{
     public:
         BufferDescript(INT bufferSize = 0,
-                       SREVAR bufferType = 0,
+                       SREVAR bufferUsage = 0,
                        SREVAR dataFormat = 0):
             m_BufferSize(bufferSize),
-            m_BufferType(bufferType),
+            m_BufferType(bufferUsage),
             m_DataFormat(dataFormat)
             {}
         virtual ~BufferDescript(){}

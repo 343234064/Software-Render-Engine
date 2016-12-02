@@ -153,7 +153,7 @@ namespace SREngine {
         TriangleMesh & operator=(TriangleMesh && other);
 
 
-    protected:
+    public:
         //vertexes list, every vertex is a float type data
         unique_vertex4_array m_pVertexList;
         //edge list, every edge connects to 2 vertexes

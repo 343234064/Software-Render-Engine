@@ -60,8 +60,8 @@ public:
 
     void NextStage()
     {
-        if(this->nextStage != nullptr)
-           this->nextStage->Run();
+        if(this->m_pNextStage != nullptr)
+           this->m_pNextStage->Run();
     }
 };
 

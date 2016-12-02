@@ -71,20 +71,38 @@ namespace SREngine {
             m_pNextStage(nullptr),
             m_pRunTimeData(nullptr)
         {}
+        BasicProcessor(const BasicProcessor & other):
+            BaseTask(),
+            m_pNextStage(other.m_pNextStage),
+            m_pRunTimeData(other.m_pRunTimeData)
+        {}
         virtual ~BasicProcessor(){}
 
+
         virtual void NextStage()=0;
-        virtual void SetRunTimeData(const RunTimeData * runtimedata)
+        virtual void PassArgument(SREVAR¡¡usage, void * argu)=0;
+
+        virtual void SetRunTimeData(RunTimeData * runtimedata)
         {
             this->m_pRunTimeData = runtimedata;
         }
-        virtual void SetRunTimeDataChain(const RunTimeData * runtimedata)
+        virtual void SetRunTimeDataChain(RunTimeData * runtimedata)
         {
             this->m_pRunTimeData = runtimedata;
             if(nullptr != m_pNextStage)
                 m_pNextStage->SetRunTimeData(runtimedata);
         }
 
+        BasicProcessor & operator=(const BasicProcessor & other)
+        {
+            if(this != &other)
+            {
+                this->m_pNextStage = other.m_pNextStage;
+                this->m_pRunTimeData = other.m_pRunTimeData;
+            }
+
+            return *this;
+        }
     protected:
         BasicProcessor * m_pNextStage;
         RunTimeData    * m_pRunTimeData;
@@ -106,10 +124,9 @@ namespace SREngine {
         BasePileLineBuilder():
             m_pPileLine(nullptr)
         {}
-        BasePileLineBuilder(const BasePileLineBuilder & other)
-        {
-            this->m_pPileLine = other.m_pPileLine;
-        }
+        BasePileLineBuilder(const BasePileLineBuilder & other):
+            m_pPileLine(other.m_pPileLine)
+        {}
 
         virtual ~BasePileLineBuilder(){}
 
@@ -183,10 +200,15 @@ namespace SREngine {
 
         void Run();
         void NextStage();
+        void PassArgument(SREVAR usage, void * argu);
 
     protected:
+        void AssembleTriangleMesh();
 
-
+//Change the storage of triangle? and then
+//Make this has 2 ways:
+//Create triangle in IA, or reuse the triangle
+//I think i may have to make a big change!!
 	};
 
 
@@ -197,13 +219,20 @@ namespace SREngine {
 	//
 	//
 	//=============================
-    class VertexPostProcesser:public BasicProcessor
+    class VertexProcesser:public BasicProcessor
     {
     public:
-        VertexPostProcesser():
+        VertexProcesser():
             BasicProcessor()
         {}
-        virtual ~VertexPostProcesser();
+        virtual ~VertexProcesser();
+
+        void Run();
+        void NextStage();
+        void PassArgument(SREVAR usage, void * argu);
+
+    protected:
+
     };
 
 
@@ -221,6 +250,14 @@ namespace SREngine {
             BasicProcessor()
         {}
         virtual ~VertexPostProcesser();
+
+        void Run();
+        void NextStage();
+        void PassArgument(SREVAR usage, void * argu);
+
+
+    protected:
+
 
     };
 
@@ -240,6 +277,10 @@ namespace SREngine {
         {}
         virtual ~Rasterizer();
 
+
+        void Run();
+        void NextStage();
+        void PassArgument(SREVAR usage, void * argu);
     };
 
 
@@ -255,6 +296,10 @@ namespace SREngine {
     public:
         PixelProcesser();
         virtual ~PixelProcesser();
+
+        void Run();
+        void NextStage();
+        void PassArgument(SREVAR usage, void * argu);
     };
 
 
@@ -271,6 +316,10 @@ namespace SREngine {
             BasicProcessor()
         {}
         virtual ~OutputMerger();
+
+        void Run();
+        void NextStage();
+        void PassArgument(SREVAR usage, void * argu);
 
     };
 
@@ -311,7 +360,16 @@ namespace SREngine {
     class VariableBuffer
     {
     public:
-        VariableBuffer(){}
+        VariableBuffer():
+            renderStates(),
+            ViewportSize(),
+            WorldViewProj(),
+            WorldView(),
+            ViewProj(),
+            World(),
+            View(),
+            Project()
+        {}
         virtual ~VariableBuffer(){}
 
     public:
@@ -435,6 +493,7 @@ namespace SREngine {
     public:
         RenderPass():
             BaseTask(),
+            m_name(),
             m_pVShader(nullptr),
             m_pPShader(nullptr),
             m_pPileLine(nullptr)
@@ -462,7 +521,7 @@ namespace SREngine {
         void        SetRenderState();
         void        SetMatrix();
         void        SetOutputTarget();
-        //void        SetInputTarget();
+        void        SetInputTarget();
         void        SetRenderMesh();
 
         RenderPass & operator=(const RenderPass &);
