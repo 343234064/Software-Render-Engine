@@ -24,7 +24,7 @@ namespace SREngine {
 	//
 	//
 	//=============================
-	class VSInput:public BasicInput
+	class VSInput:public BasicIOElement
 	{
     public:
         VSInput();

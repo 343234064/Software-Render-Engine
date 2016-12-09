@@ -3,56 +3,69 @@
 // Software Render Engine
 // Version 0.01
 //
-// File: SRE_PileLine.h
+// File: SRE_PipeLine.h
 // Date: 2016/11/16
 // Description:
-//       Defines all PileLine relative classes and functions
+//       Defines all PipeLine relative classes and functions
 //
 //
 //
 //
 //*****************************************************
-#ifndef _SRE_PILELINE_
-#define _SRE_PILELINE_
+#ifndef _SRE_PIPELINE_
+#define _SRE_PIPELINE_
 
 #include <string>
 #include <map>
 #include <list>
+#include <queue>
 #include "SRE_Math.h"
 #include "SRE_GlobalsAndUtils.h"
 using std::map;
 using std::list;
+using std::queue;
 
 namespace SREngine {
     //=============================
-	//Class BasicInput
+	//Class Basic I/O Element
 	//
 	//
-	//User defines what need to be output
-	//Need to be inherited
+	//User defines what need to be input/output
 	//=============================
-	class BasicInput:public BaseContainer
+	class BasicIOElement:public BaseContainer
 	{
     public:
-        BasicInput();
-        virtual ~BasicInput();
+        BasicIOElement();
+        virtual ~BasicIOElement();
 
 	};
 
 
 
     //=============================
-	//Class BasicOutput
+	//Class BasicObserver
 	//
 	//
-	//User defines what need to be output
-	//Need to be inherited
 	//=============================
-	class BasicOutput:public BaseContainer
+	class BasicObserver
 	{
     public:
-        BasicOutput();
-        virtual ~BasicOutput();
+        BasicObserver();
+        virtual ~BasicObserver();
+
+        void Notify(SREVAR message)
+        {
+          if(nullptr != HandleMessageCallBack)
+            this->HandleMessageCallBack(message);
+        }
+
+        void SetMessageHandler(void (*callBack)(SREVAR message))
+        {
+            this->HandleMessageCallBack = callBack;
+        }
+
+    protected:
+        void (*HandleMessageCallBack)(SREVAR message);
 
 	};
 
@@ -67,91 +80,103 @@ namespace SREngine {
 	{
     public:
         BasicProcessor():
-            BaseTask(),
-            m_pNextStage(nullptr),
-            m_pRunTimeData(nullptr)
+            BaseTask()
         {}
         BasicProcessor(const BasicProcessor & other):
-            BaseTask(),
-            m_pNextStage(other.m_pNextStage),
-            m_pRunTimeData(other.m_pRunTimeData)
+            BaseTask()
         {}
         virtual ~BasicProcessor(){}
 
+        virtual void HandleElememt()=0;
+        virtual void OnPause()=0;
+        virtual void OnResume()=0;
+        virtual void OnCancel()=0;
+        virtual void OnRunError()=0;
+        virtual void OnRunEnd()=0;
 
-        virtual void NextStage()=0;
-        virtual void PassArgument(SREVAR¡¡usage, void * argu)=0;
+        void Run();
+        void Pause();
+        void Resume();
+        void Cancel();
 
-        virtual void SetRunTimeData(RunTimeData * runtimedata)
+
+        void SetInputQueue(queue<BasicIOElement*> * inputQueue)
         {
-            this->m_pRunTimeData = runtimedata;
+            this->m_pInputQueue = inputQueue;
         }
-        virtual void SetRunTimeDataChain(RunTimeData * runtimedata)
+        void SetOutputQueue(queue<BasicIOElement*> * outpueQueue)
         {
-            this->m_pRunTimeData = runtimedata;
-            if(nullptr != m_pNextStage)
-                m_pNextStage->SetRunTimeData(runtimedata);
+            this->m_pOutputQueue = outpueQueue;
         }
 
         BasicProcessor & operator=(const BasicProcessor & other)
         {
             if(this != &other)
             {
-                this->m_pNextStage = other.m_pNextStage;
-                this->m_pRunTimeData = other.m_pRunTimeData;
+
             }
 
             return *this;
         }
-    protected:
-        BasicProcessor * m_pNextStage;
-        RunTimeData    * m_pRunTimeData;
 
-        friend class BasePileLineBuilder;
+
+
+    protected:
+        queue<BasicIOElement*> *  m_pInputQueue;
+        queue<BasicIOElement*> *  m_pOutputQueue;
+        BasicIOElement *          m_pCurrentElement;
+        BasicObserver  *          m_pObserver;
+
+        bool m_Cancel;
+        bool m_Pause;
 	};
 
 
 
     //=============================
-	//Class BasePileLineBuilder
+	//Class BasePipeLine
 	//
 	//
 	//
 	//=============================
-	class BasePileLineBuilder
+	class BasePipeLine
 	{
     public:
-        BasePileLineBuilder():
-            m_pPileLine(nullptr)
+        BasePipeLine()
         {}
-        BasePileLineBuilder(const BasePileLineBuilder & other):
-            m_pPileLine(other.m_pPileLine)
+        BasePipeLine(const BasePipeLine & other)
         {}
 
-        virtual ~BasePileLineBuilder(){}
+        virtual ~BasePipeLine(){}
 
 
-        virtual BasicProcessor* BuildPileLine()=0;
-        virtual void            AddProcessor(INT index, BasicProcessor * processor)=0;
-        virtual void            RemoveProcessor(INT index)=0;
+        virtual void BuildPipeLine()=0;
+        virtual void AddProcessor(INT index, BasicProcessor * processor)=0;
+        virtual void RemoveProcessor(INT index)=0;
+        virtual void Start()=0;
+        virtual void Pause()=0;
+        virtual void Cancel()=0;
+        virtual void Resume()=0;
+        virtual void OnInit()=0;
+        virtual void OnEnd()=0;
+        virtual void OnPause()=0;
+        virtual void OnResume()=0;
 
-        BasicProcessor ** GetNextStage(BasicProcessor * processor)
-        {
-            return &(processor->m_pNextStage);
-        }
 
-        BasePileLineBuilder & operator=(const BasePileLineBuilder & other)
+
+        BasePipeLine & operator=(const BasePipeLine & other)
         {
             if(this != &other)
             {
-               this->m_pPileLine = other.m_pPileLine;
+
             }
             return *this;
         }
 
     protected:
-        BasicProcessor * m_pPileLine;
-
+        BasicObserver                  m_processorObserver;
+        list<queue<BasicIOElement*>*>  m_IOBuffers;
+        list<BasicProcessor*>          m_Processors;
 
 	};
 
@@ -159,24 +184,26 @@ namespace SREngine {
 
 
     //=============================
-	//Class PileLineBuilder
+	//Class SREPipeLine
 	//
 	//
 	//
 	//=============================
-	class PileLineBuilder:public BasePileLineBuilder
+	class SREPipeLine:public BasePipeLine
 	{
     public:
-        PileLineBuilder():
-            BasePileLineBuilder()
+        SREPipeLine():
+            BasePipeLine()
         {}
 
-        virtual ~PileLineBuilder(){}
+        virtual ~SREPipeLine(){}
 
-        BasicProcessor* BuildPileLine();
+        BasicProcessor* BuildPipeLine();
         void            AddProcessor(INT index, BasicProcessor * processor);
         void            RemoveProcessor(INT index);
 
+    protected:
+        RunTimeData     m_runTimeData;
 
 	};
 
@@ -471,6 +498,10 @@ namespace SREngine {
         RenderPass * GetRenderPassByIndex(INT index);
         RenderPass * GetRenderPassByName(std::string name);
 
+        //2 ways to set mesh?
+        //void        SetRenderMesh(BaseMesh* mesh);
+        //void        SetVertexSource(INT index, void* vertexData, void* indexData);
+        //move to device layer
 
         Technique &  operator=(const Technique & other);
 
@@ -496,7 +527,7 @@ namespace SREngine {
             m_name(),
             m_pVShader(nullptr),
             m_pPShader(nullptr),
-            m_pPileLine(nullptr)
+            m_pPipeLine(nullptr)
         {}
         virtual ~RenderPass()
         {
@@ -505,8 +536,8 @@ namespace SREngine {
                 delete m_pVShader;
             if(nullptr != m_pPShader)
                 delete m_pPShader;
-            if(nullptr != m_pPileLine)
-                delete m_pPileLine;
+            if(nullptr != m_pPipeLine)
+                delete m_pPipeLine;
             */
         }
 
@@ -522,19 +553,20 @@ namespace SREngine {
         void        SetMatrix();
         void        SetOutputTarget();
         void        SetInputTarget();
-        void        SetRenderMesh();
+
+
 
         RenderPass & operator=(const RenderPass &);
 
     protected:
-        void        StartPileLine();
+        void        StartPipeLine();
 
 
     protected:
         std::string     m_name;
         VertexShader *  m_pVShader;
         PixelShader  *  m_pPShader;
-        BasicProcessor * m_pPileLine;
+        BasicProcessor * m_pPipeLine;
 
 
 
@@ -546,4 +578,4 @@ namespace SREngine {
 
 }
 
-#endif // SRE_PILELINE_H_INCLUDED
+#endif // SRE_PipeLine_H_INCLUDED

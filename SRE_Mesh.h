@@ -144,7 +144,6 @@ namespace SREngine {
             m_pEdgeList.reset(nullptr);
             m_pFaceList.reset(nullptr);
             m_pAttributes.reset(nullptr);
-            cout<<"mesh destructor"<<endl;
         }
 
         void Release();
@@ -153,7 +152,7 @@ namespace SREngine {
         TriangleMesh & operator=(TriangleMesh && other);
 
 
-    public:
+    protected:
         //vertexes list, every vertex is a float type data
         unique_vertex4_array m_pVertexList;
         //edge list, every edge connects to 2 vertexes
@@ -184,40 +183,24 @@ namespace SREngine {
     class TriangleMeshManager: public BaseMeshManager
     {
     public:
-        TriangleMeshManager(TriangleMesh ** mesh=nullptr):
-            BaseMeshManager(),
-            m_ppMesh(mesh)
+        TriangleMeshManager():
+            BaseMeshManager()
         {}
-        TriangleMeshManager(const TriangleMeshManager & other):
-            BaseMeshManager(),
-	        m_ppMesh(other.m_ppMesh)
-        {}
+
         virtual ~TriangleMeshManager()
-        {
-            delete m_ppMesh;
-            m_ppMesh = nullptr;
-        }
+        {}
 
 
-        void   SetMesh(TriangleMesh ** mesh);
-        void   ReleaseMesh();
-        void * GetVertex(INT vertexIndex);
-        void * GetVertexFromFace(INT faceIndex, INT vertexIndex);
-        void * GetVertexFromEdge(INT edgeIndex, INT vertexIndex);
-        void * GetAttribute(INT vertexIndex);
-        INT    GetVertexNumber();
-        INT    GetEdgeNumber();
-        INT    GetFaceNumber();
-
-
-        TriangleMeshManager & operator=(const TriangleMeshManager & other);
-
-    public:
-        TriangleMesh ** m_ppMesh;
+        static void * GetVertex(INT vertexIndex, TriangleMesh * mesh);
+        static void * GetVertexFromFace(INT faceIndex, INT vertexIndex, TriangleMesh * mesh);
+        static void * GetVertexFromEdge(INT edgeIndex, INT vertexIndex, TriangleMesh * mesh);
+        static void * GetAttribute(INT vertexIndex, TriangleMesh * mesh);
+        static INT    GetVertexNumber(TriangleMesh * mesh);
+        static INT    GetEdgeNumber(TriangleMesh * mesh);
+        static INT    GetFaceNumber(TriangleMesh * mesh);
 
 
     };
-
 
 
 

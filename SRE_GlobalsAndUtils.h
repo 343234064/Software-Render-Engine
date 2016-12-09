@@ -62,12 +62,11 @@ namespace SREngine {
     class Color4;
 
 
-    class BasicInput;
-    class BasicOutput;
+    class BasicIOElement;
     class BasicProcessor;
-    class BasePileLineBuilder;
+    class BasePipeLineBuilder;
 
-    class PileLineBuilder;
+    class PipeLineBuilder;
     class InputAssembler;
     class VertexProcesser;
     class VertexPostProcesser;
@@ -135,9 +134,10 @@ namespace SREngine {
     typedef unique_ptr<BYTE, array_deleter<BYTE>>       unique_byte_array;
     typedef unique_ptr<unique_int_array, array_deleter<unique_int_array>> unique_int_matrix;
 
-    typedef BasicOutput* (CallBackVShader)(const BasicInput &);
-    typedef BasicOutput* (CallBackPShader)(const BasicInput &);
+    typedef BasicIOElement* (CallBackVShader)(const BasicIOElement &);
+    typedef BasicIOElement* (CallBackPShader)(const BasicIOElement &);
 
+    typedef TriangleMeshManager TMManager;
 
     //==============================
     //Global variables
@@ -238,32 +238,24 @@ namespace SREngine {
     const SREVAR SRE_USAGE_RENDERBUFFER=0x10000093;
 
 
-
-
-
-
-
-
-
     /*
       Primitive types
-      POINTLIST: a list of points
-      LINELIST: a list of lines, write a index -1 means the end of a line
-      TRIANGLEFAN: a list of triangle fans, write a index -1 means the end of a fan
+      POINTLIST: a list of points.
+      LINELIST: a list of lines.
+      LINESTRIP: a list of line strip, write a index -1 means the end of a strip.
+      TRIANGLEFAN: a list of triangle fans, write a index -1 means the end of a fan.
       TRIANGLESTRIP: a list of continuous triangles, which shared an edge with the adjacent one,
                      write a index -1 means the end of a strip.
       TRIANGLELIST: a list of triangles
     */
     const SREVAR SRE_PRIMITIVETYPE_POINTLIST=0x00000300;
     const SREVAR SRE_PRIMITIVETYPE_LINELIST=0x00000301;
-    const SREVAR SRE_PRIMITIVETYPE_TRIANGLEFAN=0x00000302;
-    const SREVAR SRE_PRIMITIVETYPE_TRIANGLESTRIP=0x00000303;
-    const SREVAR SRE_PRIMITIVETYPE_TRIANGLELIST=0x00000304;
+    const SREVAR SRE_PRIMITIVETYPE_LINESTRIP=0x00000302;
+    const SREVAR SRE_PRIMITIVETYPE_TRIANGLEFAN=0x00000303;
+    const SREVAR SRE_PRIMITIVETYPE_TRIANGLESTRIP=0x00000304;
+    const SREVAR SRE_PRIMITIVETYPE_TRIANGLELIST=0x00000305;
 
 
-    //SREVAR SRE_DRAWPIMITIVETYPE_POINT;
-    //SREVAR SRE_DRAWPIMITIVETYPE_LINE;
-    //SREVAR SRE_DRAWPIMITIVETYPE_FACE;
 
 
 
@@ -333,18 +325,6 @@ namespace SREngine {
     public:
         BaseMeshManager(){}
         virtual ~BaseMeshManager(){}
-
-
-        virtual void * GetVertex(INT vertexIndex)=0;
-        virtual void * GetVertexFromFace(INT faceIndex, INT index){return nullptr;}
-        virtual void * GetVertexFromEdge(INT edgeIndex, INT index){return nullptr;}
-        virtual void * GetFaceFromEdge(INT edgeIndex, INT index){return nullptr;}
-        virtual void * GetEdgeFromVertex(INT vertexIndex, INT index){return nullptr;}
-        virtual void * GetAttribute(INT vertexIndex){return nullptr;}
-        virtual INT    GetVertexNumber()=0;
-        virtual INT    GetEdgeNumber(){return 0;}
-        virtual INT    GetFaceNumber(){return 0;}
-        virtual void   ReleaseMesh()=0;
 
 
     };

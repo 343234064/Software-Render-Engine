@@ -3,45 +3,45 @@
 // Software Render Engine
 // Version 0.01
 //
-// File: SRE_PileLine.cpp
+// File: SRE_PipeLine.cpp
 // Date: 2016/11/26
 // Description:
 //       Implements of mesh functions and classes which declared
-//       in SRE_PileLine.h
+//       in SRE_PipeLine.h
 //
 //
 //*****************************************************
 #include <string>
-#include "SRE_PileLine.h"
+#include "SRE_PipeLine.h"
 
 
 namespace SREngine {
     //===========================================
-	//Class PileLineBuilder functions
+	//Class PipeLineBuilder functions
 	//
 	//
 	//===========================================
-	BasicProcessor * PileLineBuilder::BuildPileLine()
+	BasicProcessor * PipeLineBuilder::BuildPipeLine()
 	{
-	    if(nullptr != this->m_pPileLine)
-	       return this->m_pPileLine;
+	    if(nullptr != this->m_pPipeLine)
+	       return this->m_pPipeLine;
         else
            return nullptr;
 	}
 
-	void PileLineBuilder::AddProcessor(INT index, BasicProcessor * processor)
+	void PipeLineBuilder::AddProcessor(INT index, BasicProcessor * processor)
 	{
-	    if(nullptr != this->m_pPileLine)
+	    if(nullptr != this->m_pPipeLine)
         {
             if(index == 0)
             {
-                *(GetNextStage(processor)) = this->m_pPileLine;
-                this->m_pPileLine = processor;
+                *(GetNextStage(processor)) = this->m_pPipeLine;
+                this->m_pPipeLine = processor;
             }
             else
             {
                 INT i=1;
-                BasicProcessor * curr = this->m_pPileLine;
+                BasicProcessor * curr = this->m_pPipeLine;
                 BasicProcessor ** next;
                 while(true)
                 {
@@ -64,21 +64,21 @@ namespace SREngine {
             }
         }
         else
-            this->m_pPileLine = processor;
+            this->m_pPipeLine = processor;
 	}
 
-	void PileLineBuilder::RemoveProcessor(INT index)
+	void PipeLineBuilder::RemoveProcessor(INT index)
 	{
-	    if(nullptr == this->m_pPileLine)
+	    if(nullptr == this->m_pPipeLine)
             return;
 	    else if(index == 0)
         {
-            this->m_pPileLine = *(GetNextStage(this->m_pPileLine));
+            this->m_pPipeLine = *(GetNextStage(this->m_pPipeLine));
         }
         else
         {
             INT i=1;
-            BasicProcessor * curr = this->m_pPileLine;
+            BasicProcessor * curr = this->m_pPipeLine;
             BasicProcessor ** next = GetNextStage(curr);
             while(*next != nullptr)
             {

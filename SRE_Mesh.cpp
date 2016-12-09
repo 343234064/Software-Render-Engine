@@ -499,6 +499,11 @@ namespace SREngine {
         m_pFaceList.reset(nullptr);
         m_pEdgeList.reset(nullptr);
         m_pAttributes.reset(nullptr);
+
+        m_vertexNumber = 0;
+        m_faceNumber = 0;
+        m_edgeNumber = 0;
+        m_perAttrSize = 0;
 	}
 
 	//copy constructor
@@ -662,87 +667,70 @@ namespace SREngine {
 	//
 	//
 	//===========================================
-	//assignment operator
-	TriangleMeshManager & TriangleMeshManager::operator=(const TriangleMeshManager & other)
+	static INT TriangleMeshManager::GetVertexNumber(TriangleMesh * mesh)
 	{
-	    if(this != &other)
-        {
-            this->m_ppMesh = other.m_ppMesh;
-        }
-
-        return *this;
+#ifdef _SRE_DEBUG_
+        if(nullptr == mesh) return 0;
+#endif
+	    return mesh->m_vertexNumber;
 	}
 
-
-	void TriangleMeshManager::SetMesh(TriangleMesh ** mesh)
+	static INT TriangleMeshManager::GetEdgeNumber(TriangleMesh * mesh)
 	{
-        this->m_ppMesh = mesh;
+#ifdef _SRE_DEBUG_
+        if(nullptr == mesh) return 0;
+#endif
+	    return mesh->m_edgeNumber;
 	}
 
-	void TriangleMeshManager::ReleaseMesh()
+	static INT TriangleMeshManager::GetFaceNumber(TriangleMesh * mesh)
 	{
-	    if(nullptr != *m_ppMesh)
-        {
-            delete *m_ppMesh;
-            *m_ppMesh = nullptr;
-        }
+#ifdef _SRE_DEBUG_
+        if(nullptr == mesh) return 0;
+#endif
+	    return mesh->m_faceNumber;
 	}
 
-	INT TriangleMeshManager::GetVertexNumber()
-	{
-	    return (*m_ppMesh)->m_vertexNumber;
-	}
-
-	INT TriangleMeshManager::GetEdgeNumber()
-	{
-	    return (*m_ppMesh)->m_edgeNumber;
-	}
-
-	INT TriangleMeshManager::GetFaceNumber()
-	{
-	    return (*m_ppMesh)->m_faceNumber;
-	}
-
-    void * TriangleMeshManager::GetVertex(INT vertexIndex)
+    static void * TriangleMeshManager::GetVertex(INT vertexIndex, TriangleMesh * mesh)
     {
 #ifdef _SRE_DEBUG_
-        if(nullptr == m_ppMesh || nullptr == *m_ppMesh) return nullptr;
-        if(vertexIndex < 0 || vertexIndex >= (*m_ppMesh)->m_vertexNumber) return nullptr;
+        if(nullptr == mesh) return nullptr;
+        if(vertexIndex < 0 || vertexIndex >= mesh->m_vertexNumber) return nullptr;
 #endif
-        return (void*)(&((*m_ppMesh)->m_pVertexList.get()[vertexIndex]));
+        return (void*)(&(mesh->m_pVertexList.get()[vertexIndex]));
     }
 
-    void * TriangleMeshManager::GetVertexFromEdge(INT edgeIndex, INT vertexIndex)
+    void * TriangleMeshManager::GetVertexFromEdge(INT edgeIndex, INT vertexIndex, TriangleMesh * mesh)
     {
 #ifdef _SRE_DEBUG_
-        if(nullptr == m_ppMesh || nullptr == *m_ppMesh) return nullptr;
-        if(edgeIndex < 0 || edgeIndex >= (*m_ppMesh)->m_edgeNumber) return nullptr;
+        if(nullptr == mesh) return nullptr;
+        if(edgeIndex < 0 || edgeIndex >= mesh->m_edgeNumber) return nullptr;
         if(vertexIndex < 0 || vertexIndex > 2) return nullptr;
 #endif
 
-        return (void*)(&((*m_ppMesh)->m_pEdgeList.get()[edgeIndex].get()[vertexIndex]));
+        return (void*)(&(mesh->m_pEdgeList.get()[edgeIndex].get()[vertexIndex]));
     }
 
 
-    void * TriangleMeshManager::GetVertexFromFace(INT faceIndex, INT vertexIndex)
+    void * TriangleMeshManager::GetVertexFromFace(INT faceIndex, INT vertexIndex, TriangleMesh * mesh)
     {
 #ifdef _SRE_DEBUG_
-        if(nullptr == m_ppMesh || nullptr == *m_ppMesh) return nullptr;
-        if(faceIndex < 0 || faceIndex >= (*m_ppMesh)->m_faceNumber) return nullptr;
+        if(nullptr == mesh) return nullptr;
+        if(faceIndex < 0 || faceIndex >= mesh->m_faceNumber) return nullptr;
         if(vertexIndex < 0 || vertexIndex > 3) return nullptr;
 #endif
 
-        return (void*)(&((*m_ppMesh)->m_pFaceList.get()[faceIndex].get()[vertexIndex]));
+        return (void*)(&(mesh->m_pFaceList.get()[faceIndex].get()[vertexIndex]));
     }
 
-    void * TriangleMeshManager::GetAttribute(INT vertexIndex)
+    void * TriangleMeshManager::GetAttribute(INT vertexIndex, TriangleMesh * mesh)
     {
 #ifdef _SRE_DEBUG_
-        if(nullptr == m_ppMesh || nullptr == *m_ppMesh) return nullptr;
-        if(vertexIndex < 0 || vertexIndex >= (*m_ppMesh)->m_vertexNumber) return nullptr;
+        if(nullptr == mesh) return nullptr;
+        if(vertexIndex < 0 || vertexIndex >= mesh->m_vertexNumber) return nullptr;
 #endif
-        BYTE* attribute = (*m_ppMesh)->m_pAttributes.get();
-        return  (void*)(attribute + vertexIndex * (*m_ppMesh)->m_perAttrSize);
+        BYTE* attribute = mesh->m_pAttributes.get();
+        return  (void*)(attribute + vertexIndex * mesh->m_perAttrSize);
     }
 
 }
