@@ -16,7 +16,7 @@
 
 
 
-namespace SREngine{
+namespace SRE{
 
     //==============================
     //Type definitions

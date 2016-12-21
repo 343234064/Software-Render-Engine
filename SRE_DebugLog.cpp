@@ -15,7 +15,7 @@
 #include "SRE_DebugLog.h"
 
 
-namespace SREngine {
+namespace SRE {
 
 
     //==============================

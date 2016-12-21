@@ -15,13 +15,11 @@
 #ifndef _SRE_MESH_
 #define _SRE_MESH_
 
-#include <string>
+
 #include "SRE_Math.h"
 #include "SRE_GlobalsAndUtils.h"
-#include <iostream>
-using std::cout;
-using std::endl;
-namespace SREngine {
+
+namespace SRE {
     //=============================
 	//Function definitions
 	//
@@ -95,6 +93,8 @@ namespace SREngine {
             m_faceNumber(faceNumber),
             m_perAttrSize(perAttrSize)
             {
+              try
+              {
                 if(edgeNumber>0)
                 {
                     m_pEdgeList.reset(new unique_int_array[edgeNumber]);
@@ -113,6 +113,12 @@ namespace SREngine {
                     }
                     delete[] faces;
                 }
+              }
+              catch(...)
+              {
+                  Release();
+                  throw;
+              }
             }
         TriangleMesh(unique_vertex4_array vertexes = nullptr,
                      unique_int_matrix edges = nullptr,

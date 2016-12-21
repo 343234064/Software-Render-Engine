@@ -15,7 +15,7 @@
 #include "SRE_Resources.h"
 
 
-namespace SREngine {
+namespace SRE {
 
 
 

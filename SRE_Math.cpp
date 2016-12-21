@@ -16,7 +16,7 @@
 #include "SRE_Math.h"
 
 
-namespace SREngine {
+namespace SRE {
 
     //=============================
 	//Function declarations

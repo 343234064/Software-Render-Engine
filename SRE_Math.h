@@ -16,7 +16,7 @@
 
 #include "SRE_GlobalsAndUtils.h"
 
-namespace SREngine {
+namespace SRE {
 	//=============================
 	//Public functions
 	//

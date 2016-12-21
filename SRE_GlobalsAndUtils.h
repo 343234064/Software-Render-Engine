@@ -14,22 +14,33 @@
 #ifndef _SRE_GLOBALSANDUTILS_
 #define _SRE_GLOBALSANDUTILS_
 
+#include <string>
+#include <map>
+#include <list>
+#include <queue>
+#include <thread>
+#include <mutex>
+#include <exception>
 #include <memory>
-using std::unique_ptr;
-using std::shared_ptr;
+#include <stdlib.h>
 
 
-namespace SREngine {
+namespace SRE {
     //==============================
-    //Deleter
+    //structure type
     //
-    //Use for smart pointer
+    //
     //==============================
     template<class T>
     struct array_deleter
     {
         void operator()(T* & x) const { delete[] x; }
     };
+
+    struct empty_exception:std::exception
+	{
+	    const char* what() const throw();
+	};
 
 
     //==============================
@@ -63,17 +74,19 @@ namespace SREngine {
 
 
     class BasicIOElement;
+    template<typename T>
+    class BasicIOBuffer;
+    class BasicObserver;
     class BasicProcessor;
-    class BasePipeLineBuilder;
+    class BasePipeLine;
 
-    class PipeLineBuilder;
+    class SREPipeLine;
     class InputAssembler;
     class VertexProcesser;
     class VertexPostProcesser;
     class Rasterizer;
     class PixelProcesser;
     class OutputMerger;
-
 
     class RenderStates;
     class VariableBuffer;
@@ -129,10 +142,10 @@ namespace SREngine {
     typedef Quaternion * PQUAT;
     typedef const Quaternion * CPQUAT;
 
-    typedef unique_ptr<VERTEX4, array_deleter<VERTEX4>> unique_vertex4_array;
-    typedef unique_ptr<INT, array_deleter<INT>>         unique_int_array;
-    typedef unique_ptr<BYTE, array_deleter<BYTE>>       unique_byte_array;
-    typedef unique_ptr<unique_int_array, array_deleter<unique_int_array>> unique_int_matrix;
+    typedef std::unique_ptr<VERTEX4, array_deleter<VERTEX4>> unique_vertex4_array;
+    typedef std::unique_ptr<INT, array_deleter<INT>>         unique_int_array;
+    typedef std::unique_ptr<BYTE, array_deleter<BYTE>>       unique_byte_array;
+    typedef std::unique_ptr<unique_int_array, array_deleter<unique_int_array>> unique_int_matrix;
 
     typedef BasicIOElement* (CallBackVShader)(const BasicIOElement &);
     typedef BasicIOElement* (CallBackPShader)(const BasicIOElement &);

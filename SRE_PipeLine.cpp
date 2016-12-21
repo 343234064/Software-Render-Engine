@@ -15,130 +15,40 @@
 #include "SRE_PipeLine.h"
 
 
-namespace SREngine {
-    //===========================================
-	//Class PipeLineBuilder functions
+namespace SRE {
+    //=============================
+	//Class BasicProcessor functions
 	//
 	//
-	//===========================================
-	BasicProcessor * PipeLineBuilder::BuildPipeLine()
-	{
-	    if(nullptr != this->m_pPipeLine)
-	       return this->m_pPipeLine;
-        else
-           return nullptr;
-	}
+	//=============================
+    void BasicProcessor::Run()
+    {
 
-	void PipeLineBuilder::AddProcessor(INT index, BasicProcessor * processor)
-	{
-	    if(nullptr != this->m_pPipeLine)
-        {
-            if(index == 0)
-            {
-                *(GetNextStage(processor)) = this->m_pPipeLine;
-                this->m_pPipeLine = processor;
-            }
-            else
-            {
-                INT i=1;
-                BasicProcessor * curr = this->m_pPipeLine;
-                BasicProcessor ** next;
-                while(true)
-                {
-                    next = GetNextStage(curr);
-                    if(i == index)
-                    {
-                        *(GetNextStage(processor)) = *next;
-                        *next = processor;
-                        break;
-                    }
-                    else
-                    {
-                        i++;
-                        if(*next != nullptr)
-                            curr = *next;
-                        else
-                            break;
-                    }
-                }
-            }
-        }
-        else
-            this->m_pPipeLine = processor;
-	}
+    }
 
-	void PipeLineBuilder::RemoveProcessor(INT index)
-	{
-	    if(nullptr == this->m_pPipeLine)
-            return;
-	    else if(index == 0)
-        {
-            this->m_pPipeLine = *(GetNextStage(this->m_pPipeLine));
-        }
-        else
-        {
-            INT i=1;
-            BasicProcessor * curr = this->m_pPipeLine;
-            BasicProcessor ** next = GetNextStage(curr);
-            while(*next != nullptr)
-            {
-                if(i == index)
-                {
-                    *(GetNextStage(curr)) = *(GetNextStage(*next));
-                    break;
-                }
-                else
-                {
-                    i++;
-                    curr = *next;
-                    next = GetNextStage(curr);
-                }
-            }
-        }
+    void BasicProcessor::Pause()
+    {
 
-	}
+    }
 
+    void BasicProcessor::Cancel()
+    {
+
+    }
+
+    void BasicProcessor::Resume()
+    {
+
+
+    }
 
     //===========================================
 	//Class InputAssembler functions
 	//
 	//
 	//===========================================
-    void InputAssembler::Run()
-    {
-        this->NextStage();
-    }
 
 
-    void InputAssembler::NextStage()
-    {
-        if(nullptr != this->m_pNextStage)
-           this->m_pNextStage.Run();
-    }
-
-
-    void InputAssembler::PassArgument(SREVAR usage, void * argu)
-    {
-#ifdef _SRE_DEBUG_
-        if(nullptr == argu)
-        {
-            _LOG(SRE_ERROR_NULLPOINTER);
-            return;
-        }
-#endif
-        if(usage == SRE_USAGE_NEXTINPUT)
-        {
-            if(nullptr != this->m_pRunTimeData)
-            {
-                TriangleMesh * pTriangle = new TriangleMesh((TriangleMesh)(*argu));
-                this->m_pRunTimeData.AddMesh((BaseMesh*)pTriangle, this->m_pRunTimeData.GetMeshCount()+1);
-            }
-        }
-        else
-            if(nullptr != this->m_pNextStage)
-               this->m_pNextStage.PassArgument(usage, argu);
-
-    }
 
 
     //===========================================
@@ -148,7 +58,7 @@ namespace SREngine {
 	//===========================================
 	void RunTimeData::ReleaseMeshList()
 	{
-        map<INT, BaseMesh* >::iterator it;
+        std::map<INT, BaseMesh* >::iterator it;
         BaseMesh * mesh;
         for(it=m_MeshList.begin(); it!=m_MeshList.end(); it++)
         {
@@ -162,7 +72,7 @@ namespace SREngine {
 
 	RunTimeData::RunTimeData(const RunTimeData & other):
 	    BaseContainer(),
-	    m_pVarBuffer(new VariableBuffer(*(other.m_pVarBuffer))),
+	    m_VarBuffer(other.m_VarBuffer),
 	    m_MeshList(other.m_MeshList)
 	{}
 
@@ -171,15 +81,7 @@ namespace SREngine {
 	{
 	    if(this != &other)
         {
-            if(nullptr != this->m_pVarBuffer)
-            {
-                *(this->m_pVarBuffer) = *(other.m_pVarBuffer);
-            }
-            else
-            {
-                this->m_pVarBuffer = new VariableBuffer(*(other.m_pVarBuffer));
-            }
-
+            this->m_VarBuffer = other.m_VarBuffer;
             //ReleaseMeshList();
             this->m_MeshList = other.m_MeshList;
         }
@@ -192,7 +94,7 @@ namespace SREngine {
 	{
 	    if(nullptr != mesh)
         {
-            this->m_MeshList.insert(map<INT, BaseMesh*>::value_type(key, mesh));
+            this->m_MeshList.insert(std::map<INT, BaseMesh*>::value_type(key, mesh));
         }
         else
         {
@@ -225,22 +127,16 @@ namespace SREngine {
 	}
 
 
-	VariableBuffer* RunTimeData::GetVaribleBuffer()
-	{
-	    return this->m_pVarBuffer;
-	}
-
-
     void RunTimeData::SetRenderState(SREVAR renderState, SREVAR value)
     {
         switch (renderState)
         {
         case SRE_RENDERSTATE_CULLMODE:
-            this->m_pVarBuffer->renderStates.CullMode=value;break;
+            this->m_VarBuffer.renderStates.CullMode=value;break;
         case SRE_RENDERSTATE_FILLMODE:
-            this->m_pVarBuffer->renderStates.FillMode=value;break;
+            this->m_VarBuffer.renderStates.FillMode=value;break;
         case SRE_RENDERSTATE_ZENABLE:
-            this->m_pVarBuffer->renderStates.ZEnable=value;break;
+            this->m_VarBuffer.renderStates.ZEnable=value;break;
         default:break;
         }
     }
@@ -251,17 +147,17 @@ namespace SREngine {
         switch (matrixType)
         {
         case SRE_MATRIXTYPE_WORLD:
-            this->m_pVarBuffer->World=matrix;break;
+            this->m_VarBuffer.World=matrix;break;
         case SRE_MATRIXTYPE_VIEW:
-            this->m_pVarBuffer->View=matrix;break;
+            this->m_VarBuffer.View=matrix;break;
         case SRE_MATRIXTYPE_PROJECT:
-            this->m_pVarBuffer->Project=matrix;break;
+            this->m_VarBuffer.Project=matrix;break;
         case SRE_MATRIXTYPE_WORLDVIEW:
-            this->m_pVarBuffer->WorldView=matrix;break;
+            this->m_VarBuffer.WorldView=matrix;break;
         case SRE_MATRIXTYPE_VIEWPROJECT:
-            this->m_pVarBuffer->ViewProj=matrix;break;
+            this->m_VarBuffer.ViewProj=matrix;break;
         case SRE_MATRIXTYPE_WORLDVIEWPROJECT:
-            this->m_pVarBuffer->WorldViewProj=matrix;break;
+            this->m_VarBuffer.WorldViewProj=matrix;break;
         default:break;
         }
 
@@ -288,7 +184,7 @@ namespace SREngine {
 
     void Technique::ReleasePassList()
     {
-        list<RenderPass*>::iterator it;
+        std::list<RenderPass*>::iterator it;
         RenderPass * pass;
         for(it=m_PassList.begin(); it!=m_PassList.end();)
         {
@@ -326,7 +222,7 @@ namespace SREngine {
 #endif
             return;
         }
-        list<RenderPass*>::iterator it;
+        std::list<RenderPass*>::iterator it;
         INT i=0;
         for(it=m_PassList.begin(); it!=m_PassList.end(); it++, i++)
         {
@@ -355,7 +251,7 @@ namespace SREngine {
 
     void Technique::RemoveRenderPassByIndex(INT index)
     {
-        list<RenderPass*>::iterator it;
+        std::list<RenderPass*>::iterator it;
         INT i=0;
         for(it=m_PassList.begin(); it!=m_PassList.end(); it++, i++)
         {
@@ -370,7 +266,7 @@ namespace SREngine {
 
     void Technique::RemoveRenderPassByName(std::string name)
     {
-        list<RenderPass*>::iterator it;
+        std::list<RenderPass*>::iterator it;
         for(it=m_PassList.begin(); it!=m_PassList.end(); it++)
         {
             if(name==(*it)->GetName())
@@ -384,7 +280,7 @@ namespace SREngine {
 
     RenderPass * Technique::GetRenderPassByIndex(INT index)
     {
-        list<RenderPass*>::iterator it;
+        std::list<RenderPass*>::iterator it;
         INT i=0;
         for(it=m_PassList.begin(); it!=m_PassList.end(); it++, i++)
         {
@@ -401,7 +297,7 @@ namespace SREngine {
 
     RenderPass * Technique::GetRenderPassByName(std::string name)
     {
-        list<RenderPass*>::iterator it;
+        std::list<RenderPass*>::iterator it;
         for(it=m_PassList.begin(); it!=m_PassList.end(); it++)
         {
             if(name==(*it)->GetName())
@@ -416,7 +312,7 @@ namespace SREngine {
 
     void Technique::Run()
     {
-        list<RenderPass*>::iterator it;
+        std::list<RenderPass*>::iterator it;
         for(it=m_PassList.begin(); it!=m_PassList.end(); it++)
         {
             (*it)->Run();

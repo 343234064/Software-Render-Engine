@@ -17,7 +17,7 @@
 #include "SRE_Mesh.h"
 
 
-namespace SREngine {
+namespace SRE {
 
 
 
@@ -519,7 +519,8 @@ namespace SREngine {
             m_faceNumber(other.m_faceNumber),
             m_perAttrSize(other.m_perAttrSize)
 	{
-
+      try
+      {
         if(m_vertexNumber>0)
         {
            m_pVertexList.reset(new VERTEX4[m_vertexNumber]);
@@ -553,7 +554,12 @@ namespace SREngine {
             m_pFaceList.get()[i].get()[2] = other.m_pFaceList.get()[i].get()[2];
             i++;
         }
-
+      }
+      catch(...)
+      {
+          Release();
+          throw;
+      }
 	}
 
     //assignment operator
@@ -574,6 +580,9 @@ namespace SREngine {
         m_pEdgeList.reset(nullptr);
         m_pAttributes.reset(nullptr);
 
+        try
+        {
+
         if(m_vertexNumber>0)
         {
            m_pVertexList.reset(new VERTEX4[m_vertexNumber]);
@@ -606,6 +615,13 @@ namespace SREngine {
             m_pFaceList.get()[i].get()[1] = other.m_pFaceList.get()[i].get()[1];
             m_pFaceList.get()[i].get()[2] = other.m_pFaceList.get()[i].get()[2];
             i++;
+        }
+
+        }
+        catch(...)
+        {
+            Release();
+            throw;
         }
 
         return *this;
@@ -667,7 +683,7 @@ namespace SREngine {
 	//
 	//
 	//===========================================
-	static INT TriangleMeshManager::GetVertexNumber(TriangleMesh * mesh)
+	INT TriangleMeshManager::GetVertexNumber(TriangleMesh * mesh)
 	{
 #ifdef _SRE_DEBUG_
         if(nullptr == mesh) return 0;
@@ -675,7 +691,7 @@ namespace SREngine {
 	    return mesh->m_vertexNumber;
 	}
 
-	static INT TriangleMeshManager::GetEdgeNumber(TriangleMesh * mesh)
+	INT TriangleMeshManager::GetEdgeNumber(TriangleMesh * mesh)
 	{
 #ifdef _SRE_DEBUG_
         if(nullptr == mesh) return 0;
@@ -683,7 +699,7 @@ namespace SREngine {
 	    return mesh->m_edgeNumber;
 	}
 
-	static INT TriangleMeshManager::GetFaceNumber(TriangleMesh * mesh)
+	INT TriangleMeshManager::GetFaceNumber(TriangleMesh * mesh)
 	{
 #ifdef _SRE_DEBUG_
         if(nullptr == mesh) return 0;
@@ -691,7 +707,7 @@ namespace SREngine {
 	    return mesh->m_faceNumber;
 	}
 
-    static void * TriangleMeshManager::GetVertex(INT vertexIndex, TriangleMesh * mesh)
+    void * TriangleMeshManager::GetVertex(INT vertexIndex, TriangleMesh * mesh)
     {
 #ifdef _SRE_DEBUG_
         if(nullptr == mesh) return nullptr;

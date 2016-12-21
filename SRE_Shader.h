@@ -18,7 +18,7 @@
 #include "SRE_GlobalsAndUtils.h"
 
 
-namespace SREngine {
+namespace SRE {
     //=============================
 	//Class VertexShaderInput
 	//

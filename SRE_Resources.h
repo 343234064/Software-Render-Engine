@@ -15,10 +15,11 @@
 #ifndef _SRE_BUFFER_
 #define _SRE_BUFFER_
 
-#include <stdlib.h>
+
+
 #include "SRE_GlobalsAndUtils.h"
 
-namespace SREngine {
+namespace SRE {
 
     //=============================
 	//Function definitions
@@ -117,30 +118,40 @@ namespace SREngine {
         Buffer(const Buffer & other);
         virtual ~Buffer()
         {
-           if(nullptr != m_pDescript)
-              delete m_pDescript;
-
            m_data.reset(nullptr);
         }
 
         //void  SetData(INT pos, const T & data);
         //T  &  GetData(INT pos, T & output);
         void  Reset(const T & resetData);
-        BufferDescript * GetDescript();
-        Buffer & operator=(const Buffer & other);
+        INT   GetBufferSize() const
+        {
+            return m_Descript.m_BufferSize;
+        }
+        SREVAR GetBufferUsage() const
+        {
+            return m_Descript.m_BufferType;
+        }
+        SREVAR GetBufferDataFormat() const
+        {
+            return m_Descript.m_DataFormat;
+        }
 
-    public:
-        unique_ptr<T, array_deleter<T>>  m_data;
+
+        Buffer & operator=(const Buffer & other) = delete;
+
 
     protected:
-        Buffer(BufferDescript* pBufferDescript = nullptr):
+        Buffer(BufferDescript & bufferDescript):
                BaseContainer(),
-               m_pDescript(pBufferDescript),
+               m_Descript(bufferDescript),
                m_data(nullptr)
         {}
 
     protected:
-        BufferDescript*  m_pDescript;
+        std::unique_ptr<T, array_deleter<T>>  m_data;
+        BufferDescript   m_Descript;
+        std::mutex       m_mutex;
 
 
         friend RESULT CreateBuffer<>(const BufferDescript* pBufferDescript, Buffer<T>** ppOutBuffer);
@@ -178,13 +189,14 @@ namespace SREngine {
 
 #endif // _SRE_DEBUG_
 
-       BufferDescript * pBdes = new BufferDescript(pBufferDescript->m_BufferSize,
-                                                   pBufferDescript->m_BufferType,
-                                                   pBufferDescript->m_DataFormat);
-       if(nullptr == pBdes) return RESULT::OUTMEMORY;
 
-       Buffer<T> * pbuffer = new Buffer<T>(pBdes);
-       pbuffer->m_data.reset(new T[pBdes->m_BufferSize]);
+       Buffer<T> * pbuffer = new Buffer<T>(pBufferDescript->m_BufferSize,
+                                           pBufferDescript->m_BufferType,
+                                           pBufferDescript->m_DataFormat);
+       if(nullptr == pbuffer) return RESULT::OUTMEMORY;
+
+       pbuffer->m_data.reset(new T[pbuffer->m_Descript->m_BufferSize]);
+       if(nullptr == pbuffer->m_data) return RESULT::OUTMEMORY;
 
        *ppOutBuffer = pbuffer;
 
@@ -202,42 +214,38 @@ namespace SREngine {
 	template <typename T>
 	Buffer<T>::Buffer(const Buffer & other):
 	    BaseContainer(),
-	    m_pDescript(new BufferDescript(other.m_pDescript->m_BufferSize,
-                                       other.m_pDescript->m_BufferType,
-                                       other.m_pDescript->m_DataFormat)),
+	    m_Descript(other.m_Descript),
         m_data(nullptr)
 	{
-        this->m_data.reset(new T[this->m_pDescript->m_BufferSize]);
+	    std::lock_guard<std::mutex> lock(other.m_mutex);
+        this->m_data.reset(new T[this->m_Descript->m_BufferSize]);
         T * source = other.m_data.get();
         T * dest = this->m_data.get();
-	    std::copy(source, source + this->m_pDescript->m_BufferSize, dest);
+	    std::copy(source, source + this->m_Descript->m_BufferSize, dest);
 	}
 
+	/*
 	template <typename T>
 	Buffer<T> & Buffer<T>::operator=(const Buffer & other)
 	{
 	    if(this != &other)
         {
-           if(this->m_pDescript == nullptr) this->m_pDescript = new BufferDescript();
+           std::lock_guard<std::mutex> lock(other.m_mutex);
+           std::lock_guard<std::mutex> lock2(m_mutex);
 
-           this->m_pDescript->m_BufferSize = other.m_pDescript->m_BufferSize;
-           this->m_pDescript->m_BufferType = other.m_pDescript->m_BufferType;
-           this->m_pDescript->m_DataFormat = other.m_pDescript->m_DataFormat;
+           this->m_Descript->m_BufferSize = other.m_Descript->m_BufferSize;
+           this->m_Descript->m_BufferType = other.m_Descript->m_BufferType;
+           this->m_Descript->m_DataFormat = other.m_Descript->m_DataFormat;
 
-           this->m_data.reset(new T[this->m_pDescript->m_BufferSize]);
+           this->m_data.reset(new T[this->m_Descript->m_BufferSize]);
            T * source = other.m_data.get();
            T * dest = this->m_data.get();
-	       std::copy(source, source + this->m_pDescript->m_BufferSize, dest);
+	       std::copy(source, source + this->m_Descript->m_BufferSize, dest);
         }
 
 	    return *this;
-	}
+	}*/
 
-	template <typename T>
-	BufferDescript * Buffer<T>::GetDescript()
-	{
-	    return this->m_pDescript;
-	}
 
 	template <typename T>
 	void Buffer<T>::Reset(const T & resetData)
@@ -249,7 +257,8 @@ namespace SREngine {
             return;
 	    }
 #endif
-        int i=0 , n=this->m_pDescript->m_BufferSize;
+        std::lock_guard<std::mutex> lock(m_mutex);
+        int i=0 , n=this->m_Descript->m_BufferSize;
         while(i<n)
           this->m_data.get()[i++] = resetData;
 

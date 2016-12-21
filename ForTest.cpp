@@ -6,7 +6,7 @@
 #include <list>
 #include "SoftRenderEngine.h"
 
-using namespace SREngine;
+using namespace SRE;
 using  std::cout;
 using  std::endl;
 using  std::unique_ptr;
@@ -26,13 +26,13 @@ struct attribute
 
 
 
-
+int cc = 0;
 
 class aa
 {
 public:
     aa(){v=-1;cout<<"aa constructor!"<<endl;}
-    virtual ~aa(){cout<<v<<":aa destructor!"<<endl;}
+    virtual ~aa(){cout<<this<<":aa destructor!"<<endl;}
     int v;
 
 };
@@ -45,48 +45,18 @@ public:
 
 };
 
-class pro:public BasicProcessor
-{
-public:
-    pro(int _v):v(_v){cout<<"pro constructor!"<<endl;}
-    ~pro(){cout<<"pro destructor!"<<endl;}
-    int v;
-
-    void Run()
-    {
-        cout<<v<<endl;
-        NextStage();
-    }
-
-    void NextStage()
-    {
-        if(this->m_pNextStage != nullptr)
-           this->m_pNextStage->Run();
-    }
-};
 
 
 int main()
 {
-    PileLineBuilder builder;
-    pro p1(1);
-    pro p2(2);
-    pro p3(3);
-    pro p4(4);
+    //test if map will destructs the data when calling operator=
+    aa a1,a2;
+    a2.v = 2;
+    a1.v = 1;
+    cout<<&a1<<endl;
+    cout<<&a2<<endl;
+    a2 = a1;
 
-    builder.AddProcessor(0,(BasicProcessor*)&p1);
-    builder.AddProcessor(1,(BasicProcessor*)&p2);
-    builder.AddProcessor(2,(BasicProcessor*)&p3);
-    builder.AddProcessor(0,(BasicProcessor*)&p4);
-    BasicProcessor * my = builder.BuildPileLine();
-    pro * pp = (pro*)my;
-    pp->Run();
-    cout<<endl;
-
-    builder.RemoveProcessor(6);
-    my = builder.BuildPileLine();
-    pp = (pro*)my;
-    pp->Run();
-
+    cout<<"end"<<endl;
 }
 

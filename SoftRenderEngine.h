@@ -28,7 +28,7 @@
 
 //==============================
 //The following files using
-//namespace SREngine
+//name space SRE
 //==============================
 #ifdef _SRE_DEBUG_
 #include "SRE_DebugLog.h"

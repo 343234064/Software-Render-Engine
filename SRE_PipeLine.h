@@ -15,31 +15,88 @@
 #ifndef _SRE_PIPELINE_
 #define _SRE_PIPELINE_
 
-#include <string>
-#include <map>
-#include <list>
-#include <queue>
+
 #include "SRE_Math.h"
 #include "SRE_GlobalsAndUtils.h"
-using std::map;
-using std::list;
-using std::queue;
 
-namespace SREngine {
+
+namespace SRE {
     //=============================
 	//Class Basic I/O Element
 	//
-	//
+	//Just a base class,
 	//User defines what need to be input/output
 	//=============================
-	class BasicIOElement:public BaseContainer
+	class BasicIOElement
 	{
     public:
-        BasicIOElement();
-        virtual ~BasicIOElement();
+        BasicIOElement(){}
+        virtual ~BasicIOElement(){}
 
 	};
 
+
+    //=============================
+	//Class Basic I/O Buffer
+	//
+	//
+	//=============================
+	template<typename T>
+	class BasicIOBuffer
+	{
+    public:
+        BasicIOBuffer(){}
+        BasicIOBuffer(const BasicIOBuffer & other)
+        {
+            std::lock_guard<std::mutex> lock(other.m_mutex);
+            m_queue = other.m_queue;
+        }
+        BasicIOBuffer & operator=(const BasicIOBuffer & other) = delete;
+        virtual ~BasicIOBuffer(){}
+
+
+
+        void push(T data)
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_queue.push(data);
+        }
+
+        std::shared_ptr<T> pop()
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            if(m_queue.empty())
+                throw empty_exception();
+
+            std::shared_ptr<T> const res(std::make_shared(m_queue.front()));
+            m_queue.pop();
+
+            return res;
+        }
+
+        void pop(T & out)
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            if(m_queue.empty())
+                throw empty_exception();
+
+            out = m_queue.front();
+            m_queue.pop();
+        }
+
+        bool empty() const
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            return m_queue.empty();
+        }
+
+
+    protected:
+        std::queue<T>  m_queue;
+        std::mutex     m_mutex;
+
+
+	};
 
 
     //=============================
@@ -53,7 +110,7 @@ namespace SREngine {
         BasicObserver();
         virtual ~BasicObserver();
 
-        void Notify(SREVAR message)
+        void Notify(SREVAR message) const
         {
           if(nullptr != HandleMessageCallBack)
             this->HandleMessageCallBack(message);
@@ -82,9 +139,6 @@ namespace SREngine {
         BasicProcessor():
             BaseTask()
         {}
-        BasicProcessor(const BasicProcessor & other):
-            BaseTask()
-        {}
         virtual ~BasicProcessor(){}
 
         virtual void HandleElememt()=0;
@@ -100,32 +154,29 @@ namespace SREngine {
         void Cancel();
 
 
-        void SetInputQueue(queue<BasicIOElement*> * inputQueue)
+        void SetInputQueue(BasicIOBuffer<BasicIOElement> * inputQueue)
         {
             this->m_pInputQueue = inputQueue;
         }
-        void SetOutputQueue(queue<BasicIOElement*> * outpueQueue)
+        void SetOutputQueue(BasicIOBuffer<BasicIOElement> * outpueQueue)
         {
             this->m_pOutputQueue = outpueQueue;
         }
-
-        BasicProcessor & operator=(const BasicProcessor & other)
+        void SetObserver(BasicObserver  * observer)
         {
-            if(this != &other)
-            {
-
-            }
-
-            return *this;
+            this->m_pObserver = observer;
         }
 
 
+        BasicProcessor(const BasicProcessor & other) = delete;
+        BasicProcessor & operator=(const BasicProcessor & other) = delete;
+
 
     protected:
-        queue<BasicIOElement*> *  m_pInputQueue;
-        queue<BasicIOElement*> *  m_pOutputQueue;
-        BasicIOElement *          m_pCurrentElement;
-        BasicObserver  *          m_pObserver;
+        BasicIOBuffer<BasicIOElement> *    m_pInputQueue;
+        BasicIOBuffer<BasicIOElement> *    m_pOutputQueue;
+        BasicIOElement *                   m_pCurrentElement;
+        BasicObserver  *                   m_pObserver;
 
         bool m_Cancel;
         bool m_Pause;
@@ -144,39 +195,36 @@ namespace SREngine {
     public:
         BasePipeLine()
         {}
-        BasePipeLine(const BasePipeLine & other)
-        {}
-
         virtual ~BasePipeLine(){}
 
 
         virtual void BuildPipeLine()=0;
         virtual void AddProcessor(INT index, BasicProcessor * processor)=0;
         virtual void RemoveProcessor(INT index)=0;
-        virtual void Start()=0;
-        virtual void Pause()=0;
-        virtual void Cancel()=0;
-        virtual void Resume()=0;
+        virtual void AddProcessorBack(BasicProcessor * processor)=0;
+        virtual void RemoveProcessorBack()=0;
         virtual void OnInit()=0;
         virtual void OnEnd()=0;
         virtual void OnPause()=0;
         virtual void OnResume()=0;
 
 
+        void Run();
+        void Pause();
+        void Cancel();
+        void Resume();
 
-        BasePipeLine & operator=(const BasePipeLine & other)
-        {
-            if(this != &other)
-            {
 
-            }
-            return *this;
-        }
+        BasePipeLine(const BasePipeLine & other) = delete;
+        BasePipeLine & operator=(const BasePipeLine & other) = delete;
+
 
     protected:
-        BasicObserver                  m_processorObserver;
-        list<queue<BasicIOElement*>*>  m_IOBuffers;
-        list<BasicProcessor*>          m_Processors;
+        BasicObserver                m_processorObserver;
+        std::list<BasicIOBuffer<BasicIOElement>*>
+                                     m_IOBufferArray;
+        std::list<BasicProcessor*>   m_ProcessorArray;
+        //the type should be considered again
 
 	};
 
@@ -198,12 +246,12 @@ namespace SREngine {
 
         virtual ~SREPipeLine(){}
 
-        BasicProcessor* BuildPipeLine();
-        void            AddProcessor(INT index, BasicProcessor * processor);
-        void            RemoveProcessor(INT index);
+        void     BuildPipeLine();
+        void     AddProcessor(INT index, BasicProcessor * processor);
+        void     RemoveProcessor(INT index);
 
     protected:
-        RunTimeData     m_runTimeData;
+        //RunTimeData     m_runTimeData;
 
 	};
 
@@ -232,10 +280,7 @@ namespace SREngine {
     protected:
         void AssembleTriangleMesh();
 
-//Change the storage of triangle? and then
-//Make this has 2 ways:
-//Create triangle in IA, or reuse the triangle
-//I think i may have to make a big change!!
+
 	};
 
 
@@ -422,16 +467,13 @@ namespace SREngine {
     public:
         RunTimeData():
             BaseContainer(),
-            m_pVarBuffer(new VariableBuffer()),
+            m_VarBuffer(),
             m_MeshList()
         {}
         RunTimeData(const RunTimeData & other);
 
         virtual ~RunTimeData()
         {
-            if(nullptr != m_pVarBuffer)
-                delete m_pVarBuffer;
-
              m_MeshList.clear();
             //ReleaseMeshList();
         }
@@ -440,7 +482,7 @@ namespace SREngine {
         void       RemoveMesh(INT key);
         BaseMesh * GetMesh(INT key);
         INT        GetMeshCount();
-        VariableBuffer * GetVaribleBuffer();
+        //VariableBuffer * GetVaribleBuffer();
 
         void       ReleaseMeshList();
         void       SetRenderState(SREVAR renderState, SREVAR value);
@@ -449,8 +491,8 @@ namespace SREngine {
         RunTimeData & operator=(const RunTimeData & other);
 
     protected:
-        VariableBuffer * m_pVarBuffer;
-        map<INT, BaseMesh*>
+        VariableBuffer   m_VarBuffer;
+        std::map<INT, BaseMesh*>
                          m_MeshList;
 
 
@@ -506,8 +548,8 @@ namespace SREngine {
         Technique &  operator=(const Technique & other);
 
     protected:
-        std::string        m_name;
-        list<RenderPass*>  m_PassList;
+        std::string             m_name;
+        std::list<RenderPass*>  m_PassList;
 
     };
 
