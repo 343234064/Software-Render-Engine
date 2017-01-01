@@ -23,6 +23,7 @@
 #include <exception>
 #include <memory>
 #include <stdlib.h>
+#include <condition_variable>
 
 
 namespace SRE {
@@ -249,6 +250,9 @@ namespace SRE {
     const SREVAR SRE_USAGE_VSHADER=0x10000091;
     const SREVAR SRE_USAGE_PSHADER=0x10000092;
     const SREVAR SRE_USAGE_RENDERBUFFER=0x10000093;
+
+    const SREVAR SRE_MESSAGE_RUNERROR=0x10000200;
+
 
 
     /*

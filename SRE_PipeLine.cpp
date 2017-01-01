@@ -21,26 +21,77 @@ namespace SRE {
 	//
 	//
 	//=============================
+    void BasicProcessor::Start()
+    {
+        if(nullptr == this->m_pInputQueue ||
+           nullptr == this->m_pOutputQueue ||
+           nullptr == this->m_pObserver)
+           return;
+
+        std::thread newThread(this->Run);
+        newThread.detach();
+    }
+
+
     void BasicProcessor::Run()
     {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        while(true)
+        {
+            if(m_Cancel)
+            {
+                if(nullptr != OnCancel)
+                   this->OnCancel();
+                break;
+            }
 
+            if(m_Pause)
+            {
+                if(nullptr != OnPause)
+                   this->OnPause();
+                m_cond.wait(lock);
+            }
+
+            m_pInputQueue->wait_and_pop(m_currentElement);
+
+            try
+            {
+                BasicIOElement output=HandleElememt(m_currentElement);
+                m_pOutputQueue->push(output);
+            }
+            catch(...)
+            {
+                if(nullptr != OnRunError)
+                   this->OnRunError();
+                m_pObserver->Notify(SRE_MESSAGE_RUNERROR);
+                break;
+            }
+
+
+        }
+
+        return;
     }
 
     void BasicProcessor::Pause()
     {
-
+        m_Pause=true;
     }
 
     void BasicProcessor::Cancel()
     {
-
+        m_Cancel=true;
     }
 
     void BasicProcessor::Resume()
     {
+        m_Pause=false;
+        m_cond.notify_one();
 
-
+        if(nullptr != OnResume)
+           this->OnResume();
     }
+
 
     //===========================================
 	//Class InputAssembler functions

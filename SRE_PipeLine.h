@@ -60,26 +60,23 @@ namespace SRE {
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             m_queue.push(data);
+            m_cond.notify_one();
         }
 
-        std::shared_ptr<T> pop()
+        std::shared_ptr<T> wait_and_pop()
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            if(m_queue.empty())
-                throw empty_exception();
-
-            std::shared_ptr<T> const res(std::make_shared(m_queue.front()));
+            m_cond.wait(lock, [this]{return !m_queue.empty();});
+            std::shared_ptr<T> res(std::make_shared<T>(m_queue.front()));
             m_queue.pop();
 
             return res;
         }
 
-        void pop(T & out)
+        void wait_and_pop(T & out)
         {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            if(m_queue.empty())
-                throw empty_exception();
-
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_cond.wait(lock, [this]{return !m_queue.empty();});
             out = m_queue.front();
             m_queue.pop();
         }
@@ -94,6 +91,8 @@ namespace SRE {
     protected:
         std::queue<T>  m_queue;
         std::mutex     m_mutex;
+        std::condition_variable
+                       m_cond;
 
 
 	};
@@ -136,47 +135,71 @@ namespace SRE {
 	class BasicProcessor:public BaseTask
 	{
     public:
-        BasicProcessor():
-            BaseTask()
+        BasicProcessor(BasicIOBuffer<BasicIOElement> * input=nullptr,
+                       BasicIOBuffer<BasicIOElement> * output=nullptr,
+                       BasicObserver * observer=nullptr):
+            BaseTask(),
+            HandleElememt(nullptr),
+            OnCancel(nullptr),
+            OnPause(nullptr),
+            OnResume(nullptr),
+            OnRunError(nullptr),
+            m_pInputQueue(input),
+            m_pOutputQueue(output),
+            m_pObserver(observer),
+            m_Cancel(false),
+            m_Pause(false),
+            m_cond(),
+            m_currentElement(),
+            m_mutex()
         {}
         virtual ~BasicProcessor(){}
 
-        virtual void HandleElememt()=0;
-        virtual void OnPause()=0;
-        virtual void OnResume()=0;
-        virtual void OnCancel()=0;
-        virtual void OnRunError()=0;
-        virtual void OnRunEnd()=0;
-
+        void Start();
         void Run();
         void Pause();
         void Resume();
         void Cancel();
 
-
         void SetInputQueue(BasicIOBuffer<BasicIOElement> * inputQueue)
         {
+            std::lock_guard<std::mutex> lock(m_mutex);
             this->m_pInputQueue = inputQueue;
         }
         void SetOutputQueue(BasicIOBuffer<BasicIOElement> * outpueQueue)
         {
+            std::lock_guard<std::mutex> lock(m_mutex);
             this->m_pOutputQueue = outpueQueue;
         }
         void SetObserver(BasicObserver  * observer)
         {
+            std::lock_guard<std::mutex> lock(m_mutex);
             this->m_pObserver = observer;
         }
 
+        void SetHandleElementFunc(BasicIOElement (*handler)(BasicIOElement &)){this->HandleElememt = handler;}
+        void SetOnCancelFunc(void (*oncancel)()){this->OnCancel = oncancel;};
+        void SetOnPauseFunc(void (*onpause)()){this->OnPause = onpause;};
+        void SetOnResumelFunc(void (*onresume)()){this->OnResume = onresume;};
+        void SetOnRunErrorFunc(void (*onrunerror)()){this->OnRunError = onrunerror;};
 
         BasicProcessor(const BasicProcessor & other) = delete;
         BasicProcessor & operator=(const BasicProcessor & other) = delete;
 
+    protected:
+        BasicIOElement (*HandleElememt)(BasicIOElement & input);
+        void           (*OnCancel)();
+        void           (*OnPause)();
+        void           (*OnResume)();
+        void           (*OnRunError)();
 
     protected:
         BasicIOBuffer<BasicIOElement> *    m_pInputQueue;
         BasicIOBuffer<BasicIOElement> *    m_pOutputQueue;
-        BasicIOElement *                   m_pCurrentElement;
         BasicObserver  *                   m_pObserver;
+        BasicIOElement                     m_currentElement;
+        std::mutex                         m_mutex;
+        std::condition_variable            m_cond;
 
         bool m_Cancel;
         bool m_Pause;
@@ -221,9 +244,9 @@ namespace SRE {
 
     protected:
         BasicObserver                m_processorObserver;
-        std::list<BasicIOBuffer<BasicIOElement>*>
+        std::list<BasicIOBuffer<BasicIOElement>>
                                      m_IOBufferArray;
-        std::list<BasicProcessor*>   m_ProcessorArray;
+        std::list<BasicProcessor>    m_ProcessorArray;
         //the type should be considered again
 
 	};
@@ -268,8 +291,10 @@ namespace SRE {
 	class InputAssembler:public BasicProcessor
 	{
     public:
-        InputAssembler():
-            BasicProcessor()
+        InputAssembler(BasicIOBuffer<BasicIOElement> * input=nullptr,
+                       BasicIOBuffer<BasicIOElement> * output=nullptr,
+                       BasicObserver * observer=nullptr):
+            BasicProcessor(input, output, observer)
         {}
         virtual ~InputAssembler(){}
 
@@ -294,8 +319,10 @@ namespace SRE {
     class VertexProcesser:public BasicProcessor
     {
     public:
-        VertexProcesser():
-            BasicProcessor()
+        VertexProcesser(BasicIOBuffer<BasicIOElement> * input=nullptr,
+                        BasicIOBuffer<BasicIOElement> * output=nullptr,
+                        BasicObserver * observer=nullptr):
+            BasicProcessor(input, output, observer)
         {}
         virtual ~VertexProcesser();
 
@@ -318,8 +345,10 @@ namespace SRE {
     class VertexPostProcesser:public BasicProcessor
     {
     public:
-        VertexPostProcesser():
-            BasicProcessor()
+        VertexPostProcesser(BasicIOBuffer<BasicIOElement> * input=nullptr,
+                            BasicIOBuffer<BasicIOElement> * output=nullptr,
+                            BasicObserver * observer=nullptr):
+            BasicProcessor(input, output, observer)
         {}
         virtual ~VertexPostProcesser();
 
@@ -344,8 +373,10 @@ namespace SRE {
     class Rasterizer:public BasicProcessor
     {
     public:
-        Rasterizer():
-            BasicProcessor()
+        Rasterizer(BasicIOBuffer<BasicIOElement> * input=nullptr,
+                   BasicIOBuffer<BasicIOElement> * output=nullptr,
+                   BasicObserver * observer=nullptr):
+            BasicProcessor(input, output, observer)
         {}
         virtual ~Rasterizer();
 
@@ -366,7 +397,11 @@ namespace SRE {
     class PixelProcesser:public BasicProcessor
     {
     public:
-        PixelProcesser();
+        PixelProcesser(BasicIOBuffer<BasicIOElement> * input=nullptr,
+                       BasicIOBuffer<BasicIOElement> * output=nullptr,
+                       BasicObserver * observer=nullptr):
+             BasicProcessor(input, output, observer)
+        {}
         virtual ~PixelProcesser();
 
         void Run();
@@ -384,8 +419,10 @@ namespace SRE {
     class OutputMerger:public BasicProcessor
     {
     public:
-        OutputMerger():
-            BasicProcessor()
+        OutputMerger(BasicIOBuffer<BasicIOElement> * input=nullptr,
+                     BasicIOBuffer<BasicIOElement> * output=nullptr,
+                     BasicObserver * observer=nullptr):
+            BasicProcessor(input, output, observer)
         {}
         virtual ~OutputMerger();
 
