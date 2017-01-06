@@ -177,13 +177,13 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
        if(nullptr == pBufferDescript || nullptr == ppOutBuffer)
        {
-           _LOG(SRE_ERROR_NULLPOINTER);
+           _ERRORLOG(SRE_ERROR_NULLPOINTER);
            return RESULT::INVALIDARG;
        }
 
        if(pBufferDescript->m_BufferSize <=0)
        {
-           _LOG(SRE_ERROR_INVALIDARG);
+           _ERRORLOG(SRE_ERROR_INVALIDARG);
            return RESULT::INVALIDARG;
        }
 
@@ -253,7 +253,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
         if(nullptr == this->m_data)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return;
 	    }
 #endif

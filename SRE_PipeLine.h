@@ -59,6 +59,7 @@ namespace SRE {
         void push(T data)
         {
             std::lock_guard<std::mutex> lock(m_mutex);
+            //cout<<"IN PUSH"<<endl;
             m_queue.push(data);
             m_cond.notify_one();
         }
@@ -106,22 +107,16 @@ namespace SRE {
 	class BasicObserver
 	{
     public:
-        BasicObserver();
-        virtual ~BasicObserver();
+        BasicObserver(){}
+        virtual ~BasicObserver(){}
 
-        void Notify(SREVAR message) const
+        void Notify(SREVAR message)
         {
-          if(nullptr != HandleMessageCallBack)
-            this->HandleMessageCallBack(message);
-        }
-
-        void SetMessageHandler(void (*callBack)(SREVAR message))
-        {
-            this->HandleMessageCallBack = callBack;
+           HandleMessage(message);
         }
 
     protected:
-        void (*HandleMessageCallBack)(SREVAR message);
+        virtual void HandleMessage(SREVAR message){};
 
 	};
 
@@ -135,23 +130,18 @@ namespace SRE {
 	class BasicProcessor:public BaseTask
 	{
     public:
-        BasicProcessor(BasicIOBuffer<BasicIOElement> * input=nullptr,
-                       BasicIOBuffer<BasicIOElement> * output=nullptr,
+        BasicProcessor(BasicIOBuffer<BasicIOElement*> * input=nullptr,
+                       BasicIOBuffer<BasicIOElement*> * output=nullptr,
                        BasicObserver * observer=nullptr):
             BaseTask(),
-            HandleElememt(nullptr),
-            OnCancel(nullptr),
-            OnPause(nullptr),
-            OnResume(nullptr),
-            OnRunError(nullptr),
             m_pInputQueue(input),
             m_pOutputQueue(output),
             m_pObserver(observer),
-            m_Cancel(false),
-            m_Pause(false),
+            m_pCurrentElement(nullptr),
             m_cond(),
-            m_currentElement(),
-            m_mutex()
+            m_mutex(),
+            m_Cancel(false),
+            m_Pause(false)
         {}
         virtual ~BasicProcessor(){}
 
@@ -161,12 +151,12 @@ namespace SRE {
         void Resume();
         void Cancel();
 
-        void SetInputQueue(BasicIOBuffer<BasicIOElement> * inputQueue)
+        void SetInputQueue(BasicIOBuffer<BasicIOElement*> * inputQueue)
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             this->m_pInputQueue = inputQueue;
         }
-        void SetOutputQueue(BasicIOBuffer<BasicIOElement> * outpueQueue)
+        void SetOutputQueue(BasicIOBuffer<BasicIOElement*> * outpueQueue)
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             this->m_pOutputQueue = outpueQueue;
@@ -177,29 +167,25 @@ namespace SRE {
             this->m_pObserver = observer;
         }
 
-        void SetHandleElementFunc(BasicIOElement (*handler)(BasicIOElement &)){this->HandleElememt = handler;}
-        void SetOnCancelFunc(void (*oncancel)()){this->OnCancel = oncancel;};
-        void SetOnPauseFunc(void (*onpause)()){this->OnPause = onpause;};
-        void SetOnResumelFunc(void (*onresume)()){this->OnResume = onresume;};
-        void SetOnRunErrorFunc(void (*onrunerror)()){this->OnRunError = onrunerror;};
 
         BasicProcessor(const BasicProcessor & other) = delete;
         BasicProcessor & operator=(const BasicProcessor & other) = delete;
 
     protected:
-        BasicIOElement (*HandleElememt)(BasicIOElement & input);
-        void           (*OnCancel)();
-        void           (*OnPause)();
-        void           (*OnResume)();
-        void           (*OnRunError)();
+        virtual void    HandleElememt(BasicIOElement * input_and_output)=0;
+        virtual void    OnCancel()=0;
+        virtual void    OnPause()=0;
+        virtual void    OnResume()=0;
+        virtual void    OnRunError()=0;
 
-    protected:
-        BasicIOBuffer<BasicIOElement> *    m_pInputQueue;
-        BasicIOBuffer<BasicIOElement> *    m_pOutputQueue;
-        BasicObserver  *                   m_pObserver;
-        BasicIOElement                     m_currentElement;
-        std::mutex                         m_mutex;
-        std::condition_variable            m_cond;
+    private:
+        BasicIOBuffer<BasicIOElement*> *    m_pInputQueue;
+        BasicIOBuffer<BasicIOElement*> *    m_pOutputQueue;
+        BasicObserver  *                    m_pObserver;
+        BasicIOElement *                    m_pCurrentElement;
+        std::condition_variable             m_cond;
+        std::mutex                          m_mutex;
+
 
         bool m_Cancel;
         bool m_Pause;
@@ -213,6 +199,8 @@ namespace SRE {
 	//
 	//
 	//=============================
+	/*
+	template<typename ProcessorType, typename IOBufferType>
 	class BasePipeLine
 	{
     public:
@@ -243,10 +231,10 @@ namespace SRE {
 
 
     protected:
-        BasicObserver                m_processorObserver;
-        std::list<BasicIOBuffer<BasicIOElement>>
-                                     m_IOBufferArray;
-        std::list<BasicProcessor>    m_ProcessorArray;
+        BasicObserver               m_processorObserver;
+        std::list<IOBufferType>
+                                    m_IOBufferArray;
+        std::list<ProcessorType>    m_ProcessorArray;
         //the type should be considered again
 
 	};
@@ -277,6 +265,7 @@ namespace SRE {
         //RunTimeData     m_runTimeData;
 
 	};
+	*/
 
 
 
@@ -291,16 +280,14 @@ namespace SRE {
 	class InputAssembler:public BasicProcessor
 	{
     public:
-        InputAssembler(BasicIOBuffer<BasicIOElement> * input=nullptr,
-                       BasicIOBuffer<BasicIOElement> * output=nullptr,
+        InputAssembler(BasicIOBuffer<BasicIOElement*> * input=nullptr,
+                       BasicIOBuffer<BasicIOElement*> * output=nullptr,
                        BasicObserver * observer=nullptr):
             BasicProcessor(input, output, observer)
         {}
         virtual ~InputAssembler(){}
 
         void Run();
-        void NextStage();
-        void PassArgument(SREVAR usage, void * argu);
 
     protected:
         void AssembleTriangleMesh();
@@ -309,7 +296,7 @@ namespace SRE {
 	};
 
 
-
+    /*
     //=============================
 	//Class VertexProcesser
 	//
@@ -319,8 +306,8 @@ namespace SRE {
     class VertexProcesser:public BasicProcessor
     {
     public:
-        VertexProcesser(BasicIOBuffer<BasicIOElement> * input=nullptr,
-                        BasicIOBuffer<BasicIOElement> * output=nullptr,
+        VertexProcesser(BasicIOBuffer<BasicIOElement*> * input=nullptr,
+                        BasicIOBuffer<BasicIOElement*> * output=nullptr,
                         BasicObserver * observer=nullptr):
             BasicProcessor(input, output, observer)
         {}
@@ -432,7 +419,7 @@ namespace SRE {
 
     };
 
-
+    */
 
 
 

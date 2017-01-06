@@ -28,41 +28,48 @@ namespace SRE {
            nullptr == this->m_pObserver)
            return;
 
-        std::thread newThread(this->Run);
+        std::thread newThread(&BasicProcessor::Run, this);
         newThread.detach();
+        //newThread.join();
     }
 
 
     void BasicProcessor::Run()
     {
+        Log_Write("RUN START");
         std::unique_lock<std::mutex> lock(m_mutex);
         while(true)
         {
             if(m_Cancel)
             {
-                if(nullptr != OnCancel)
-                   this->OnCancel();
+                OnCancel();
                 break;
             }
 
             if(m_Pause)
             {
-                if(nullptr != OnPause)
-                   this->OnPause();
+                OnPause();
                 m_cond.wait(lock);
             }
 
-            m_pInputQueue->wait_and_pop(m_currentElement);
-
+            Log_Write("RUN TRY BLOCK");
             try
             {
-                BasicIOElement output=HandleElememt(m_currentElement);
-                m_pOutputQueue->push(output);
+                m_pInputQueue->wait_and_pop(m_pCurrentElement);
+
+                Log_Write("IN RUN");
+                //BasicIOElement * output;
+                HandleElememt(m_pCurrentElement);
+                //
+                //delete m_pCurrentElement;
+
+                Log_Write("HANDLE END");
+                m_pOutputQueue->push(m_pCurrentElement);
+                Log_Write("RUN END");
             }
             catch(...)
             {
-                if(nullptr != OnRunError)
-                   this->OnRunError();
+                OnRunError();
                 m_pObserver->Notify(SRE_MESSAGE_RUNERROR);
                 break;
             }
@@ -86,11 +93,11 @@ namespace SRE {
     void BasicProcessor::Resume()
     {
         m_Pause=false;
+        OnResume();
         m_cond.notify_one();
 
-        if(nullptr != OnResume)
-           this->OnResume();
     }
+
 
 
     //===========================================
@@ -150,7 +157,7 @@ namespace SRE {
         else
         {
 #ifdef _SRE_DEBUG_
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
 #endif
             return;
         }
@@ -269,7 +276,7 @@ namespace SRE {
         if(nullptr == renderPass)
         {
 #ifdef _SRE_DEBUG_
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
 #endif
             return;
         }
@@ -291,7 +298,7 @@ namespace SRE {
         if(nullptr == renderPass)
         {
 #ifdef _SRE_DEBUG_
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
 #endif
             return;
         }

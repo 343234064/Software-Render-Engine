@@ -11,52 +11,91 @@ using  std::cout;
 using  std::endl;
 using  std::unique_ptr;
 
-struct vv
-{
-    float x,y,z;
-    float nx,ny,nz;
-    float a,r,g,b;
-};
-
-struct attribute
-{
-    float nx,ny,nz;
-    float a,r,g,b;
-};
-
-
-
-int cc = 0;
-
-class aa
+class Element:public BasicIOElement
 {
 public:
-    aa(){v=-1;cout<<"aa constructor!"<<endl;}
-    virtual ~aa(){cout<<this<<":aa destructor!"<<endl;}
-    int v;
+    Element(int v=0):
+        val(v)
+    {}
+    ~Element(){}
+public:
+    int val;
 
 };
 
-class av:public aa
+
+class Observer:public BasicObserver
 {
 public:
-    av(){cout<<"av constructor!"<<endl;}
-    virtual ~av(){cout<<"av destructor!"<<endl;}
+    Observer(){}
+    ~Observer(){}
 
+protected:
+    void HandleMessage(SREVAR message)
+    {
+        cout<<"Observer Handler Message!!"<<endl;
+    }
+};
+
+
+class testProcessor:public BasicProcessor
+{
+public:
+       testProcessor(BasicIOBuffer<BasicIOElement*> * input=nullptr,
+                     BasicIOBuffer<BasicIOElement*> * output=nullptr,
+                     BasicObserver * observer=nullptr):
+                 BasicProcessor(input, output, observer),
+                 value(0)
+        {}
+       virtual ~testProcessor(){}
+
+protected:
+       int value;
+protected:
+       void HandleElememt(BasicIOElement * element)
+       {
+           Log_WriteKV("Handle index:", value);
+           Element* e=(Element*)element;
+           e->val++;
+           Log_WriteKV("Element:", e->val);
+           if(value == 9) this->Cancel();
+       }
+       void OnCancel(){cout<<"Cancel!!"<<endl;}
+       void OnPause(){cout<<"Pause!!"<<endl;}
+       void OnResume(){cout<<"Resume!!"<<endl;}
+       void OnRunError(){cout<<"RunError!!"<<endl;}
 };
 
 
 
 int main()
 {
-    //test if map will destructs the data when calling operator=
-    aa a1,a2;
-    a2.v = 2;
-    a1.v = 1;
-    cout<<&a1<<endl;
-    cout<<&a2<<endl;
-    a2 = a1;
+    BasicIOBuffer<BasicIOElement*> inputBuffer;
+    BasicIOBuffer<BasicIOElement*> outputBuffer;
+    Observer observer;
 
-    cout<<"end"<<endl;
+    for(int i=10;i<20;i++)
+    {
+        Element * e=new Element(i);
+        inputBuffer.push((BasicIOElement*)e);
+        cout<<e->val<<endl;
+    }
+/*
+    for(int i=10;i<20;i++)
+    {
+        BasicIOElement * e;
+        inputBuffer.wait_and_pop(e);
+        Element * e_=(Element*)e;
+        cout<<e_->val<<endl;
+    }
+*/
+
+    testProcessor processor(&inputBuffer, &outputBuffer, &observer);
+
+    processor.Start();
+
+
+
+    cout<<"main end"<<endl;
 }
 

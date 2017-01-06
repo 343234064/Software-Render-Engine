@@ -63,19 +63,19 @@ namespace SRE {
        if(nullptr == pVertexes || nullptr == pIndexes ||
           nullptr == ppOutTriangleMesh)
        {
-           _LOG(SRE_ERROR_NULLPOINTER);
+           _ERRORLOG(SRE_ERROR_NULLPOINTER);
            return RESULT::INVALIDARG;
        }
 
        if(vertexNumber <= 2 || indexNumber <= 0)
        {
-           _LOG(SRE_ERROR_FAIL);
+           _ERRORLOG(SRE_ERROR_FAIL);
            return RESULT::FAIL;
        }
 
        if(vertexStructSize <= 0 && vertexStructSize%sizeof(FLOAT) != 0)
        {
-           _LOG(SRE_ERROR_INVALIDARG);
+           _ERRORLOG(SRE_ERROR_INVALIDARG);
            return RESULT::INVALIDARG;
        }
 

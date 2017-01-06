@@ -307,7 +307,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == vec1 || nullptr == vec2)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -330,7 +330,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == vec1 || nullptr == vec2)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return  0.0;
         }
 #endif
@@ -352,7 +352,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == vec1 || nullptr == vec2)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return 0.0;
         }
 #endif
@@ -374,7 +374,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == vec1 || nullptr == vec2)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return 0.0;
         }
 #endif
@@ -399,7 +399,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == vec1 || nullptr == vec2)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return 0.0;
         }
 #endif
@@ -425,7 +425,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == vector)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return 0.0;
         }
 #endif
@@ -452,7 +452,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == vector)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return 0.0;
         }
 #endif
@@ -477,7 +477,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == vector)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return 0.0;
         }
 #endif
@@ -503,7 +503,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == vector)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return 0.0;
         }
 #endif
@@ -531,7 +531,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == vector)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -543,7 +543,7 @@ namespace SRE {
         else
         {
 #ifdef _SRE_DEBUG_
-            _LOG(SRE_ERROR_DIVIDEBYZERO);
+            _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
 #endif
 
         }
@@ -563,7 +563,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == vector)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -577,7 +577,7 @@ namespace SRE {
 		else
         {
 #ifdef _SRE_DEBUG_
-            _LOG(SRE_ERROR_DIVIDEBYZERO);
+            _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
 #endif
 
         }
@@ -596,7 +596,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == vector)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -612,7 +612,7 @@ namespace SRE {
         {
 
 #ifdef _SRE_DEBUG_
-            _LOG(SRE_ERROR_DIVIDEBYZERO);
+            _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
 #endif
 
         }
@@ -631,7 +631,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == vector)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -647,7 +647,7 @@ namespace SRE {
 		else
         {
 #ifdef _SRE_DEBUG_
-            _LOG(SRE_ERROR_DIVIDEBYZERO);
+            _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
 #endif
 
         }
@@ -980,7 +980,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == mat1 || nullptr == mat2)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -1044,7 +1044,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == mat1 || nullptr == mat2)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -1114,7 +1114,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == mat)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -1137,7 +1137,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == mat)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -1163,7 +1163,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == mat)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return 0.0;
         }
 #endif
@@ -1189,7 +1189,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == mat)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return 0.0;
         }
 #endif
@@ -1223,7 +1223,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -1248,7 +1248,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -1280,7 +1280,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == mat)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return false;
         }
 #endif
@@ -1325,7 +1325,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == mat)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return false;
         }
 #endif
@@ -1447,7 +1447,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == mat || nullptr == vec)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -1470,7 +1470,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == mat || nullptr == vec)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -1589,7 +1589,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == quat )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return 0.0;
         }
 #endif
@@ -1611,7 +1611,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == quat1 || nullptr == quat2)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return 0.0;
         }
 #endif
@@ -1633,7 +1633,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == quat1 || nullptr == quat2)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -1658,7 +1658,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == quat)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return false;
         }
 #endif
@@ -1689,7 +1689,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == quat)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -1719,7 +1719,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == quat)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -1761,7 +1761,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == quat1 || nullptr == quat2)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -1791,7 +1791,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == quat)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -1810,7 +1810,7 @@ namespace SRE {
         else
         {
 #ifdef _SRE_DEBUG_
-            _LOG(SRE_ERROR_DIVIDEBYZERO);
+            _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
 #endif
 
         }
@@ -1837,7 +1837,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == starting || nullptr == ending)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -1900,7 +1900,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == axis)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -1935,7 +1935,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -1981,7 +1981,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2001,7 +2001,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2032,7 +2032,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2053,7 +2053,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2083,7 +2083,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2116,7 +2116,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2164,7 +2164,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2228,7 +2228,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2283,7 +2283,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2306,7 +2306,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2336,7 +2336,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2360,7 +2360,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2390,7 +2390,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2414,7 +2414,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2446,7 +2446,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2486,7 +2486,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2544,7 +2544,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2576,7 +2576,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out )
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2619,7 +2619,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == quat)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2648,7 +2648,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == quat)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2691,7 +2691,7 @@ namespace SRE {
 		if (nullptr == out || nullptr == pos ||
             nullptr == lookAt || nullptr == up)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2752,7 +2752,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == pos)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2806,7 +2806,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == pos || nullptr == quat)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 #endif
@@ -2867,25 +2867,25 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 
         if(fabs(view_width) < EPSILON)
         {
-             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
              return out;
         }
 
         if(fabs(view_height) < EPSILON)
         {
-             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
              return out;
         }
 
         if(fabs(zfar-znear) < EPSILON)
         {
-             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
              return out;
         }
 #endif
@@ -2949,25 +2949,25 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 
         if(fabs(right-left) < EPSILON)
         {
-             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
              return out;
         }
 
         if(fabs(top-bottom) < EPSILON)
         {
-             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
              return out;
         }
 
         if(fabs(zfar-znear) < EPSILON)
         {
-             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
              return out;
         }
 #endif
@@ -3033,25 +3033,25 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 
         if(fabs(right-left) < EPSILON)
         {
-             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
              return out;
         }
 
         if(fabs(top-bottom) < EPSILON)
         {
-             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
              return out;
         }
 
         if(fabs(zfar-znear) < EPSILON)
         {
-             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
              return out;
         }
 #endif
@@ -3111,25 +3111,25 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 
         if(fabs(view_width) < EPSILON)
         {
-             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
              return out;
         }
 
         if(fabs(view_height) < EPSILON)
         {
-             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
              return out;
         }
 
         if(fabs(zfar-znear) < EPSILON)
         {
-             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
              return out;
         }
 #endif
@@ -3188,19 +3188,19 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
 		if (nullptr == out)
         {
-            _LOG(SRE_ERROR_NULLPOINTER);
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
             return nullptr;
         }
 
         if(fabs(aspectRatio) < EPSILON)
         {
-             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
              return out;
         }
 
         if(fabs(zfar-znear) < EPSILON)
         {
-             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
              return out;
         }
 #endif
@@ -3212,13 +3212,13 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
         if(fabs(as) < EPSILON)
         {
-             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
              return out;
         }
 
         if(fabs(Tan) < EPSILON)
         {
-             _LOG(SRE_ERROR_DIVIDEBYZERO);
+             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
              return out;
         }
 #endif

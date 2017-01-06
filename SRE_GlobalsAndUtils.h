@@ -14,6 +14,14 @@
 #ifndef _SRE_GLOBALSANDUTILS_
 #define _SRE_GLOBALSANDUTILS_
 
+//==============================
+//For debug use
+//==============================
+#ifndef _SRE_DEBUG_
+#define _SRE_DEBUG_
+#endif
+//==============================
+
 #include <string>
 #include <map>
 #include <list>
@@ -24,6 +32,12 @@
 #include <memory>
 #include <stdlib.h>
 #include <condition_variable>
+
+
+#ifdef _SRE_DEBUG_
+#include "SRE_DebugLog.h"
+#endif
+
 
 
 namespace SRE {
@@ -345,6 +359,9 @@ namespace SRE {
 
 
     };
+
+
+
 
 }
 

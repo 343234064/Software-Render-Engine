@@ -11,38 +11,48 @@
 //
 //
 //*****************************************************
-#include <stdio.h>
 #include "SRE_DebugLog.h"
 
 
 namespace SRE {
+    //==============================
+    //Return system time
+    //
+    //example:
+    //[2000/01/01 00:00:00]
+    //==============================
+    char* GetTime()
+    {
+        time_t t=time(nullptr);
+        char* out=new char[TIME_FORMAT_LENGTH];
+        strftime(out, TIME_FORMAT_LENGTH*sizeof(char), "[%Y/%m/%d %X]",localtime(&t));
+        return out;
+    }
 
 
     //==============================
     //Output error message
     //
     //==============================
-
     void LOG(const char * filename, const int line, ERROR error)
     {
-        printf("Log: %s, Line:%d :\n", filename, line);
 
         switch (error)
         {
         case SRE_ERROR_FAIL:
-            printf("  %s \n", "Function executed failed!");
+            Log_WriteError(filename, line, "Function executed failed!");
             break;
         case SRE_ERROR_INVALIDARG:
-            printf("  %s \n", "Invalid arguments!");
+            Log_WriteError(filename, line, "Invalid arguments!");
             break;
         case SRE_ERROR_OUTOFMEMORY:
-            printf("  %s \n", "Memory is not enough!");
+            Log_WriteError(filename, line, "Memory is not enough!");
             break;
         case SRE_ERROR_NULLPOINTER:
-            printf("  %s \n", "There is a NULL pointer!");
+            Log_WriteError(filename, line, "There is a NULL pointer!");
             break;
         case SRE_ERROR_DIVIDEBYZERO:
-            printf("  %s \n", "Value divide by a zero!");
+            Log_WriteError(filename, line, "Value divide by a zero!");
             break;
         default:
             break;

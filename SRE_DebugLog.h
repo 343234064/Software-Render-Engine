@@ -13,8 +13,12 @@
 #ifndef SRE_DEBUGLOG_
 #define SRE_DEBUGLOG_
 
+#include <fstream>
+#include <time.h>
+#include <stdio.h>
 
-
+#define LOG_FILE_NAME  ".\\DebugLog.txt"
+#define _ERRORLOG(error) LOG(__FILE__, __LINE__, error)
 
 namespace SRE{
 
@@ -23,6 +27,9 @@ namespace SRE{
     //
     //==============================
     typedef const unsigned int ERROR;
+
+    const int TIME_FORMAT_LENGTH = 22;
+
 
     //==============================
     //Error type
@@ -41,9 +48,50 @@ namespace SRE{
     //Function declarations
     //
     //==============================
-    void LOG   (const char * filename, int line, ERROR error);
-    #define _LOG(error) LOG(__FILE__, __LINE__, error)
+    void LOG(const char * filename, const int line, ERROR error);
+
+
+    char* GetTime();
+
+    template<typename T>
+    void Log_Write(T x)
+    {
+        std::ofstream fout(LOG_FILE_NAME, std::ios_base::app);
+        fout.seekp(std::ios_base::end);
+        char* time = GetTime();
+        fout.write(time, TIME_FORMAT_LENGTH);
+        fout<<x<<std::endl;
+        fout.close();
+        delete[] time;
+    }
+
+
+    template<typename KEY, typename VAL>
+    void Log_WriteKV(KEY k, VAL v)
+    {
+        std::ofstream fout(LOG_FILE_NAME, std::ios_base::app);
+        fout.seekp(std::ios_base::end);
+        char* time = GetTime();
+        fout.write(time, TIME_FORMAT_LENGTH);
+        fout<<k<<" = "<<v<<std::endl;
+        fout.close();
+        delete[] time;
+    }
+
+    template<typename FILE, typename LINE, typename ERROR>
+    void Log_WriteError(FILE f, LINE l, ERROR e)
+    {
+        std::ofstream fout(LOG_FILE_NAME, std::ios_base::app);
+        fout.seekp(std::ios_base::end);
+        char* time = GetTime();
+        fout.write(time, TIME_FORMAT_LENGTH);
+        fout<<f<<", line "<<l<<":"<<e<<std::endl;
+        fout.close();
+        delete[] time;
+    }
+
 
 
 }
+
 #endif // SRE_DEBUGLOG_
