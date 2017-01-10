@@ -92,6 +92,8 @@ namespace SRE {
     template<typename T>
     class BasicIOBuffer;
     class BasicObserver;
+    class BasicThread;
+    class CallBackFunctions;
     class BasicProcessor;
     class BasePipeLine;
 

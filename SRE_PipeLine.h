@@ -116,9 +116,61 @@ namespace SRE {
         }
 
     protected:
-        virtual void HandleMessage(SREVAR message){};
+        virtual void HandleMessage(SREVAR message)=0;
 
 	};
+
+
+
+    //=============================
+	//Class BasicThread
+	//
+	//
+	//=============================
+    class BasicThread
+    {
+    public:
+        BasicThread():
+            m_thread()
+        {}
+        ~BasicThread()
+        {
+            if(m_thread.joinable())
+               m_thread.join();
+        }
+
+        template<typename Callable, typename... Args>
+        void StartThread(Callable&& call, Args&&... args)
+        {
+            m_thread = std::thread(call, args...);
+        }
+
+        BasicThread(BasicThread & other) = delete;
+        BasicThread & operator=(BasicThread & other) = delete;
+
+
+    private:
+        std::thread m_thread;
+
+    };
+
+
+
+    //=============================
+	//Class CallBackFunctions
+	//
+	//
+	//=============================
+    class CallBackFunctions
+    {
+    public:
+        virtual void HandleElement(BasicIOElement * element)=0;
+        virtual void OnCancel()=0;
+        virtual void OnPause()=0;
+        virtual void OnResume()=0;
+        virtual void OnRunError()=0;
+
+    };
 
 
 
@@ -132,7 +184,8 @@ namespace SRE {
     public:
         BasicProcessor(BasicIOBuffer<BasicIOElement*> * input=nullptr,
                        BasicIOBuffer<BasicIOElement*> * output=nullptr,
-                       BasicObserver * observer=nullptr):
+                       BasicObserver     * observer=nullptr,
+                       CallBackFunctions * callbacks=nullptr):
             BaseTask(),
             m_pInputQueue(input),
             m_pOutputQueue(output),
@@ -140,10 +193,14 @@ namespace SRE {
             m_pCurrentElement(nullptr),
             m_cond(),
             m_mutex(),
+            m_thread(),
             m_Cancel(false),
-            m_Pause(false)
+            m_Pause(false),
+            m_callBacks(callbacks)
         {}
-        virtual ~BasicProcessor(){}
+        virtual ~BasicProcessor()
+        {}
+
 
         void Start();
         void Run();
@@ -168,15 +225,14 @@ namespace SRE {
         }
 
 
+        void SetCallBacks(CallBackFunctions * callbacks)
+        {
+            this->m_callBacks = callbacks;
+        }
+
         BasicProcessor(const BasicProcessor & other) = delete;
         BasicProcessor & operator=(const BasicProcessor & other) = delete;
 
-    protected:
-        virtual void    HandleElememt(BasicIOElement * input_and_output)=0;
-        virtual void    OnCancel()=0;
-        virtual void    OnPause()=0;
-        virtual void    OnResume()=0;
-        virtual void    OnRunError()=0;
 
     private:
         BasicIOBuffer<BasicIOElement*> *    m_pInputQueue;
@@ -185,10 +241,12 @@ namespace SRE {
         BasicIOElement *                    m_pCurrentElement;
         std::condition_variable             m_cond;
         std::mutex                          m_mutex;
-
+        BasicThread                         m_thread;
 
         bool m_Cancel;
         bool m_Pause;
+
+        CallBackFunctions   *               m_callBacks;
 	};
 
 

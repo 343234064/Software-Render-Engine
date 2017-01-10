@@ -16,6 +16,7 @@
 #include <fstream>
 #include <time.h>
 #include <stdio.h>
+#include <mutex>
 
 #define LOG_FILE_NAME  ".\\DebugLog.txt"
 #define _ERRORLOG(error) LOG(__FILE__, __LINE__, error)
@@ -56,6 +57,7 @@ namespace SRE{
     template<typename T>
     void Log_Write(T x)
     {
+        //std::lock_guard<std::mutex> lock(g_fileMutex);
         std::ofstream fout(LOG_FILE_NAME, std::ios_base::app);
         fout.seekp(std::ios_base::end);
         char* time = GetTime();
@@ -69,6 +71,7 @@ namespace SRE{
     template<typename KEY, typename VAL>
     void Log_WriteKV(KEY k, VAL v)
     {
+        //std::lock_guard<std::mutex> lock(g_fileMutex);
         std::ofstream fout(LOG_FILE_NAME, std::ios_base::app);
         fout.seekp(std::ios_base::end);
         char* time = GetTime();
@@ -81,6 +84,7 @@ namespace SRE{
     template<typename FILE, typename LINE, typename ERROR>
     void Log_WriteError(FILE f, LINE l, ERROR e)
     {
+        //std::lock_guard<std::mutex> lock(g_fileMutex);
         std::ofstream fout(LOG_FILE_NAME, std::ios_base::app);
         fout.seekp(std::ios_base::end);
         char* time = GetTime();

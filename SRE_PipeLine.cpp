@@ -28,72 +28,69 @@ namespace SRE {
            nullptr == this->m_pObserver)
            return;
 
-        std::thread newThread(&BasicProcessor::Run, this);
-        newThread.detach();
-        //newThread.join();
+        m_thread.StartThread(&BasicProcessor::Run, this);
     }
 
 
     void BasicProcessor::Run()
     {
-        Log_Write("RUN START");
         std::unique_lock<std::mutex> lock(m_mutex);
+        Log_Write("RUN START");
         while(true)
         {
             if(m_Cancel)
             {
-                OnCancel();
+                if(nullptr != m_callBacks)
+                   m_callBacks->OnCancel();
                 break;
             }
 
             if(m_Pause)
             {
-                OnPause();
+                if(nullptr != m_callBacks)
+                   m_callBacks->OnPause();
                 m_cond.wait(lock);
             }
 
-            Log_Write("RUN TRY BLOCK");
+
             try
             {
                 m_pInputQueue->wait_and_pop(m_pCurrentElement);
-
                 Log_Write("IN RUN");
                 //BasicIOElement * output;
-                HandleElememt(m_pCurrentElement);
-                //
+                if(nullptr != m_callBacks)
+                   m_callBacks->HandleElement(m_pCurrentElement);
                 //delete m_pCurrentElement;
-
                 Log_Write("HANDLE END");
                 m_pOutputQueue->push(m_pCurrentElement);
                 Log_Write("RUN END");
             }
             catch(...)
             {
-                OnRunError();
+                if(nullptr != m_callBacks)
+                   m_callBacks->OnRunError();
                 m_pObserver->Notify(SRE_MESSAGE_RUNERROR);
-                break;
+                throw;
             }
-
-
         }
-
         return;
     }
 
     void BasicProcessor::Pause()
     {
-        m_Pause=true;
+        m_Pause = true;
     }
 
     void BasicProcessor::Cancel()
     {
-        m_Cancel=true;
+        m_Cancel = true;
     }
 
     void BasicProcessor::Resume()
     {
-        m_Pause=false;
-        OnResume();
+        m_Pause = false;
+        if(nullptr != m_callBacks)
+           m_callBacks->OnResume();
         m_cond.notify_one();
 
     }

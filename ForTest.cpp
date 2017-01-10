@@ -38,34 +38,36 @@ protected:
 };
 
 
-class testProcessor:public BasicProcessor
+class testProcessor:public BasicProcessor, public CallBackFunctions
 {
 public:
        testProcessor(BasicIOBuffer<BasicIOElement*> * input=nullptr,
                      BasicIOBuffer<BasicIOElement*> * output=nullptr,
                      BasicObserver * observer=nullptr):
-                 BasicProcessor(input, output, observer),
+                 BasicProcessor(input, output, observer, (CallBackFunctions*)this),
                  value(0)
         {}
-       virtual ~testProcessor(){}
+       ~testProcessor(){cout<<"test processor end"<<endl;}
 
 protected:
-       int value;
-protected:
-       void HandleElememt(BasicIOElement * element)
-       {
-           Log_WriteKV("Handle index:", value);
+          void HandleElement(BasicIOElement * element)
+          {
+           Log_WriteKV("Handle index:", value++);
            Element* e=(Element*)element;
            e->val++;
            Log_WriteKV("Element:", e->val);
-           if(value == 9) this->Cancel();
-       }
-       void OnCancel(){cout<<"Cancel!!"<<endl;}
-       void OnPause(){cout<<"Pause!!"<<endl;}
-       void OnResume(){cout<<"Resume!!"<<endl;}
-       void OnRunError(){cout<<"RunError!!"<<endl;}
-};
+           if(value == 9) Cancel();
+          }
+          void OnCancel(){cout<<"Cancel!!"<<endl;}
+          void OnPause(){cout<<"Pause!!"<<endl;}
+          void OnResume(){cout<<"Resume!!"<<endl;}
+          void OnRunError(){cout<<"RunError!!"<<endl;}
 
+
+protected:
+       int value;
+
+};
 
 
 int main()
@@ -91,11 +93,11 @@ int main()
 */
 
     testProcessor processor(&inputBuffer, &outputBuffer, &observer);
-
     processor.Start();
 
 
 
     cout<<"main end"<<endl;
+
 }
 
