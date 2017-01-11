@@ -32,6 +32,7 @@ namespace SRE{
     const int TIME_FORMAT_LENGTH = 22;
 
 
+
     //==============================
     //Error type
     //
@@ -50,51 +51,60 @@ namespace SRE{
     //
     //==============================
     void LOG(const char * filename, const int line, ERROR error);
-
-
     char* GetTime();
 
-    template<typename T>
-    void Log_Write(T x)
+
+    //==============================
+    //class Log Writer
+    //
+    //==============================
+    class LogWriter
     {
-        //std::lock_guard<std::mutex> lock(g_fileMutex);
-        std::ofstream fout(LOG_FILE_NAME, std::ios_base::app);
-        fout.seekp(std::ios_base::end);
-        char* time = GetTime();
-        fout.write(time, TIME_FORMAT_LENGTH);
-        fout<<x<<std::endl;
-        fout.close();
-        delete[] time;
-    }
+    public:
+        template<typename T>
+        static void Write(T x)
+        {
+            std::lock_guard<std::mutex> lock(LogWriter::m_mutex);
+            std::ofstream fout(LOG_FILE_NAME, std::ios_base::app);
+            fout.seekp(std::ios_base::end);
+            char* time = GetTime();
+            fout.write(time, TIME_FORMAT_LENGTH);
+            fout<<x<<std::endl;
+            fout.close();
+            delete[] time;
+        }
 
 
-    template<typename KEY, typename VAL>
-    void Log_WriteKV(KEY k, VAL v)
-    {
-        //std::lock_guard<std::mutex> lock(g_fileMutex);
-        std::ofstream fout(LOG_FILE_NAME, std::ios_base::app);
-        fout.seekp(std::ios_base::end);
-        char* time = GetTime();
-        fout.write(time, TIME_FORMAT_LENGTH);
-        fout<<k<<" = "<<v<<std::endl;
-        fout.close();
-        delete[] time;
-    }
+        template<typename KEY, typename VAL>
+        static void WriteKV(KEY k, VAL v)
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            std::ofstream fout(LOG_FILE_NAME, std::ios_base::app);
+            fout.seekp(std::ios_base::end);
+            char* time = GetTime();
+            fout.write(time, TIME_FORMAT_LENGTH);
+            fout<<k<<" = "<<v<<std::endl;
+            fout.close();
+            delete[] time;
+        }
 
-    template<typename FILE, typename LINE, typename ERROR>
-    void Log_WriteError(FILE f, LINE l, ERROR e)
-    {
-        //std::lock_guard<std::mutex> lock(g_fileMutex);
-        std::ofstream fout(LOG_FILE_NAME, std::ios_base::app);
-        fout.seekp(std::ios_base::end);
-        char* time = GetTime();
-        fout.write(time, TIME_FORMAT_LENGTH);
-        fout<<f<<", line "<<l<<":"<<e<<std::endl;
-        fout.close();
-        delete[] time;
-    }
+        template<typename FILE, typename LINE, typename ERROR>
+        static void Error(FILE f, LINE l, ERROR e)
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            std::ofstream fout(LOG_FILE_NAME, std::ios_base::app);
+            fout.seekp(std::ios_base::end);
+            char* time = GetTime();
+            fout.write(time, TIME_FORMAT_LENGTH);
+            fout<<f<<", line "<<l<<":"<<e<<std::endl;
+            fout.close();
+            delete[] time;
+        }
 
-
+    private:
+        static std::mutex m_mutex;
+    };
+    std::mutex LogWriter::m_mutex;
 
 }
 

@@ -40,19 +40,19 @@ namespace SRE {
         switch (error)
         {
         case SRE_ERROR_FAIL:
-            Log_WriteError(filename, line, "Function executed failed!");
+            LogWriter::Error(filename, line, "Function executed failed!");
             break;
         case SRE_ERROR_INVALIDARG:
-            Log_WriteError(filename, line, "Invalid arguments!");
+            LogWriter::Error(filename, line, "Invalid arguments!");
             break;
         case SRE_ERROR_OUTOFMEMORY:
-            Log_WriteError(filename, line, "Memory is not enough!");
+            LogWriter::Error(filename, line, "Memory is not enough!");
             break;
         case SRE_ERROR_NULLPOINTER:
-            Log_WriteError(filename, line, "There is a NULL pointer!");
+            LogWriter::Error(filename, line, "There is a NULL pointer!");
             break;
         case SRE_ERROR_DIVIDEBYZERO:
-            Log_WriteError(filename, line, "Value divide by a zero!");
+            LogWriter::Error(filename, line, "Value divide by a zero!");
             break;
         default:
             break;

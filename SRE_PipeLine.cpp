@@ -34,8 +34,6 @@ namespace SRE {
 
     void BasicProcessor::Run()
     {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        Log_Write("RUN START");
         while(true)
         {
             if(m_Cancel)
@@ -47,6 +45,7 @@ namespace SRE {
 
             if(m_Pause)
             {
+                std::unique_lock<std::mutex> lock(m_mutex);
                 if(nullptr != m_callBacks)
                    m_callBacks->OnPause();
                 m_cond.wait(lock);
@@ -56,14 +55,14 @@ namespace SRE {
             try
             {
                 m_pInputQueue->wait_and_pop(m_pCurrentElement);
-                Log_Write("IN RUN");
+
                 //BasicIOElement * output;
                 if(nullptr != m_callBacks)
                    m_callBacks->HandleElement(m_pCurrentElement);
                 //delete m_pCurrentElement;
-                Log_Write("HANDLE END");
+
                 m_pOutputQueue->push(m_pCurrentElement);
-                Log_Write("RUN END");
+
             }
             catch(...)
             {

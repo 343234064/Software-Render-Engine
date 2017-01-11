@@ -14,27 +14,11 @@
 #define _SOFTRENDERENGINE_
 
 
-//==============================
-//For debug use
-//
-//Do not define _SRE_DEBUG_ when
-//you finish debugging the entire
-//project
-//==============================
-#ifndef _SRE_DEBUG_
-#define _SRE_DEBUG_
-#endif
-
 
 //==============================
 //The following files using
 //name space SRE
 //==============================
-#ifdef _SRE_DEBUG_
-#include "SRE_DebugLog.h"
-#endif
-
-
 #include "SRE_GlobalsAndUtils.h"
 #include "SRE_Math.h"
 #include "SRE_Resources.h"
