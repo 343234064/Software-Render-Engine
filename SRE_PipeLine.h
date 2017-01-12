@@ -15,7 +15,6 @@
 #ifndef _SRE_PIPELINE_
 #define _SRE_PIPELINE_
 
-
 #include "SRE_Math.h"
 #include "SRE_GlobalsAndUtils.h"
 
@@ -169,6 +168,7 @@ namespace SRE {
         virtual void OnPause()=0;
         virtual void OnResume()=0;
         virtual void OnRunError()=0;
+        virtual void OnStart()=0;
 
     };
 
@@ -329,13 +329,39 @@ namespace SRE {
 
 
 
+
+
+
+
+    //=============================
+	//Class Triangle
+	//
+	//
+	//=============================
+	class Triangle:public BasicIOElement
+	{
+    public:
+        Triangle(VERTEX4 & v1, VERTEX4 & v2, VERTEX4 & v3)
+        {
+            vertices[0] = v1;
+            vertices[1] = v2;
+            vertices[2] = v3;
+        }
+        virtual ~Triangle(){}
+
+    public:
+        VERTEX4 vertices[3];
+	};
+
+
+
     //=============================
 	//Class InputAssembler
 	//
 	//
 	//
 	//=============================
-	class InputAssembler:public BasicProcessor
+	class InputAssembler:public BasicProcessor, public CallBackFunctions
 	{
     public:
         InputAssembler(BasicIOBuffer<BasicIOElement*> * input=nullptr,
@@ -345,7 +371,16 @@ namespace SRE {
         {}
         virtual ~InputAssembler(){}
 
-        void Run();
+
+        void HandleElement(BasicIOElement * element);
+        void OnCancel();
+        void OnPause();
+        void OnResume();
+        void OnRunError();
+        void OnStart();
+
+        InputAssembler(const InputAssembler & other) = delete;
+        InputAssembler & operator=(const InputAssembler & other) = delete;
 
     protected:
         void AssembleTriangleMesh();
@@ -695,9 +730,6 @@ namespace SRE {
 
 
 	};
-
-
-
 
 
 }

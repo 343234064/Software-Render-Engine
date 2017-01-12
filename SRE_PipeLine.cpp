@@ -29,6 +29,8 @@ namespace SRE {
            return;
 
         m_thread.StartThread(&BasicProcessor::Run, this);
+        if(nullptr != m_callBacks)
+            m_callBacks->OnStart();
     }
 
 

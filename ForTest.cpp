@@ -6,6 +6,7 @@
 #include <list>
 #include "SoftRenderEngine.h"
 
+
 using namespace SRE;
 using  std::cout;
 using  std::endl;
@@ -54,16 +55,17 @@ protected:
           {
            if(value == 9) Cancel();
            value++;
-           LogWriter::Write("----Processor:1");
+           g_log.Write("----Processor:1");
            Element* e=(Element*)element;
-           LogWriter::WriteKV("1 Element:", e->val);
-           LogWriter::Write("---------------");
+           g_log.WriteKV("1 Element:", e->val);
+           g_log.Write("---------------");
 
           }
           void OnCancel(){cout<<"Cancel!!"<<endl;}
           void OnPause(){cout<<"Pause!!"<<endl;}
           void OnResume(){cout<<"Resume!!"<<endl;}
           void OnRunError(){cout<<"RunError!!"<<endl;}
+          void OnStart(){}
 
 
 protected:
@@ -88,17 +90,17 @@ protected:
           {
            if(value == 9) Cancel();
            value++;
-           LogWriter::Write("===Processor:2");
+           g_log.Write("===Processor:2");
            Element* e=(Element*)element;
            e->val++;
-           LogWriter::WriteKV("2 Element:", e->val);
-           LogWriter::Write("===========");
+           g_log.WriteKV("2 Element:", e->val);
+           g_log.Write("===========");
           }
           void OnCancel(){cout<<"Cancel!!"<<endl;}
           void OnPause(){cout<<"Pause!!"<<endl;}
           void OnResume(){cout<<"Resume!!"<<endl;}
           void OnRunError(){cout<<"RunError!!"<<endl;}
-
+          void OnStart(){}
 
 protected:
        int value;
@@ -125,6 +127,7 @@ int main()
     testProcessor2 processor2(&outputBuffer, &outputBuffer2, &observer);
     processor.Start();
     processor2.Start();
+
 
 
     cout<<"main end"<<endl;

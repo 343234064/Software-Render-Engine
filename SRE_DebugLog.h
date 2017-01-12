@@ -10,19 +10,17 @@
 //       Mainly for debug use.
 //
 //*****************************************************
-#ifndef SRE_DEBUGLOG_
-#define SRE_DEBUGLOG_
+#ifndef _SRE_DEBUGLOG_
+#define _SRE_DEBUGLOG_
 
 #include <fstream>
 #include <time.h>
-#include <stdio.h>
 #include <mutex>
 
 #define LOG_FILE_NAME  ".\\DebugLog.txt"
 #define _ERRORLOG(error) LOG(__FILE__, __LINE__, error)
 
 namespace SRE{
-
     //==============================
     //Type definitions
     //
@@ -30,7 +28,6 @@ namespace SRE{
     typedef const unsigned int ERROR;
 
     const int TIME_FORMAT_LENGTH = 22;
-
 
 
     //==============================
@@ -61,10 +58,13 @@ namespace SRE{
     class LogWriter
     {
     public:
+        LogWriter(){}
+        ~LogWriter(){}
+
         template<typename T>
-        static void Write(T x)
+        void Write(T x)
         {
-            std::lock_guard<std::mutex> lock(LogWriter::m_mutex);
+            std::lock_guard<std::mutex> lock(m_mutex);
             std::ofstream fout(LOG_FILE_NAME, std::ios_base::app);
             fout.seekp(std::ios_base::end);
             char* time = GetTime();
@@ -72,11 +72,12 @@ namespace SRE{
             fout<<x<<std::endl;
             fout.close();
             delete[] time;
+
         }
 
 
         template<typename KEY, typename VAL>
-        static void WriteKV(KEY k, VAL v)
+        void WriteKV(KEY k, VAL v)
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             std::ofstream fout(LOG_FILE_NAME, std::ios_base::app);
@@ -89,7 +90,7 @@ namespace SRE{
         }
 
         template<typename FILE, typename LINE, typename ERROR>
-        static void Error(FILE f, LINE l, ERROR e)
+        void Error(FILE f, LINE l, ERROR e)
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             std::ofstream fout(LOG_FILE_NAME, std::ios_base::app);
@@ -102,9 +103,11 @@ namespace SRE{
         }
 
     private:
-        static std::mutex m_mutex;
+        std::mutex  m_mutex;
+
+
     };
-    std::mutex LogWriter::m_mutex;
+    static LogWriter g_log;
 
 }
 

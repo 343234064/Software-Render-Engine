@@ -16,7 +16,6 @@
 #define _SRE_BUFFER_
 
 
-
 #include "SRE_GlobalsAndUtils.h"
 
 namespace SRE {

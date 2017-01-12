@@ -17,10 +17,12 @@
 //==============================
 //For debug use
 //==============================
-#ifndef _SRE_DEBUG_
 #define _SRE_DEBUG_
-#endif
 //==============================
+
+#ifdef _SRE_DEBUG_
+#include "SRE_DebugLog.h"
+#endif
 
 #include <string>
 #include <map>
@@ -33,10 +35,6 @@
 #include <stdlib.h>
 #include <condition_variable>
 
-
-#ifdef _SRE_DEBUG_
-#include "SRE_DebugLog.h"
-#endif
 
 
 
@@ -96,6 +94,8 @@ namespace SRE {
     class CallBackFunctions;
     class BasicProcessor;
     class BasePipeLine;
+
+    class Triangle;
 
     class SREPipeLine;
     class InputAssembler;
