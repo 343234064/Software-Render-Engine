@@ -25,7 +25,7 @@ namespace SRE {
 	//
 	//=============================
 	template <typename T>
-	RESULT CreateBuffer(const BufferDescript* pBufferDescript, Buffer<T>** ppOutBuffer);
+	RESULT CreateBuffer(BufferDescript& pBufferDescript, Buffer<T>** ppOutBuffer);
 
 
 
@@ -147,13 +147,14 @@ namespace SRE {
                m_data(nullptr)
         {}
 
+        friend RESULT CreateBuffer<>(BufferDescript & pBufferDescript, Buffer<T>** ppOutBuffer);
     protected:
         std::unique_ptr<T, array_deleter<T>>  m_data;
         BufferDescript   m_Descript;
         std::mutex       m_mutex;
 
 
-        friend RESULT CreateBuffer<>(const BufferDescript* pBufferDescript, Buffer<T>** ppOutBuffer);
+
 
 	};
 
@@ -171,30 +172,14 @@ namespace SRE {
 	//
 	//===========================================
 	template <typename T>
-    RESULT CreateBuffer(const BufferDescript* pBufferDescript, Buffer<T>** ppOutBuffer)
+    RESULT CreateBuffer(BufferDescript & pBufferDescript, Buffer<T>** ppOutBuffer)
     {
-#ifdef _SRE_DEBUG_
-       if(nullptr == pBufferDescript || nullptr == ppOutBuffer)
-       {
-           _ERRORLOG(SRE_ERROR_NULLPOINTER);
-           return RESULT::INVALIDARG;
-       }
-
-       if(pBufferDescript->m_BufferSize <=0)
-       {
-           _ERRORLOG(SRE_ERROR_INVALIDARG);
-           return RESULT::INVALIDARG;
-       }
-
-#endif // _SRE_DEBUG_
 
 
-       Buffer<T> * pbuffer = new Buffer<T>(pBufferDescript->m_BufferSize,
-                                           pBufferDescript->m_BufferType,
-                                           pBufferDescript->m_DataFormat);
+       Buffer<T> * pbuffer = new Buffer<T>(pBufferDescript);
        if(nullptr == pbuffer) return RESULT::OUTMEMORY;
 
-       pbuffer->m_data.reset(new T[pbuffer->m_Descript->m_BufferSize]);
+       pbuffer->m_data.reset(new T[pbuffer->m_Descript.m_BufferSize]);
        if(nullptr == pbuffer->m_data) return RESULT::OUTMEMORY;
 
        *ppOutBuffer = pbuffer;

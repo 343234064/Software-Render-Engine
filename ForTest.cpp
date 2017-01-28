@@ -110,6 +110,7 @@ protected:
 
 int main()
 {
+/*
     BasicIOBuffer<BasicIOElement*> inputBuffer;
     BasicIOBuffer<BasicIOElement*> outputBuffer;
     BasicIOBuffer<BasicIOElement*> outputBuffer2;
@@ -127,7 +128,11 @@ int main()
     testProcessor2 processor2(&outputBuffer, &outputBuffer2, &observer);
     processor.Start();
     processor2.Start();
+*/
 
+   Buffer<int>* buffer;
+   BufferDescript bd(2,1,1);
+   CreateBuffer(bd, &buffer);
 
 
     cout<<"main end"<<endl;
