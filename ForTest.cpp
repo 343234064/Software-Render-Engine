@@ -174,7 +174,13 @@ int main()
     else
         cout<<"FAIL"<<endl;
 
-
+    cout<<ibuffer->GetBufferSize()<<endl;
+    cout<<ibuffer->GetData(1)<<endl;
+    cout<<ibuffer->GetData(0)<<endl;
+    ibuffer->SetData(1,29);
+    cout<<ibuffer->GetData(1)<<endl;
+    ibuffer->Reset(20);
+    cout<<ibuffer->GetData(1)<<endl;
 
     cout<<"main end"<<endl;
 

@@ -160,7 +160,7 @@ namespace SRE {
             }
         }
 
-        friend RESULT CreateBuffer(BufferDescript & descript, T * initData, Buffer<T>** out);
+        friend RESULT CreateBuffer<>(BufferDescript & descript, T * initData, Buffer<T>** out);
     protected:
         std::unique_ptr<T, array_deleter<T>>  m_data;
         BufferDescript                        m_descript;
@@ -198,7 +198,7 @@ namespace SRE {
 	    }
 #endif
 
-        int i=0 , n=this->m_Descript->m_BufferSize;
+        int i=0 , n=this->m_descript.m_BufferSize;
         while(i<n)
           this->m_data.get()[i++] = resetData;
 
@@ -231,13 +231,13 @@ namespace SRE {
         if(nullptr == this->m_data)
         {
             _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return;
+            throw;
 	    }
 
 	    if(pos >= this->m_descript.m_BufferSize || pos < 0)
         {
             _ERRORLOG(SRE_ERROR_INVALIDARG);
-            return;
+            throw;
         }
 #endif
 
