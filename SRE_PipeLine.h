@@ -21,21 +21,6 @@
 
 namespace SRE {
     //=============================
-	//Class Basic I/O Element
-	//
-	//Just a base class,
-	//User defines what need to be input/output
-	//=============================
-	class BasicIOElement
-	{
-    public:
-        BasicIOElement(){}
-        virtual ~BasicIOElement(){}
-
-	};
-
-
-    //=============================
 	//Class Basic I/O Buffer
 	//
 	//
@@ -168,6 +153,7 @@ namespace SRE {
         virtual void OnPause()=0;
         virtual void OnResume()=0;
         virtual void OnRunError()=0;
+        virtual void OnRunFinish()=0;
         virtual void OnStart()=0;
 
     };
@@ -185,7 +171,9 @@ namespace SRE {
         BasicProcessor(BasicIOBuffer<BasicIOElement*> * input=nullptr,
                        BasicIOBuffer<BasicIOElement*> * output=nullptr,
                        BasicObserver     * observer=nullptr,
-                       CallBackFunctions * callbacks=nullptr):
+                       CallBackFunctions * callbacks=nullptr,
+                       bool inputOn=true,
+                       bool outputOn=true):
             BaseTask(),
             m_pInputQueue(input),
             m_pOutputQueue(output),
@@ -194,9 +182,11 @@ namespace SRE {
             m_cond(),
             m_mutex(),
             m_thread(),
+            m_callBacks(callbacks),
             m_Cancel(false),
             m_Pause(false),
-            m_callBacks(callbacks)
+            m_input(inputOn),
+            m_output(outputOn)
         {}
         virtual ~BasicProcessor()
         {}
@@ -223,6 +213,17 @@ namespace SRE {
             std::lock_guard<std::mutex> lock(m_mutex);
             this->m_pObserver = observer;
         }
+        void SetIOMode(bool input, bool output)
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_input = input;
+            m_output = output;
+        }
+
+        void InputElement(BasicIOElement* element)
+        {
+            m_pInputQueue->push(element);
+        }
 
 
         void SetCallBacks(CallBackFunctions * callbacks)
@@ -242,11 +243,15 @@ namespace SRE {
         std::condition_variable             m_cond;
         std::mutex                          m_mutex;
         BasicThread                         m_thread;
+        CallBackFunctions   *               m_callBacks;
 
         bool m_Cancel;
         bool m_Pause;
+        bool m_input;
+        bool m_output;
 
-        CallBackFunctions   *               m_callBacks;
+
+
 	};
 
 
@@ -319,6 +324,7 @@ namespace SRE {
         void     AddProcessor(INT index, BasicProcessor * processor);
         void     RemoveProcessor(INT index);
 
+
     protected:
         //RunTimeData     m_runTimeData;
 
@@ -341,16 +347,21 @@ namespace SRE {
 	class Triangle:public BasicIOElement
 	{
     public:
-        Triangle(VERTEX4 & v1, VERTEX4 & v2, VERTEX4 & v3)
+        Triangle(VERTEX4 & v1, VERTEX4 & v2, VERTEX4 & v3, void * attr=nullptr):
+            attributes(attr)
         {
             vertices[0] = v1;
             vertices[1] = v2;
             vertices[2] = v3;
         }
-        virtual ~Triangle(){}
+        virtual ~Triangle()
+        {
+            delete[] attributes;
+        }
 
     public:
         VERTEX4 vertices[3];
+        void *  attributes;
 	};
 
 
@@ -367,7 +378,9 @@ namespace SRE {
         InputAssembler(BasicIOBuffer<BasicIOElement*> * input=nullptr,
                        BasicIOBuffer<BasicIOElement*> * output=nullptr,
                        BasicObserver * observer=nullptr):
-            BasicProcessor(input, output, observer)
+            BasicProcessor(input, output, observer, this, true, true),
+            m_indexBuffers(),
+            m_primitiveTopology(SRE_PRIMITIVETYPE_TRIANGLELIST)
         {}
         virtual ~InputAssembler(){}
 
@@ -377,13 +390,22 @@ namespace SRE {
         void OnPause();
         void OnResume();
         void OnRunError();
+        void OnRunFinish();
         void OnStart();
 
         InputAssembler(const InputAssembler & other) = delete;
         InputAssembler & operator=(const InputAssembler & other) = delete;
 
+        void SetVertexAndIndexBuffers(Buffer<void*>* vertexbuffer, Buffer<void*>* indexBuffer);
+        void SetPrimitiveTopology(SREVAR primitiveTopo);
+
     protected:
         void AssembleTriangleMesh();
+
+    private:
+        std::queue<Buffer<INT>*>    m_indexBuffers;
+        SREVAR                      m_primitiveTopology;
+
 
 
 	};

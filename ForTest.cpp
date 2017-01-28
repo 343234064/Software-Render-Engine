@@ -108,25 +108,71 @@ protected:
 };
 
 
+struct vertex
+{
+    FLOAT ver[3];
+    FLOAT nor[3];
+    FLOAT a1;
+    FLOAT a2;
+};
+
+
+
 int main()
 {
-    BasicIOBuffer<BasicIOElement*> inputBuffer;
-    BasicIOBuffer<BasicIOElement*> outputBuffer;
-    BasicIOBuffer<BasicIOElement*> outputBuffer2;
-    Observer observer;
-
-    int v=100;
-    for(int i=1;i<10;i++)
+/*
+    vertex vertexes[10];
+    for(int i=0; i<10; i++)
     {
-        Element * e=new Element(i*v);
-        inputBuffer.push((BasicIOElement*)e);
-        cout<<e->val<<endl;
+        vertexes[i].ver[0] = 1.1+i;
+        vertexes[i].ver[1] = 1.2+i;
+        vertexes[i].ver[2] = 1.3+i;
+
+        vertexes[i].nor[0] = 2.1+i;
+        vertexes[i].nor[1] = 2.2+i;
+        vertexes[i].nor[2] = 2.3+i;
+
+        vertexes[i].a1 = 3.1+i;
+        vertexes[i].a2 = 3.2+i;
     }
 
-    testProcessor processor(&inputBuffer, &outputBuffer, &observer);
-    testProcessor2 processor2(&outputBuffer, &outputBuffer2, &observer);
-    processor.Start();
-    processor2.Start();
+    VertexBuffer * vbuffer;
+
+    RESULT re=CreateVertexBuffer(10, sizeof(vertex), SRE_FORMAT_VERTEX_XYZ | SRE_FORMAT_ATTRIBUTE_NORMAL | SRE_FORMAT_ATTRIBUTE_OTHER2,
+                                 (BYTE*)vertexes, &vbuffer);
+
+    if(re == RESULT::SUCC)
+        cout<<"succ"<<endl;
+    else
+        cout<<"fail"<<endl;
+
+    BYTE* attri;
+    vbuffer->GetAttributes(2, &attri);
+
+    FLOAT* a1=(FLOAT*)(attri);
+    FLOAT* a2=(FLOAT*)(attri+sizeof(FLOAT));
+    FLOAT* a3=(FLOAT*)(attri+2*sizeof(FLOAT));
+    cout<<*a1<<" "<<*a2<<" "<<*a3<<endl;
+
+    cout<<vbuffer->GetVertexX(2)<<endl;
+    cout<<vbuffer->GetVertexY(2)<<endl;
+    cout<<vbuffer->GetVertexZ(2)<<endl;
+
+    VERTEX3 ver3=vbuffer->GetVertex3(3);
+    cout<<ver3.x<<" "<<ver3.y<<" "<<ver3.z<<endl;
+*/
+
+    INT index[10];
+    for(int i=0;i<10;i++)
+        index[i]=i;
+
+    Buffer<INT>* ibuffer;
+    BufferDescript bd(10,1,1,SRE_TYPE_INDEXBUFFER,0);
+    RESULT re2=CreateBuffer(bd, index, &ibuffer);
+    if(re2==RESULT::SUCC)
+        cout<<"SUCC"<<endl;
+    else
+        cout<<"FAIL"<<endl;
 
 
 
