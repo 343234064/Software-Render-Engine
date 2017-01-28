@@ -56,14 +56,18 @@ namespace SRE {
 
             try
             {
-                m_pInputQueue->wait_and_pop(m_pCurrentElement);
+                if(m_input)
+                  m_pInputQueue->wait_and_pop(m_pCurrentElement);
+                else
+                  m_pCurrentElement = nullptr;
 
                 //BasicIOElement * output;
                 if(nullptr != m_callBacks)
                    m_callBacks->HandleElement(m_pCurrentElement);
                 //delete m_pCurrentElement;
 
-                m_pOutputQueue->push(m_pCurrentElement);
+                if(m_output)
+                  m_pOutputQueue->push(m_pCurrentElement);
 
             }
             catch(...)
@@ -73,7 +77,12 @@ namespace SRE {
                 m_pObserver->Notify(SRE_MESSAGE_RUNERROR);
                 throw;
             }
+
         }
+
+        if(nullptr != m_callBacks)
+            m_callBacks->OnRunFinish();
+
         return;
     }
 
@@ -103,8 +112,67 @@ namespace SRE {
 	//
 	//
 	//===========================================
+    /*
+    void InputAssembler::SetVertexAndIndexBuffers(Buffer<void*>* vertexBuffer, Buffer<INT*>* indexBuffer)
+    {
+        InputElement((BasicIOElement*)vertexBuffer);
 
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_indexBuffers.push(indexBuffer);
 
+        m_cond.notify_one();
+    }*/
+
+    void InputAssembler::SetPrimitiveTopology(SREVAR primitiveTopo)
+    {
+        m_primitiveTopology = primitiveTopo;
+    }
+
+    void InputAssembler::HandleElement(BasicIOElement * element)
+    {
+        /*
+        if(!currentHandleVbuffer.empty())
+        {
+            getNextTriangle;
+            NewTriangle;
+            FillInData;
+            element = NewTriangle;
+        }
+        else
+        {
+            currentHandleVbuffer = wait to get a vbuffer;
+        }*/
+    }
+
+    void InputAssembler::OnCancel()
+    {
+
+    }
+
+    void InputAssembler::OnPause()
+    {
+
+    }
+
+    void InputAssembler::OnResume()
+    {
+
+    }
+
+    void InputAssembler::OnRunError()
+    {
+
+    }
+
+    void InputAssembler::OnRunFinish()
+    {
+
+    }
+
+    void InputAssembler::OnStart()
+    {
+
+    }
 
 
     //===========================================

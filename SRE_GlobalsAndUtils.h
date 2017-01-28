@@ -24,7 +24,7 @@
 #include "SRE_DebugLog.h"
 #endif
 
-#include <string>
+#include <string.h>
 #include <map>
 #include <list>
 #include <queue>
@@ -77,6 +77,8 @@ namespace SRE {
     template <typename T>
 	class Buffer;
 
+    class VertexBuffer;
+
     class BaseMesh;
     class TriangleMesh;
 	class BaseMeshManager;
@@ -85,10 +87,10 @@ namespace SRE {
     class Color3;
     class Color4;
 
-
-    class BasicIOElement;
     template<typename T>
     class BasicIOBuffer;
+
+    class BasicIOElement;
     class BasicObserver;
     class BasicThread;
     class CallBackFunctions;
@@ -199,14 +201,13 @@ namespace SRE {
     a non-transformed vertex.
       It must be a 3 floating point data
     */
-    const SREVAR SRE_FORMAT_VERTEX_XYZ=0x00000003;
+    const SREVAR SRE_FORMAT_VERTEX_XYZ=0x00000002;
     /*
       Each vertex has x ,y ,z and w member, this format will be treated as
     a transformed vertex.
       It must be a 4 floating point data
     */
-    const SREVAR SRE_FORMAT_VERTEX_XYZW=0x00000007;
-
+    const SREVAR SRE_FORMAT_VERTEX_XYZW=0x00000004;
     /*
       Vertex normal, 3 floating point data
     */
@@ -230,10 +231,15 @@ namespace SRE {
     /*
       Vertex texture coordinate set , in UV order
     */
-    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORD1=0x00000100;
-    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORD2=0x00000200;
-    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORD3=0x00000400;
-    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORD4=0x00000800;
+    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORDUV=0x00000100;
+    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORDUVW=0x00000200;
+    /* 1111 1111 1111 1111 1111 1111 1111 1111
+      Some other vertex data
+    */
+    const SREVAR SRE_FORMAT_ATTRIBUTE_OTHER1=0x00000400;
+    const SREVAR SRE_FORMAT_ATTRIBUTE_OTHER2=0x00000800;
+    const SREVAR SRE_FORMAT_ATTRIBUTE_OTHER3=0x00001000;
+    const SREVAR SRE_FORMAT_ATTRIBUTE_OTHER4=0x00002000;
     //===========================================================
     //===========================================================
 
@@ -262,10 +268,12 @@ namespace SRE {
     const SREVAR SRE_MATRIXTYPE_VIEWPROJECT=0x10000074;
     const SREVAR SRE_MATRIXTYPE_WORLDVIEWPROJECT=0x10000075;
 
-    const SREVAR SRE_USAGE_NEXTINPUT=0x10000090;
-    const SREVAR SRE_USAGE_VSHADER=0x10000091;
-    const SREVAR SRE_USAGE_PSHADER=0x10000092;
-    const SREVAR SRE_USAGE_RENDERBUFFER=0x10000093;
+    const SREVAR SRE_TYPE_VERTEXBUFFER=0x10000090;
+    const SREVAR SRE_TYPE_INDEXBUFFER=0x10000091;
+    const SREVAR SRE_TYPE_RENDERBUFFER=0x10000092;
+    const SREVAR SRE_TYPE_VSHADER=0x10000093;
+    const SREVAR SRE_TYPE_PSHADER=0x10000094;
+
 
     const SREVAR SRE_MESSAGE_RUNERROR=0x10000200;
 
@@ -364,6 +372,19 @@ namespace SRE {
 
 
 
+    //=============================
+	//Class Basic I/O Element
+	//
+	//Just a base class,
+	//User defines what need to be input/output
+	//=============================
+	class BasicIOElement
+	{
+    public:
+        BasicIOElement(){}
+        virtual ~BasicIOElement(){}
+
+	};
 
 }
 
