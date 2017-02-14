@@ -11,8 +11,7 @@
 //
 //
 //*****************************************************
-#include <math.h>
-#include <string.h>
+
 #include "SRE_Math.h"
 
 
@@ -657,8 +656,43 @@ namespace SRE {
 	}
 
 
+	//=============================
+	//Normalize
+	//
+	//vector4
+	//=============================
+    VEC2 Lerp(const VEC2 & starting, const VEC2 & ending, FLOAT factor)
+    {
+        return VEC2(starting.x+factor*(ending.x-starting.x),
+                    starting.y+factor*(ending.y-starting.y));
+    }
 
 
+	//=============================
+	//Normalize
+	//
+	//vector4
+	//=============================
+    VEC3 Lerp(const VEC3 & starting, const VEC3 & ending, FLOAT factor)
+    {
+        return VEC3(starting.x+factor*(ending.x-starting.x),
+                    starting.y+factor*(ending.y-starting.y),
+                    starting.z+factor*(ending.z-starting.z));
+    }
+
+
+    //=============================
+	//Normalize
+	//
+	//vector4
+	//=============================
+    VEC4 Lerp(const VEC4 & starting, const VEC4 & ending, FLOAT factor)
+    {
+        return VEC4(starting.x+factor*(ending.x-starting.x),
+                    starting.y+factor*(ending.y-starting.y),
+                    starting.z+factor*(ending.z-starting.z),
+                    starting.w+factor*(ending.w-starting.w));
+    }
 
 
 	//=============================

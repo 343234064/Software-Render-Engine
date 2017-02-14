@@ -25,6 +25,7 @@ namespace SRE {
     FLOAT Lerp(const FLOAT starting, const FLOAT ending, const FLOAT factor);
 
 
+
 	//=============================
 	//Vector functions
 	//
@@ -42,7 +43,9 @@ namespace SRE {
 	PVEC2   Normalize(PVEC2 vec);
 	PVEC3   Normalize(PVEC3 vec);
 	PVEC4   Normalize(PVEC4 vec);
-
+    VEC2    Lerp(const VEC2 & starting, const VEC2 & ending, FLOAT factor);
+    VEC3    Lerp(const VEC3 & starting, const VEC3 & ending, FLOAT factor);
+    VEC4    Lerp(const VEC4 & starting, const VEC4 & ending, FLOAT factor);
 
 
 	//=============================
@@ -244,6 +247,7 @@ namespace SRE {
 			    const FLOAT & _w = 0.0f) :Vector3(_x, _y, _z), w(_w) {}
 
 		Vector4(const VEC3 & vector) :Vector3(vector), w(0.0) {}
+        Vector4(const VEC2 & vector) :Vector3(vector), w(0.0) {}
 
 		Vector4(const VEC4 & vector)
 		    :Vector3(vector.x, vector.y, vector.z),

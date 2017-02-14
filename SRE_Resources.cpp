@@ -21,119 +21,149 @@ namespace SRE {
 	//
 	//
 	//=============================
-    void VertexBuffer::GetAttributes(INT pos, BYTE** output)
-    {
+	BYTE* VertexBuffer::GetVertex(INT index)
+	{
 #ifdef _SRE_DEBUG_
-	    if(pos >= m_vertexNum|| pos < 0)
+	    if(index >= m_vertexNum|| index < 0)
         {
             _ERRORLOG(SRE_ERROR_INVALIDARG);
-            return;
+            return nullptr;
+        }
+#endif
+        BYTE* output = new BYTE[m_vertexSize];
+        if(nullptr == output) return nullptr;
+        memcpy(output, m_vertexes + index*m_vertexSize, m_vertexSize);
+
+        return output;
+	}
+
+    BYTE* VertexBuffer::GetAttributes(INT index)
+    {
+#ifdef _SRE_DEBUG_
+	    if(index >= m_vertexNum|| index < 0)
+        {
+            _ERRORLOG(SRE_ERROR_INVALIDARG);
+            return nullptr;
         }
 #endif
 
-        *output = new BYTE[m_attriSize];
-        if(nullptr == *output) return;
-        memcpy(*output, m_vertexes + pos*m_vertexSize + m_vertexSize - m_attriSize, m_attriSize);
-
+        BYTE* output = new BYTE[m_attriSize];
+        if(nullptr == output) return nullptr;
+        memcpy(output, m_vertexes + index*m_vertexSize + m_vertexSize - m_attriSize, m_attriSize);
+        return output;
     }
 
-    FLOAT VertexBuffer::GetVertexX(INT pos)
+    FLOAT VertexBuffer::GetVertexX(INT index)
     {
 #ifdef _SRE_DEBUG_
-	    if(pos >= m_vertexNum || pos < 0)
-        {
-            _ERRORLOG(SRE_ERROR_INVALIDARG);
-            return 0.0f;
-        }
-#endif
-
-        BYTE* val = m_vertexes + pos*m_vertexSize;
-        return *((FLOAT*)val);
-    }
-
-    FLOAT VertexBuffer::GetVertexY(INT pos)
-    {
-#ifdef _SRE_DEBUG_
-	    if(pos >= m_vertexNum || pos < 0)
-        {
-            _ERRORLOG(SRE_ERROR_INVALIDARG);
-            return 0.0f;
-        }
-#endif
-
-        BYTE* val = m_vertexes + pos*m_vertexSize + sizeof(FLOAT);
-        return *((FLOAT*)val);
-    }
-
-    FLOAT VertexBuffer::GetVertexZ(INT pos)
-    {
-#ifdef _SRE_DEBUG_
-	    if(pos >= m_vertexNum || pos < 0)
+	    if(index >= m_vertexNum || index < 0)
         {
             _ERRORLOG(SRE_ERROR_INVALIDARG);
             return 0.0f;
         }
 #endif
 
-        BYTE* val = m_vertexes + pos*m_vertexSize + 2*sizeof(FLOAT);
+        BYTE* val = m_vertexes + index*m_vertexSize;
         return *((FLOAT*)val);
     }
 
-    FLOAT VertexBuffer::GetVertexW(INT pos)
+    FLOAT VertexBuffer::GetVertexY(INT index)
     {
 #ifdef _SRE_DEBUG_
-	    if(pos >= m_vertexNum || pos < 0)
+	    if(index >= m_vertexNum || index < 0)
         {
             _ERRORLOG(SRE_ERROR_INVALIDARG);
             return 0.0f;
         }
 #endif
-        BYTE* val = m_vertexes + pos*m_vertexSize + 3*sizeof(FLOAT);
+
+        BYTE* val = m_vertexes + index*m_vertexSize + sizeof(FLOAT);
         return *((FLOAT*)val);
     }
 
-    VERTEX2 VertexBuffer::GetVertex2(INT pos)
+    FLOAT VertexBuffer::GetVertexZ(INT index)
     {
 #ifdef _SRE_DEBUG_
-	    if(pos >= m_vertexNum || pos < 0)
+	    if(index >= m_vertexNum || index < 0)
+        {
+            _ERRORLOG(SRE_ERROR_INVALIDARG);
+            return 0.0f;
+        }
+#endif
+
+        BYTE* val = m_vertexes + index*m_vertexSize + 2*sizeof(FLOAT);
+        return *((FLOAT*)val);
+    }
+
+    FLOAT VertexBuffer::GetVertexW(INT index)
+    {
+#ifdef _SRE_DEBUG_
+	    if(index >= m_vertexNum || index < 0)
+        {
+            _ERRORLOG(SRE_ERROR_INVALIDARG);
+            return 0.0f;
+        }
+#endif
+        BYTE* val = m_vertexes + index*m_vertexSize + 3*sizeof(FLOAT);
+        return *((FLOAT*)val);
+    }
+
+    VERTEX2 VertexBuffer::GetVertex2(INT index)
+    {
+#ifdef _SRE_DEBUG_
+	    if(index >= m_vertexNum || index < 0)
         {
             _ERRORLOG(SRE_ERROR_INVALIDARG);
             return VERTEX2();
         }
 #endif
 
-        BYTE* v = m_vertexes + pos*m_vertexSize;
+        BYTE* v = m_vertexes + index*m_vertexSize;
         return *(VERTEX2*)v;
     }
 
-    VERTEX3 VertexBuffer::GetVertex3(INT pos)
+    VERTEX3 VertexBuffer::GetVertex3(INT index)
     {
 #ifdef _SRE_DEBUG_
-	    if(pos >= m_vertexNum || pos < 0)
+	    if(index >= m_vertexNum || index < 0)
         {
             _ERRORLOG(SRE_ERROR_INVALIDARG);
             return VERTEX3();
         }
 #endif
 
-        BYTE* v = m_vertexes + pos*m_vertexSize;
+        BYTE* v = m_vertexes + index*m_vertexSize;
         return *(VERTEX3*)v;
     }
 
-    VERTEX4 VertexBuffer::GetVertex4(INT pos)
+    VERTEX4 VertexBuffer::GetVertex4(INT index)
     {
 #ifdef _SRE_DEBUG_
-	    if(pos >= m_vertexNum || pos < 0)
+	    if(index >= m_vertexNum || index < 0)
         {
             _ERRORLOG(SRE_ERROR_INVALIDARG);
             return VERTEX4();
         }
 #endif
 
-        BYTE* v = m_vertexes + pos*m_vertexSize;
+        BYTE* v = m_vertexes + index*m_vertexSize;
         return *(VERTEX4*)v;
     }
 
+    INT VertexBuffer::GetVertexNumber()
+    {
+        return m_vertexNum;
+    }
+
+    INT VertexBuffer::GetVertexDimension()
+    {
+        return m_vertexDimen;
+    }
+
+    SREVAR VertexBuffer::GetVertexFormat()
+    {
+        return m_vertexFormat;
+    }
 
 
 
