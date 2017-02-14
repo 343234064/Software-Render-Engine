@@ -122,7 +122,6 @@ namespace SRE {
 	class Buffer: public BaseContainer, public BasicIOElement
 	{
     public:
-        Buffer(const Buffer & other);
         virtual ~Buffer()
         {
            m_data.reset(nullptr);
@@ -145,12 +144,13 @@ namespace SRE {
         }
 
 
+        Buffer(const Buffer & other) = delete;
         Buffer & operator=(const Buffer & other) = delete;
 
     protected:
         Buffer(BufferDescript & bufferDescript, T * initData):
-               m_descript(bufferDescript),
-               m_data(nullptr)
+               m_data(nullptr),
+               m_descript(bufferDescript)
         {
             m_data.reset(new T[m_descript.m_BufferSize]);
             if(nullptr != initData)
@@ -176,6 +176,7 @@ namespace SRE {
 	//
 	//
 	//=============================
+	/*
 	template <typename T>
 	Buffer<T>::Buffer(const Buffer & other):
 	    BaseContainer(),
@@ -186,7 +187,7 @@ namespace SRE {
         T * source = other.m_data.get();
         T * dest = this->m_data.get();
 	    std::copy(source, source + this->m_descript.m_BufferSize, dest);
-	}
+	}*/
 
 	template <typename T>
 	void Buffer<T>::Reset(const T & resetData)
@@ -262,18 +263,26 @@ namespace SRE {
         {
             if(nullptr != m_vertexes)
                 delete[] m_vertexes;
+            if(nullptr != m_marks)
+                delete[] m_marks;
         }
 
+        BYTE*   GetVertex(INT index);
+        BYTE*   GetAttributes(INT index);
+        FLOAT   GetVertexX(INT index);
+        FLOAT   GetVertexY(INT index);
+        FLOAT   GetVertexZ(INT index);
+        FLOAT   GetVertexW(INT index);
+        VERTEX2 GetVertex2(INT index);
+        VERTEX3 GetVertex3(INT index);
+        VERTEX4 GetVertex4(INT index);
+        INT     GetVertexNumber();
+        INT     GetVertexDimension();
+        SREVAR  GetVertexFormat();
 
-        void    GetAttributes(INT pos, BYTE** output);
-        FLOAT   GetVertexX(INT pos);
-        FLOAT   GetVertexY(INT pos);
-        FLOAT   GetVertexZ(INT pos);
-        FLOAT   GetVertexW(INT pos);
-        VERTEX2 GetVertex2(INT pos);
-        VERTEX3 GetVertex3(INT pos);
-        VERTEX4 GetVertex4(INT pos);
-
+        void    SetMark(INT index, bool m){m_marks[index]=m;}
+        bool    GetMark(INT index){return m_marks[index];}
+        void    ResetMark(bool val){memset(m_marks, val, m_vertexNum*sizeof(bool));}
 
         VertexBuffer & operator=(const VertexBuffer & other) = delete;
         VertexBuffer(const VertexBuffer & other) = delete;
@@ -294,6 +303,8 @@ namespace SRE {
                 memcpy(m_vertexes, vertexes, length);
             }
 
+            m_marks = new bool[vertexNumber];
+            memset(m_marks, 0, vertexNumber*sizeof(bool));
 
             if((m_vertexFormat & SRE_FORMAT_VERTEX_XY)==SRE_FORMAT_VERTEX_XY)
                m_vertexDimen = 2;
@@ -309,6 +320,7 @@ namespace SRE {
         friend RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer** out);
     protected:
         BYTE *         m_vertexes;
+        bool *         m_marks;
         INT            m_vertexNum;
         INT            m_attriSize;
         INT            m_vertexDimen;

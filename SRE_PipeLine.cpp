@@ -28,9 +28,10 @@ namespace SRE {
            nullptr == this->m_pObserver)
            return;
 
-        m_thread.StartThread(&BasicProcessor::Run, this);
         if(nullptr != m_callBacks)
             m_callBacks->OnStart();
+        m_thread.StartThread(&BasicProcessor::Run, this);
+
     }
 
 
@@ -56,18 +57,9 @@ namespace SRE {
 
             try
             {
-                if(m_input)
-                  m_pInputQueue->wait_and_pop(m_pCurrentElement);
-                else
-                  m_pCurrentElement = nullptr;
 
-                //BasicIOElement * output;
                 if(nullptr != m_callBacks)
-                   m_callBacks->HandleElement(m_pCurrentElement);
-                //delete m_pCurrentElement;
-
-                if(m_output)
-                  m_pOutputQueue->push(m_pCurrentElement);
+                    m_callBacks->HandleElement();
 
             }
             catch(...)
@@ -105,6 +97,20 @@ namespace SRE {
 
     }
 
+    BasicIOElement* BasicProcessor::GetInput()
+    {
+        BasicIOElement * element;
+        m_pInputQueue->wait_and_pop(element);
+
+        return element;
+    }
+
+    void BasicProcessor::Output(BasicIOElement* out)
+    {
+        m_pOutputQueue->push(out);
+    }
+
+
 
 
     //===========================================
@@ -112,180 +118,519 @@ namespace SRE {
 	//
 	//
 	//===========================================
-    /*
-    void InputAssembler::SetVertexAndIndexBuffers(Buffer<void*>* vertexBuffer, Buffer<INT*>* indexBuffer)
+    void InputAssembler::SetVertexAndIndexBuffers(VertexBuffer* vertexBuffer, Buffer<INT>* indexBuffer)
     {
-        InputElement((BasicIOElement*)vertexBuffer);
-
         std::lock_guard<std::mutex> lock(m_mutex);
+        m_vertexBuffers.push(vertexBuffer);
         m_indexBuffers.push(indexBuffer);
 
         m_cond.notify_one();
-    }*/
-
-    void InputAssembler::SetPrimitiveTopology(SREVAR primitiveTopo)
-    {
-        m_primitiveTopology = primitiveTopo;
     }
 
-    void InputAssembler::HandleElement(BasicIOElement * element)
+    void InputAssembler::SetConstantBuffer(const ConstantBuffer * cbuffer)
     {
-        /*
-        if(!currentHandleVbuffer.empty())
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_pConstantBuffer = cbuffer;
+    }
+
+    void InputAssembler::HandleElement()
+    {
+        if(nullptr != m_pCurrentHandleVbuffer)
         {
-            getNextTriangle;
-            NewTriangle;
-            FillInData;
-            element = NewTriangle;
+            INT actualIndex1 = 0, actualIndex2 = 0, actualIndex3 = 0;
+            INT prevIndex = m_currentIndex;
+            if(m_pConstantBuffer->primitiveTopology == SRE_PRIMITIVETYPE_TRIANGLELIST)
+            {
+                actualIndex1 = m_currentIndex;
+                actualIndex2 = m_currentIndex + 1;
+                actualIndex3 = m_currentIndex + 2;
+                m_currentIndex = m_currentIndex + 3;
+            }
+            else if(m_pConstantBuffer->primitiveTopology == SRE_PRIMITIVETYPE_TRIANGLEFAN)
+            {
+                m_currentIndex = m_currentIndex + 1;
+                actualIndex1 = m_currentIndex2;
+                actualIndex2 = m_currentIndex;
+                actualIndex3 = m_currentIndex + 1;
+            }
+            else //if(m_primitiveTopology == SRE_PRIMITIVETYPE_TriangleSTRIP)
+            {
+                actualIndex1 = m_currentIndex;
+                actualIndex2 = m_currentIndex + 1;
+                actualIndex3 = m_currentIndex + 2;
+                m_currentIndex = m_currentIndex + 1;
+            }
+
+            INT vertexNum = m_pCurrentHandleVbuffer->GetVertexNumber();
+            if(nullptr != m_pCurrentHandleIbuffer)
+            {
+                if(actualIndex3 >= m_pCurrentHandleIbuffer->GetBufferSize())
+                {
+                    m_pCurrentHandleVbuffer = nullptr;
+                    Output(nullptr);
+                    return;
+                }
+                actualIndex1 = m_pCurrentHandleIbuffer->GetData(actualIndex1);
+                actualIndex2 = m_pCurrentHandleIbuffer->GetData(actualIndex2);
+                actualIndex3 = m_pCurrentHandleIbuffer->GetData(actualIndex3);
+
+                if(actualIndex1 >= vertexNum || actualIndex1 < 0) {m_currentIndex = prevIndex+1;m_currentIndex2 = m_currentIndex2+1;return;}
+                if(actualIndex2 >= vertexNum || actualIndex2 < 0) {m_currentIndex = prevIndex+1;return;}
+                if(actualIndex3 >= vertexNum || actualIndex3 < 0) {m_currentIndex = prevIndex+1;return;}
+            }
+            else if(actualIndex3 >= m_pCurrentHandleVbuffer->GetVertexNumber())
+            {
+                m_pCurrentHandleVbuffer = nullptr;
+                Output(nullptr);
+                return;
+            }
+
+            if(!(m_pCurrentHandleVbuffer->GetMark(actualIndex1)))
+            {
+                BYTE* vertex1=m_pCurrentHandleVbuffer->GetVertex(actualIndex1);
+                if(nullptr == vertex1)
+                {
+#ifdef _SRE_DEBUG_
+                   _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
+#endif // _SRE_DEBUG_
+                   return;
+                }
+                Output((BasicIOElement*)vertex1);
+                m_pCurrentHandleVbuffer->SetMark(actualIndex1, true);
+            }
+            if(!(m_pCurrentHandleVbuffer->GetMark(actualIndex2)))
+            {
+                BYTE* vertex2=m_pCurrentHandleVbuffer->GetVertex(actualIndex2);
+                if(nullptr == vertex2)
+                {
+#ifdef _SRE_DEBUG_
+                   _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
+#endif // _SRE_DEBUG_
+                   return;
+                }
+                Output((BasicIOElement*)vertex2);
+                m_pCurrentHandleVbuffer->SetMark(actualIndex2, true);
+            }
+            if(!(m_pCurrentHandleVbuffer->GetMark(actualIndex3)))
+            {
+                BYTE* vertex3=m_pCurrentHandleVbuffer->GetVertex(actualIndex3);
+                if(nullptr == vertex3)
+                {
+#ifdef _SRE_DEBUG_
+                   _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
+#endif // _SRE_DEBUG_
+                   return;
+                }
+                Output((BasicIOElement*)vertex3);
+                m_pCurrentHandleVbuffer->SetMark(actualIndex3, true);
+            }
+
         }
         else
         {
-            currentHandleVbuffer = wait to get a vbuffer;
-        }*/
+            m_vertexBuffers.wait_and_pop(m_pCurrentHandleVbuffer);
+            m_pCurrentHandleIbuffer = m_indexBuffers.front();
+            m_indexBuffers.pop();
+            m_currentIndex = 0;
+        }
     }
 
     void InputAssembler::OnCancel()
-    {
-
-    }
+    {}
 
     void InputAssembler::OnPause()
-    {
-
-    }
+    {}
 
     void InputAssembler::OnResume()
-    {
-
-    }
+    {}
 
     void InputAssembler::OnRunError()
-    {
-
-    }
+    {}
 
     void InputAssembler::OnRunFinish()
-    {
-
-    }
+    {}
 
     void InputAssembler::OnStart()
     {
-
+        m_pCurrentHandleVbuffer->ResetMark(false);
     }
+
 
 
     //===========================================
-	//Class RunTimeData functions
+	//Class VertexProcessor functions
 	//
 	//
 	//===========================================
-	void RunTimeData::ReleaseMeshList()
-	{
-        std::map<INT, BaseMesh* >::iterator it;
-        BaseMesh * mesh;
-        for(it=m_MeshList.begin(); it!=m_MeshList.end(); it++)
+    void VertexProcesser::SetVertexShader(VertexShader * vshader)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_pVertexShader = vshader;
+    }
+
+    void VertexProcesser::SetVariableBuffer(VariableBuffer* varbuffer)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_pVariableBuffer = varbuffer;
+    }
+
+    void VertexProcesser::HandleElement()
+    {
+        BYTE* vertex = (BYTE*)(GetInput());
+        if(nullptr == vertex)
         {
-            mesh = it->second;
-            delete mesh;
-        }
-        m_MeshList.clear();
-
-	}
-
-
-	RunTimeData::RunTimeData(const RunTimeData & other):
-	    BaseContainer(),
-	    m_VarBuffer(other.m_VarBuffer),
-	    m_MeshList(other.m_MeshList)
-	{}
-
-
-	RunTimeData & RunTimeData::operator=(const RunTimeData & other)
-	{
-	    if(this != &other)
-        {
-            this->m_VarBuffer = other.m_VarBuffer;
-            //ReleaseMeshList();
-            this->m_MeshList = other.m_MeshList;
-        }
-
-        return *this;
-	}
-
-
-	void RunTimeData::AddMesh(BaseMesh * mesh, INT key)
-	{
-	    if(nullptr != mesh)
-        {
-            this->m_MeshList.insert(std::map<INT, BaseMesh*>::value_type(key, mesh));
-        }
-        else
-        {
-#ifdef _SRE_DEBUG_
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-#endif
+            Output(nullptr);
             return;
         }
-	}
-
-
-	void RunTimeData::RemoveMesh(INT key)
-	{
-        this->m_MeshList.erase(key);
-	}
-
-
-	BaseMesh * RunTimeData::GetMesh(INT key)
-	{
-	    if(this->m_MeshList.count(key)<1)
-            return nullptr;
         else
-            return (BaseMesh*)(this->m_MeshList.find(key)->second);
-	}
+        {
+            VSOutput * out = m_pVertexShader->Run(vertex);
+            if(nullptr != out)
+                Output((BasicIOElement*)out);
+        }
+        delete vertex;
+    }
+
+    void VertexProcesser::OnCancel()
+    {}
+
+    void VertexProcesser::OnPause()
+    {}
+
+    void VertexProcesser::OnResume()
+    {}
+
+    void VertexProcesser::OnRunError()
+    {}
+
+    void VertexProcesser::OnRunFinish()
+    {}
+
+    void VertexProcesser::OnStart()
+    {
+        if(nullptr == m_pVertexShader) this->Cancel();
+        if(nullptr == m_pVariableBuffer) this->Cancel();
+    }
 
 
-	INT RunTimeData::GetMeshCount()
+
+
+
+    //===========================================
+	//Class PrimitiveAssembler functions
+	//
+	//
+	//===========================================
+    void PrimitiveAssembler::SetConstantBuffer(const ConstantBuffer * cbuffer)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_pConstantBuffer = cbuffer;
+    }
+
+	void PrimitiveAssembler::TriangleList()
 	{
-	    return this->m_MeshList.size();
+	    VSOutput* v1=(VSOutput*)GetInput();
+	    VSOutput* v2=(VSOutput*)GetInput();
+	    VSOutput* v3=(VSOutput*)GetInput();
+
+        if(nullptr == v1 || nullptr == v2 || nullptr == v3)
+            return;
+
+        _Triangle_* out = new _Triangle_(*v1, *v2, *v3);
+        delete v1;
+        delete v2;
+        delete v3;
+
+        if(nullptr == out)
+        {
+#ifdef _SRE_DEBUG_
+                   _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
+#endif // _SRE_DEBUG_
+                   return;
+        }
+        Output((BasicIOElement*)out);
 	}
 
-
-    void RunTimeData::SetRenderState(SREVAR renderState, SREVAR value)
-    {
-        switch (renderState)
+	void PrimitiveAssembler::TriangleFan()
+	{
+	    VSOutput* v3 = nullptr;
+	    if(nullptr == m_pCachedVertex1)
         {
-        case SRE_RENDERSTATE_CULLMODE:
-            this->m_VarBuffer.renderStates.CullMode=value;break;
-        case SRE_RENDERSTATE_FILLMODE:
-            this->m_VarBuffer.renderStates.FillMode=value;break;
-        case SRE_RENDERSTATE_ZENABLE:
-            this->m_VarBuffer.renderStates.ZEnable=value;break;
-        default:break;
+            m_pCachedVertex1 = (BYTE*)(GetInput());
+            m_pCachedVertex2 = (BYTE*)(GetInput());
         }
-    }
-
-
-    void RunTimeData::SetMatrix(SREVAR matrixType, const MAT44 & matrix)
-    {
-        switch (matrixType)
+        else
         {
-        case SRE_MATRIXTYPE_WORLD:
-            this->m_VarBuffer.World=matrix;break;
-        case SRE_MATRIXTYPE_VIEW:
-            this->m_VarBuffer.View=matrix;break;
-        case SRE_MATRIXTYPE_PROJECT:
-            this->m_VarBuffer.Project=matrix;break;
-        case SRE_MATRIXTYPE_WORLDVIEW:
-            this->m_VarBuffer.WorldView=matrix;break;
-        case SRE_MATRIXTYPE_VIEWPROJECT:
-            this->m_VarBuffer.ViewProj=matrix;break;
-        case SRE_MATRIXTYPE_WORLDVIEWPROJECT:
-            this->m_VarBuffer.WorldViewProj=matrix;break;
-        default:break;
+            v3 = (VSOutput*)(GetInput());
+            if(nullptr == v3)
+            {
+                delete m_pCachedVertex1;
+                delete m_pCachedVertex2;
+                m_pCachedVertex1 = nullptr;
+                return;
+            }
         }
 
+        _Triangle_* out = new _Triangle_(*((VSOutput*)m_pCachedVertex1), *((VSOutput*)m_pCachedVertex2), *v3);
+        if(nullptr == out)
+        {
+#ifdef _SRE_DEBUG_
+                   _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
+#endif // _SRE_DEBUG_
+                   return;
+        }
+        Output((BasicIOElement*)out);
+
+        delete m_pCachedVertex2;
+        m_pCachedVertex2 = (BYTE*)v3;
+	}
+
+	void PrimitiveAssembler::TriangleStrip()
+	{
+	    VSOutput* v3 = nullptr;
+	    if(nullptr == m_pCachedVertex1)
+        {
+            m_pCachedVertex1 = (BYTE*)GetInput();
+            m_pCachedVertex2 = (BYTE*)GetInput();
+        }
+        else
+        {
+            v3 = (VSOutput*)GetInput();
+            if(nullptr == v3)
+            {
+                delete m_pCachedVertex1;
+                delete m_pCachedVertex2;
+                m_pCachedVertex1 = nullptr;
+                return;
+            }
+        }
+
+        _Triangle_* out = new _Triangle_(*((VSOutput*)m_pCachedVertex1), *((VSOutput*)m_pCachedVertex2), *v3);
+        if(nullptr == out)
+        {
+#ifdef _SRE_DEBUG_
+                   _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
+#endif // _SRE_DEBUG_
+                   return;
+        }
+        Output((BasicIOElement*)out);
+
+        delete m_pCachedVertex1;
+        m_pCachedVertex1 = m_pCachedVertex2;
+        m_pCachedVertex2 = (BYTE*)v3;
+	}
+
+    void PrimitiveAssembler::HandleElement()
+    {
+        if(m_pConstantBuffer->primitiveTopology == SRE_PRIMITIVETYPE_TRIANGLELIST)
+        {
+            TriangleList();
+        }
+        else if(m_pConstantBuffer->primitiveTopology == SRE_PRIMITIVETYPE_TRIANGLEFAN)
+        {
+            TriangleFan();
+        }
+        else if(m_pConstantBuffer->primitiveTopology == SRE_PRIMITIVETYPE_TRIANGLESTRIP)
+        {
+            TriangleStrip();
+        }
+
     }
+
+    void PrimitiveAssembler::OnCancel()
+    {}
+
+    void PrimitiveAssembler::OnPause()
+    {}
+
+    void PrimitiveAssembler::OnResume()
+    {}
+
+    void PrimitiveAssembler::OnRunError()
+    {}
+
+    void PrimitiveAssembler::OnRunFinish()
+    {}
+
+    void PrimitiveAssembler::OnStart()
+    {}
+
+
+
+    //===========================================
+	//Class VertexPostProcesser functions
+	//
+    //
+    //I use Sutherland and Hodgman Clipping Algorithm
+	//===========================================
+	bool VertexPostProcesser::TriangleClipping()
+	{
+	    if(m_pCurrentTriangle->v[0].vertex.w <= 0) return false;
+	    if(m_pCurrentTriangle->v[1].vertex.w <= 0) return false;
+	    if(m_pCurrentTriangle->v[2].vertex.w <= 0) return false;
+
+	    m_vlist[0].push_back(_vertex_(m_pCurrentTriangle->v[0].vertex, -1, 0, 0));
+	    m_vlist[0].push_back(_vertex_(m_pCurrentTriangle->v[1].vertex, -1, 1, 1));
+	    m_vlist[0].push_back(_vertex_(m_pCurrentTriangle->v[2].vertex, -1, 2, 2));
+
+	    INT src = 0, des = 1;
+	    INT counter = 0;
+        std::list<_vertex_>::iterator it;
+
+        for(INT i=0; i<6; i++)
+        {//for all 6 plane
+
+            while(true)
+            {//for each edge in m_vlist[src]
+
+                it=m_vlist[src].begin();
+                _vertex_ va = *it++;
+                _vertex_ vb = *it;
+
+                FLOAT Da = Dot((VEC3*)&(va.v), m_clipPlaneNormal+i)-m_clipPlane[i];
+                FLOAT Db = Dot((VEC3*)&(vb.v), m_clipPlaneNormal+i)-m_clipPlane[i];
+
+                if(Da >= m_clipEpsilon)
+                {
+                    if(Db >= m_clipEpsilon)
+                    {
+                        m_vlist[des].push_back(vb);
+                        counter++;
+                    }
+                    else
+                    {
+                        FLOAT t = fabs(Da)/(fabs(Da)+fabs(Db));
+                        VERTEX4 lerpVertex = Lerp(va.v, vb.v, t);
+                        m_vlist[des].push_back(_vertex_(lerpVertex, t, va.s, vb.e));
+                    }
+
+                }
+                else if(Db >= m_clipEpsilon)
+                {
+                    FLOAT t = fabs(Da)/(fabs(Da)+fabs(Db));
+                    VERTEX4 lerpVertex = Lerp(va.v, vb.v, t);
+                    m_vlist[des].push_back(_vertex_(lerpVertex, t, va.s, vb.e));
+
+                    m_vlist[des].push_back(vb);
+                }
+                else
+                {
+                    counter--;
+                }
+
+                if(it == m_vlist[src].begin())
+                {
+                    break;
+                }
+
+            }
+
+            m_vlist[src].clear();
+            src = !src;
+            des = !des;
+        }
+
+
+        if(counter == 18)
+        {//do not need to clip any vertex
+            m_triangles.push(*m_pCurrentTriangle);
+            return true;
+        }
+        else if(counter == -18)
+        {//we need to clip all vertexes
+            return false;
+        }
+        else
+        {//we need to cut the triangle
+            it = m_vlist[src].begin();
+
+            VEC3 lerpNormal = Lerp(m_pCurrentTriangle->v[it->s].normal, m_pCurrentTriangle->v[it->e].normal, it->t);
+            VEC3 lerpUVW = Lerp(m_pCurrentTriangle->v[it->s].texcoord,  m_pCurrentTriangle->v[it->e].texcoord,it->t);
+            VSOutput v1(it->v, lerpNormal, lerpUVW);
+            it++;
+
+            lerpNormal = Lerp(m_pCurrentTriangle->v[it->s].normal, m_pCurrentTriangle->v[it->e].normal,  it->t);
+            lerpUVW = Lerp(m_pCurrentTriangle->v[it->s].texcoord,  m_pCurrentTriangle->v[it->e].texcoord,it->t);
+            VSOutput _v2(it->v, lerpNormal, lerpUVW);
+            VSOutput& v2 = _v2;
+
+            while(it != m_vlist[src].end())
+            {
+                it++;
+                lerpNormal = Lerp(m_pCurrentTriangle->v[it->s].normal, m_pCurrentTriangle->v[it->e].normal,  it->t);
+                lerpUVW = Lerp(m_pCurrentTriangle->v[it->s].texcoord,  m_pCurrentTriangle->v[it->e].texcoord,it->t);
+                VSOutput v3(it->v, lerpNormal, lerpUVW);
+
+                _Triangle_ triangle(v1, v2, v3);
+                m_triangles.push(triangle);
+                v2 = v3;
+            }
+
+        }
+
+        m_vlist[0].clear();
+        m_vlist[1].clear();
+
+        return true;
+	}
+
+	void VertexPostProcesser::PerspectiveDivide()
+	{
+	    while(!m_triangles.empty())
+        {
+            _Triangle_ triangle = m_triangles.front();
+            m_triangles.pop();
+
+            for(INT i=0; i<3; i++)
+            {
+               triangle.v[i].vertex.x = triangle.v[i].vertex.x/triangle.v[i].vertex.w;
+               triangle.v[i].vertex.y = triangle.v[i].vertex.y/triangle.v[i].vertex.w;
+               triangle.v[i].vertex.z = triangle.v[i].vertex.z/triangle.v[i].vertex.w;
+            }
+        }
+	}
+
+	void VertexPostProcesser::ViewportTranform()
+	{
+	    while(!m_triangles.empty())
+        {
+
+        }
+
+	}
+
+    void VertexPostProcesser::HandleElement()
+    {
+        m_pCurrentTriangle = (_Triangle_*)GetInput();
+
+        if(nullptr != m_pCurrentTriangle)
+          if(TriangleClipping())
+          {
+              PerspectiveDivide();
+              ViewportTranform();
+          }
+
+        delete m_pCurrentTriangle;
+        m_pCurrentTriangle = nullptr;
+    }
+
+    void VertexPostProcesser::OnCancel()
+    {}
+
+    void VertexPostProcesser::OnPause()
+    {}
+
+    void VertexPostProcesser::OnResume()
+    {}
+
+    void VertexPostProcesser::OnRunError()
+    {}
+
+    void VertexPostProcesser::OnRunFinish()
+    {}
+
+    void VertexPostProcesser::OnStart()
+    {}
 
 
 

@@ -12,17 +12,6 @@ using  std::cout;
 using  std::endl;
 using  std::unique_ptr;
 
-class Element:public BasicIOElement
-{
-public:
-    Element(int v=0):
-        val(v)
-    {}
-    ~Element(){}
-public:
-    int val;
-
-};
 
 
 class Observer:public BasicObserver
@@ -39,73 +28,7 @@ protected:
 };
 
 
-class testProcessor:public BasicProcessor, public CallBackFunctions
-{
-public:
-       testProcessor(BasicIOBuffer<BasicIOElement*> * input=nullptr,
-                     BasicIOBuffer<BasicIOElement*> * output=nullptr,
-                     BasicObserver * observer=nullptr):
-                 BasicProcessor(input, output, observer, (CallBackFunctions*)this),
-                 value(1)
-        {}
-       ~testProcessor(){cout<<"test processor 1 destructor"<<endl;}
 
-protected:
-          void HandleElement(BasicIOElement * element)
-          {
-           if(value == 9) Cancel();
-           value++;
-           g_log.Write("----Processor:1");
-           Element* e=(Element*)element;
-           g_log.WriteKV("1 Element:", e->val);
-           g_log.Write("---------------");
-
-          }
-          void OnCancel(){cout<<"Cancel!!"<<endl;}
-          void OnPause(){cout<<"Pause!!"<<endl;}
-          void OnResume(){cout<<"Resume!!"<<endl;}
-          void OnRunError(){cout<<"RunError!!"<<endl;}
-          void OnStart(){}
-
-
-protected:
-       int value;
-
-};
-
-
-class testProcessor2:public BasicProcessor, public CallBackFunctions
-{
-public:
-       testProcessor2(BasicIOBuffer<BasicIOElement*> * input=nullptr,
-                     BasicIOBuffer<BasicIOElement*> * output=nullptr,
-                     BasicObserver * observer=nullptr):
-                 BasicProcessor(input, output, observer, (CallBackFunctions*)this),
-                 value(1)
-        {}
-       ~testProcessor2(){cout<<"test processor 2 destructor"<<endl;}
-
-protected:
-          void HandleElement(BasicIOElement * element)
-          {
-           if(value == 9) Cancel();
-           value++;
-           g_log.Write("===Processor:2");
-           Element* e=(Element*)element;
-           e->val++;
-           g_log.WriteKV("2 Element:", e->val);
-           g_log.Write("===========");
-          }
-          void OnCancel(){cout<<"Cancel!!"<<endl;}
-          void OnPause(){cout<<"Pause!!"<<endl;}
-          void OnResume(){cout<<"Resume!!"<<endl;}
-          void OnRunError(){cout<<"RunError!!"<<endl;}
-          void OnStart(){}
-
-protected:
-       int value;
-
-};
 
 
 struct vertex
@@ -122,20 +45,20 @@ struct vertex
 
 int main()
 {
-/*
+
     vertex vertexes[10];
     for(int i=0; i<10; i++)
     {
-        vertexes[i].ver[0] = 1.1+i;
-        vertexes[i].ver[1] = 1.2+i;
-        vertexes[i].ver[2] = 1.3+i;
+        vertexes[i].ver[0] = 0.1+i;
+        vertexes[i].ver[1] = 0.2+i;
+        vertexes[i].ver[2] = 0.3+i;
 
-        vertexes[i].nor[0] = 2.1+i;
-        vertexes[i].nor[1] = 2.2+i;
-        vertexes[i].nor[2] = 2.3+i;
+        vertexes[i].nor[0] = 0.9+i;
+        vertexes[i].nor[1] = 0.8+i;
+        vertexes[i].nor[2] = 0.7+i;
 
-        vertexes[i].a1 = 3.1+i;
-        vertexes[i].a2 = 3.2+i;
+        vertexes[i].a1 = 0.11+i;
+        vertexes[i].a2 = 0.21+i;
     }
 
 
@@ -149,43 +72,25 @@ int main()
     else
         cout<<"fail"<<endl;
 
-    BYTE* attri;
-    vbuffer->GetAttributes(2, &attri);
-
-    FLOAT* a1=(FLOAT*)(attri);
-    FLOAT* a2=(FLOAT*)(attri+sizeof(FLOAT));
-    FLOAT* a3=(FLOAT*)(attri+2*sizeof(FLOAT));
-    cout<<*a1<<" "<<*a2<<" "<<*a3<<endl;
-
-    cout<<vbuffer->GetVertexX(2)<<endl;
-    cout<<vbuffer->GetVertexY(2)<<endl;
-    cout<<vbuffer->GetVertexZ(2)<<endl;
-
-    VERTEX3 ver3=vbuffer->GetVertex3(3);
-    cout<<ver3.x<<" "<<ver3.y<<" "<<ver3.z<<endl;
-*/
-
-    INT index[10];
-    for(int i=0;i<10;i++)
-        index[i]=i;
+    INT index[13]={0,1,2,3,6,-1,9,7,5,4,0,2,3};
 
     Buffer<INT>* ibuffer;
-    BufferDescript bd(10,1,1,SRE_TYPE_INDEXBUFFER,0);
+    BufferDescript bd(13,1,1,SRE_TYPE_INDEXBUFFER,0);
     RESULT re2=CreateBuffer(bd, index, &ibuffer);
     if(re2==RESULT::SUCC)
         cout<<"SUCC"<<endl;
     else
         cout<<"FAIL"<<endl;
 
-    cout<<ibuffer->GetBufferSize()<<endl;
-    cout<<ibuffer->GetData(1)<<endl;
-    cout<<ibuffer->GetData(0)<<endl;
-    ibuffer->SetData(1,29);
-    cout<<ibuffer->GetData(1)<<endl;
-    ibuffer->Reset(20);
-    cout<<ibuffer->GetData(1)<<endl;
+    BasicIOBuffer<BasicIOElement*> outputBuffer;
+    Observer observer;
+
+    InputAssembler IA(&outputBuffer, &observer);
+
+
+    IA.SetVertexAndIndexBuffers(vbuffer, ibuffer);
+    IA.Run();
 
     cout<<"main end"<<endl;
-
 }
 

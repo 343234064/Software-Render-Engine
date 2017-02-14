@@ -16,6 +16,8 @@
 #define _SRE_PIPELINE_
 
 #include "SRE_Math.h"
+#include "SRE_Resources.h"
+#include "SRE_Shader.h"
 #include "SRE_GlobalsAndUtils.h"
 
 
@@ -29,16 +31,12 @@ namespace SRE {
 	class BasicIOBuffer
 	{
     public:
-        BasicIOBuffer(){}
-        BasicIOBuffer(const BasicIOBuffer & other)
-        {
-            std::lock_guard<std::mutex> lock(other.m_mutex);
-            m_queue = other.m_queue;
-        }
-        BasicIOBuffer & operator=(const BasicIOBuffer & other) = delete;
+        BasicIOBuffer():
+            m_queue(),
+            m_mutex(),
+            m_cond()
+        {}
         virtual ~BasicIOBuffer(){}
-
-
 
         void push(T data)
         {
@@ -58,6 +56,13 @@ namespace SRE {
             return res;
         }
 
+        std::shared_ptr<T> topp()
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            std::shared_ptr<T> res(std::make_shared<T>(m_queue.front()));
+            return res;
+        }
+
         void wait_and_pop(T & out)
         {
             std::unique_lock<std::mutex> lock(m_mutex);
@@ -66,12 +71,20 @@ namespace SRE {
             m_queue.pop();
         }
 
+        void top(T & out)
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            out = m_queue.front();
+        }
+
         bool empty() const
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             return m_queue.empty();
         }
 
+        BasicIOBuffer(const BasicIOBuffer & other) = delete;
+        BasicIOBuffer & operator=(const BasicIOBuffer & other) = delete;
 
     protected:
         std::queue<T>  m_queue;
@@ -148,7 +161,8 @@ namespace SRE {
     class CallBackFunctions
     {
     public:
-        virtual void HandleElement(BasicIOElement * element)=0;
+        virtual ~CallBackFunctions(){}
+        virtual void HandleElement()=0;
         virtual void OnCancel()=0;
         virtual void OnPause()=0;
         virtual void OnResume()=0;
@@ -171,22 +185,17 @@ namespace SRE {
         BasicProcessor(BasicIOBuffer<BasicIOElement*> * input=nullptr,
                        BasicIOBuffer<BasicIOElement*> * output=nullptr,
                        BasicObserver     * observer=nullptr,
-                       CallBackFunctions * callbacks=nullptr,
-                       bool inputOn=true,
-                       bool outputOn=true):
+                       CallBackFunctions * callbacks=nullptr):
             BaseTask(),
+            m_cond(),
+            m_mutex(),
             m_pInputQueue(input),
             m_pOutputQueue(output),
             m_pObserver(observer),
-            m_pCurrentElement(nullptr),
-            m_cond(),
-            m_mutex(),
             m_thread(),
             m_callBacks(callbacks),
             m_Cancel(false),
-            m_Pause(false),
-            m_input(inputOn),
-            m_output(outputOn)
+            m_Pause(false)
         {}
         virtual ~BasicProcessor()
         {}
@@ -197,6 +206,9 @@ namespace SRE {
         void Pause();
         void Resume();
         void Cancel();
+
+        BasicIOElement* GetInput();
+        void            Output(BasicIOElement *out);
 
         void SetInputQueue(BasicIOBuffer<BasicIOElement*> * inputQueue)
         {
@@ -213,14 +225,9 @@ namespace SRE {
             std::lock_guard<std::mutex> lock(m_mutex);
             this->m_pObserver = observer;
         }
-        void SetIOMode(bool input, bool output)
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            m_input = input;
-            m_output = output;
-        }
 
-        void InputElement(BasicIOElement* element)
+
+        void Input(BasicIOElement* element)
         {
             m_pInputQueue->push(element);
         }
@@ -231,27 +238,23 @@ namespace SRE {
             this->m_callBacks = callbacks;
         }
 
+
         BasicProcessor(const BasicProcessor & other) = delete;
         BasicProcessor & operator=(const BasicProcessor & other) = delete;
 
+    protected:
+        std::condition_variable             m_cond;
+        std::mutex                          m_mutex;
 
     private:
         BasicIOBuffer<BasicIOElement*> *    m_pInputQueue;
         BasicIOBuffer<BasicIOElement*> *    m_pOutputQueue;
         BasicObserver  *                    m_pObserver;
-        BasicIOElement *                    m_pCurrentElement;
-        std::condition_variable             m_cond;
-        std::mutex                          m_mutex;
         BasicThread                         m_thread;
         CallBackFunctions   *               m_callBacks;
 
         bool m_Cancel;
         bool m_Pause;
-        bool m_input;
-        bool m_output;
-
-
-
 	};
 
 
@@ -333,37 +336,23 @@ namespace SRE {
 
 
 
-
-
-
-
-
-
     //=============================
-	//Class Triangle
+	//Class _Triangle_
 	//
-	//
+	//a temp structure for IO
 	//=============================
-	class Triangle:public BasicIOElement
+	class _Triangle_:public BasicIOElement
 	{
     public:
-        Triangle(VERTEX4 & v1, VERTEX4 & v2, VERTEX4 & v3, void * attr=nullptr):
-            attributes(attr)
+        _Triangle_(VSOutput& v1, VSOutput& v2, VSOutput& v3)
         {
-            vertices[0] = v1;
-            vertices[1] = v2;
-            vertices[2] = v3;
+            v[0]=v1;v[1]=v2;v[2]=v3;
         }
-        virtual ~Triangle()
-        {
-            delete[] attributes;
-        }
+        virtual ~_Triangle_(){}
 
     public:
-        VERTEX4 vertices[3];
-        void *  attributes;
+        VSOutput v[3];
 	};
-
 
 
     //=============================
@@ -375,17 +364,22 @@ namespace SRE {
 	class InputAssembler:public BasicProcessor, public CallBackFunctions
 	{
     public:
-        InputAssembler(BasicIOBuffer<BasicIOElement*> * input=nullptr,
-                       BasicIOBuffer<BasicIOElement*> * output=nullptr,
-                       BasicObserver * observer=nullptr):
-            BasicProcessor(input, output, observer, this, true, true),
+        InputAssembler(BasicIOBuffer<BasicIOElement*> * output=nullptr,
+                       BasicObserver * observer=nullptr,
+                       const ConstantBuffer * constbuffer=nullptr):
+            BasicProcessor(nullptr, output, observer, this),
+            m_vertexBuffers(),
             m_indexBuffers(),
-            m_primitiveTopology(SRE_PRIMITIVETYPE_TRIANGLELIST)
+            m_pConstantBuffer(constbuffer),
+            m_pCurrentHandleVbuffer(nullptr),
+            m_pCurrentHandleIbuffer(nullptr),
+            m_currentIndex(0),
+            m_currentIndex2(0)
         {}
         virtual ~InputAssembler(){}
 
 
-        void HandleElement(BasicIOElement * element);
+        void HandleElement();
         void OnCancel();
         void OnPause();
         void OnResume();
@@ -396,43 +390,114 @@ namespace SRE {
         InputAssembler(const InputAssembler & other) = delete;
         InputAssembler & operator=(const InputAssembler & other) = delete;
 
-        void SetVertexAndIndexBuffers(Buffer<void*>* vertexbuffer, Buffer<void*>* indexBuffer);
-        void SetPrimitiveTopology(SREVAR primitiveTopo);
-
-    protected:
-        void AssembleTriangleMesh();
+        void SetVertexAndIndexBuffers(VertexBuffer* vertexbuffer, Buffer<INT>* indexBuffer);
+        void SetConstantBuffer(const ConstantBuffer * cbuffer);
 
     private:
-        std::queue<Buffer<INT>*>    m_indexBuffers;
-        SREVAR                      m_primitiveTopology;
+        BasicIOBuffer<VertexBuffer*>  m_vertexBuffers;
+        std::queue<Buffer<INT>*>      m_indexBuffers;
+        const ConstantBuffer *        m_pConstantBuffer;
 
+        VertexBuffer*                 m_pCurrentHandleVbuffer;
+        Buffer<INT>*                  m_pCurrentHandleIbuffer;
 
+        INT                           m_currentIndex;
+        INT                           m_currentIndex2;
 
 	};
 
 
-    /*
+
     //=============================
 	//Class VertexProcesser
 	//
 	//
 	//
 	//=============================
-    class VertexProcesser:public BasicProcessor
+    class VertexProcesser:public BasicProcessor, public CallBackFunctions
     {
     public:
         VertexProcesser(BasicIOBuffer<BasicIOElement*> * input=nullptr,
                         BasicIOBuffer<BasicIOElement*> * output=nullptr,
-                        BasicObserver * observer=nullptr):
-            BasicProcessor(input, output, observer)
+                        BasicObserver * observer=nullptr,
+                        VertexShader*   vshader=nullptr,
+                        VariableBuffer* variablebuffer=nullptr):
+            BasicProcessor(input, output, observer, this),
+            m_pVertexShader(vshader),
+            m_pVariableBuffer(variablebuffer)
         {}
         virtual ~VertexProcesser();
 
-        void Run();
-        void NextStage();
-        void PassArgument(SREVAR usage, void * argu);
+        void HandleElement();
+        void OnCancel();
+        void OnPause();
+        void OnResume();
+        void OnRunError();
+        void OnRunFinish();
+        void OnStart();
+
+        void SetVertexShader(VertexShader * vshader);
+        void SetVariableBuffer(VariableBuffer* varbuffer);
+
+        VertexProcesser(const VertexProcesser & other) = delete;
+        VertexProcesser & operator=(const VertexProcesser & other) = delete;
+
+    private:
+        VertexShader*     m_pVertexShader;
+        VariableBuffer*   m_pVariableBuffer;
+    };
+
+
+
+    //=============================
+	//Class PrimitiveAssembler
+	//
+	//
+	//
+	//=============================
+    class PrimitiveAssembler:public BasicProcessor, public CallBackFunctions
+    {
+    public:
+        PrimitiveAssembler(BasicIOBuffer<BasicIOElement*> * input=nullptr,
+                        BasicIOBuffer<BasicIOElement*> * output=nullptr,
+                        BasicObserver * observer=nullptr,
+                        const ConstantBuffer * constbuffer=nullptr):
+            BasicProcessor(input, output, observer, this),
+            m_pConstantBuffer(constbuffer),
+            m_pCachedVertex1(nullptr),
+            m_pCachedVertex2(nullptr)
+        {}
+        virtual ~PrimitiveAssembler()
+        {
+            if(nullptr != m_pCachedVertex1)
+                delete m_pCachedVertex1;
+            if(nullptr != m_pCachedVertex2)
+                delete m_pCachedVertex2;
+        }
+
+        void HandleElement();
+        void OnCancel();
+        void OnPause();
+        void OnResume();
+        void OnRunError();
+        void OnRunFinish();
+        void OnStart();
+
+        void SetConstantBuffer(const ConstantBuffer * cbuffer);
+
+        PrimitiveAssembler(const PrimitiveAssembler & other) = delete;
+        PrimitiveAssembler & operator=(const PrimitiveAssembler & other) = delete;
+
+    private:
+        void TriangleList();
+        void TriangleFan();
+        void TriangleStrip();
 
     protected:
+        const ConstantBuffer * m_pConstantBuffer;
+        BYTE* m_pCachedVertex1;
+        BYTE* m_pCachedVertex2;
+
 
     };
 
@@ -441,31 +506,85 @@ namespace SRE {
     //=============================
 	//Class VertexPostProcesser
 	//
-	//
-	//
+	//ccv:
+	//x: (-1,1)
+	//y: (-1,1)
+	//z: ( 0,1)
 	//=============================
-    class VertexPostProcesser:public BasicProcessor
+	struct _vertex_
+	{//A temp data structure used for clipping
+	    VERTEX4 v;
+	    FLOAT   t;
+	    INT     s;
+	    INT     e;
+
+        _vertex_(VERTEX4& _v, FLOAT _t, INT _s, INT _e):
+            v(_v),t(_t),s(_s),e(_e)
+        {}
+	};
+
+    class VertexPostProcesser:public BasicProcessor, public CallBackFunctions
     {
     public:
-        VertexPostProcesser(BasicIOBuffer<BasicIOElement> * input=nullptr,
-                            BasicIOBuffer<BasicIOElement> * output=nullptr,
+        VertexPostProcesser(BasicIOBuffer<BasicIOElement*> * input=nullptr,
+                            BasicIOBuffer<BasicIOElement*> * output=nullptr,
                             BasicObserver * observer=nullptr):
-            BasicProcessor(input, output, observer)
-        {}
-        virtual ~VertexPostProcesser();
+            BasicProcessor(input, output, observer, this),
+            m_clipEpsilon(0.01),
+            m_pCurrentTriangle(nullptr)
+        {
+            m_clipPlane[0]=-1;m_clipPlaneNormal[0].x= 1;
+            m_clipPlane[1]= 1;m_clipPlaneNormal[1].x=-1;
+            m_clipPlane[2]=-1;m_clipPlaneNormal[2].y= 1;
+            m_clipPlane[3]= 1;m_clipPlaneNormal[3].y=-1;
+            m_clipPlane[4]= 0;m_clipPlaneNormal[4].z= 1;
+            m_clipPlane[5]=-1;m_clipPlaneNormal[5].z=-1;
 
-        void Run();
-        void NextStage();
-        void PassArgument(SREVAR usage, void * argu);
+        }
+        virtual ~VertexPostProcesser()
+        {
+            if(nullptr != m_pCurrentTriangle)
+                delete m_pCurrentTriangle;
+        }
 
+        void HandleElement();
+        void OnCancel();
+        void OnPause();
+        void OnResume();
+        void OnRunError();
+        void OnRunFinish();
+        void OnStart();
+
+        void SetClipPlaneX(FLOAT _x){m_clipPlane[0]=_x;m_clipPlane[1]=-_x;}
+        void SetClipPlaneY(FLOAT _y){m_clipPlane[2]=_y;m_clipPlane[3]=-_y;}
+        void SetClipPlaneZ(FLOAT _z){m_clipPlane[4]=_z;m_clipPlane[5]=-_z;}
+        void SetClipEpsilon(FLOAT eps){m_clipEpsilon = eps;}
+
+
+        VertexPostProcesser(const VertexPostProcesser & other) = delete;
+        VertexPostProcesser & operator=(const VertexPostProcesser & other) = delete;
 
     protected:
+        bool TriangleClipping();//clip in cvv
+        void PerspectiveDivide();//then divided by w
+        void ViewportTranform();//
+
+    protected:
+        FLOAT        m_clipPlane[6];//-x, x, -y, y, -z, z
+        VEC3         m_clipPlaneNormal[6];
+        FLOAT        m_clipEpsilon;
+        _Triangle_*  m_pCurrentTriangle;
+
+    private:
+        std::list<_vertex_>    m_vlist[2];
+        std::queue<_Triangle_> m_triangles;
+
 
 
     };
 
 
-
+    /*
     //=============================
 	//Class Rasterizer
 	//
@@ -539,30 +658,6 @@ namespace SRE {
 
 
     //=============================
-	//Class RenderStates
-	//
-	//
-	//
-	//=============================
-	class RenderStates
-	{
-    public:
-        RenderStates():
-            FillMode(SRE_FILLMODE_SOLID),
-            CullMode(SRE_CULLMODE_CCW),
-            ZEnable(SRE_TRUE)
-        {}
-
-        ~RenderStates(){}
-
-    public:
-        SREVAR FillMode;
-        SREVAR CullMode;
-        SREVAR ZEnable;
-	};
-
-
-    //=============================
 	//Class VariableBuffer
 	//
 	//
@@ -572,7 +667,6 @@ namespace SRE {
     {
     public:
         VariableBuffer():
-            renderStates(),
             ViewportSize(),
             WorldViewProj(),
             WorldView(),
@@ -584,7 +678,6 @@ namespace SRE {
         virtual ~VariableBuffer(){}
 
     public:
-        RenderStates renderStates;
         VEC2   ViewportSize;
         MAT44  WorldViewProj;
         MAT44  WorldView;
@@ -592,166 +685,35 @@ namespace SRE {
         MAT44  World;
         MAT44  View;
         MAT44  Project;
-
     };
 
+
     //=============================
-	//Class RunTimeData
+	//Class ConstantBuffer
 	//
 	//
 	//
 	//=============================
-    class RunTimeData:public BaseContainer
-    {
-    public:
-        RunTimeData():
-            BaseContainer(),
-            m_VarBuffer(),
-            m_MeshList()
-        {}
-        RunTimeData(const RunTimeData & other);
-
-        virtual ~RunTimeData()
-        {
-             m_MeshList.clear();
-            //ReleaseMeshList();
-        }
-
-        void       AddMesh(BaseMesh * mesh, INT key);
-        void       RemoveMesh(INT key);
-        BaseMesh * GetMesh(INT key);
-        INT        GetMeshCount();
-        //VariableBuffer * GetVaribleBuffer();
-
-        void       ReleaseMeshList();
-        void       SetRenderState(SREVAR renderState, SREVAR value);
-        void       SetMatrix(SREVAR matrixType, const MAT44 & matrix);
-
-        RunTimeData & operator=(const RunTimeData & other);
-
-    protected:
-        VariableBuffer   m_VarBuffer;
-        std::map<INT, BaseMesh*>
-                         m_MeshList;
-
-
-    };
-
-
-
-    //=============================
-	//Class Technique
-	//
-	//
-	//
-	//=============================
-    class Technique:public BaseTask
-    {
-    public:
-        Technique(std::string name="\0"):
-            BaseTask(),
-            m_name(name),
-            m_PassList()
-        {}
-
-        Technique(const Technique & other):
-            BaseTask(),
-            m_name(other.m_name),
-            m_PassList()
-        {}
-
-        virtual ~Technique()
-        {
-            //
-            m_PassList.clear();
-        }
-
-        void         Run();
-        void         SetName(std::string name);
-        std::string  GetName();
-
-        void         AddRenderPass(RenderPass * renderPass, INT index);
-        void         AddRenderPassBack(RenderPass * renderPass);
-        void         RemoveRenderPassByIndex(INT index);
-        void         RemoveRenderPassByName(std::string name);
-        void         ReleasePassList();
-        INT          GetRenderPassNumber();
-        RenderPass * GetRenderPassByIndex(INT index);
-        RenderPass * GetRenderPassByName(std::string name);
-
-        //2 ways to set mesh?
-        //void        SetRenderMesh(BaseMesh* mesh);
-        //void        SetVertexSource(INT index, void* vertexData, void* indexData);
-        //move to device layer
-
-        Technique &  operator=(const Technique & other);
-
-    protected:
-        std::string             m_name;
-        std::list<RenderPass*>  m_PassList;
-
-    };
-
-
-
-    //=============================
-	//Class RenderPass
-	//
-	//
-	//
-	//=============================
-	class RenderPass:public BaseTask
+	class ConstantBuffer
 	{
     public:
-        RenderPass():
-            BaseTask(),
-            m_name(),
-            m_pVShader(nullptr),
-            m_pPShader(nullptr),
-            m_pPipeLine(nullptr)
+        ConstantBuffer():
+            primitiveTopology(SRE_PRIMITIVETYPE_TRIANGLELIST),
+            FillMode(SRE_FILLMODE_SOLID),
+            CullMode(SRE_CULLMODE_CCW),
+            ZEnable(SRE_TRUE)
         {}
-        virtual ~RenderPass()
-        {
-            /*
-            if(nullptr != m_pVShader)
-                delete m_pVShader;
-            if(nullptr != m_pPShader)
-                delete m_pPShader;
-            if(nullptr != m_pPipeLine)
-                delete m_pPipeLine;
-            */
-        }
+        virtual ~ConstantBuffer(){}
 
-        RenderPass(const RenderPass &);
-
-        void        Run();
-        void        SetName(std::string name);
-        std::string GetName();
-
-        void        SetVertexShader(const VertexShader * vs);
-        void        SetPixelShader(const PixelShader * ps);
-        void        SetRenderState();
-        void        SetMatrix();
-        void        SetOutputTarget();
-        void        SetInputTarget();
-
-
-
-        RenderPass & operator=(const RenderPass &);
-
-    protected:
-        void        StartPipeLine();
-
-
-    protected:
-        std::string     m_name;
-        VertexShader *  m_pVShader;
-        PixelShader  *  m_pPShader;
-        BasicProcessor * m_pPipeLine;
-
-
-
+    public:
+        SREVAR primitiveTopology;
+        SREVAR FillMode;
+        SREVAR CullMode;
+        SREVAR ZEnable;
 	};
+
+
+
 
 
 }

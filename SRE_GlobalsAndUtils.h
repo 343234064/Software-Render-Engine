@@ -24,6 +24,7 @@
 #include "SRE_DebugLog.h"
 #endif
 
+#include <math.h>
 #include <string.h>
 #include <map>
 #include <list>
@@ -97,25 +98,24 @@ namespace SRE {
     class BasicProcessor;
     class BasePipeLine;
 
-    class Triangle;
+    class _Triangle_;
 
     class SREPipeLine;
-    class InputAssembler;
     class VertexProcesser;
     class VertexPostProcesser;
+    class PrimitiveAssembler;
     class Rasterizer;
     class PixelProcesser;
     class OutputMerger;
 
-    class RenderStates;
     class VariableBuffer;
-    class RunTimeData;
-    class Technique;
-    class RenderPass;
+    class ConstantBuffer;
 
-    class VSInput;
+    class VSOutput;
     class VertexShader;
     class PixelShader;
+    class Technique;
+    class RenderPass;
 
 
     //==============================
@@ -166,8 +166,8 @@ namespace SRE {
     typedef std::unique_ptr<BYTE, array_deleter<BYTE>>       unique_byte_array;
     typedef std::unique_ptr<unique_int_array, array_deleter<unique_int_array>> unique_int_matrix;
 
-    typedef BasicIOElement* (CallBackVShader)(const BasicIOElement &);
-    typedef BasicIOElement* (CallBackPShader)(const BasicIOElement &);
+    typedef VSOutput* (CallBackVShader)(BYTE*, VariableBuffer*);
+    //typedef PSOutput* (CallBackPShader)(PSInput *, );
 
     typedef TriangleMeshManager TMManager;
 
@@ -296,6 +296,11 @@ namespace SRE {
     const SREVAR SRE_PRIMITIVETYPE_TRIANGLESTRIP=0x00000304;
     const SREVAR SRE_PRIMITIVETYPE_TRIANGLELIST=0x00000305;
 
+    const SREVAR SRE_PRIMITIVE_POINT=0x00000400;
+    const SREVAR SRE_PRIMITIVE_LINE=0x00000401;
+    const SREVAR SRE_PRIMITIVE_TRIANGLE=0x00000402;
+
+
 
 
 
@@ -385,6 +390,7 @@ namespace SRE {
         virtual ~BasicIOElement(){}
 
 	};
+
 
 }
 
