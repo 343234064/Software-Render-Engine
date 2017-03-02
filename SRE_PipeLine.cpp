@@ -23,15 +23,24 @@ namespace SRE {
 	//=============================
     void BasicProcessor::Start()
     {
-        if(nullptr == this->m_pInputQueue ||
-           nullptr == this->m_pOutputQueue ||
-           nullptr == this->m_pObserver)
-           return;
+#ifdef _SRE_DEBUGLOG_
+        if(nullptr == this->m_pInputQueue)
+        {
+           g_log.Write("Processor Ignore Input");
+        }
+        if(nullptr == this->m_pOutputQueue)
+        {
+           g_log.Write("Processor Ignore Output");
+        }
+        if(nullptr == this->m_pObserver)
+        {
+           g_log.Write("Processor Ignore Message Feedback");
+        }
+#endif // _SRE_DEBUGLOG_
 
         if(nullptr != m_callBacks)
             m_callBacks->OnStart();
-        m_thread.StartThread(&BasicProcessor::Run, this);
-
+        m_thread = std::thread(&BasicProcessor::Run, this);
     }
 
 
@@ -41,6 +50,7 @@ namespace SRE {
         {
             if(m_Cancel)
             {
+                g_log.Write("m_cancel true");
                 if(nullptr != m_callBacks)
                    m_callBacks->OnCancel();
                 break;
@@ -59,14 +69,15 @@ namespace SRE {
             {
 
                 if(nullptr != m_callBacks)
-                    m_callBacks->HandleElement();
+                   m_callBacks->HandleElement();
 
             }
             catch(...)
             {
                 if(nullptr != m_callBacks)
                    m_callBacks->OnRunError();
-                m_pObserver->Notify(SRE_MESSAGE_RUNERROR);
+                if(nullptr != m_pObserver)
+                   m_pObserver->Notify(SRE_MESSAGE_RUNERROR);
                 throw;
             }
 
@@ -167,7 +178,6 @@ namespace SRE {
                 if(actualIndex3 >= m_pCurrentHandleIbuffer->GetBufferSize())
                 {
                     m_pCurrentHandleVbuffer = nullptr;
-                    Output(nullptr);
                     return;
                 }
                 actualIndex1 = m_pCurrentHandleIbuffer->GetData(actualIndex1);
@@ -181,50 +191,14 @@ namespace SRE {
             else if(actualIndex3 >= m_pCurrentHandleVbuffer->GetVertexNumber())
             {
                 m_pCurrentHandleVbuffer = nullptr;
-                Output(nullptr);
                 return;
             }
 
-            if(!(m_pCurrentHandleVbuffer->GetMark(actualIndex1)))
-            {
-                BYTE* vertex1=m_pCurrentHandleVbuffer->GetVertex(actualIndex1);
-                if(nullptr == vertex1)
-                {
-#ifdef _SRE_DEBUG_
-                   _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
-#endif // _SRE_DEBUG_
-                   return;
-                }
-                Output((BasicIOElement*)vertex1);
-                m_pCurrentHandleVbuffer->SetMark(actualIndex1, true);
-            }
-            if(!(m_pCurrentHandleVbuffer->GetMark(actualIndex2)))
-            {
-                BYTE* vertex2=m_pCurrentHandleVbuffer->GetVertex(actualIndex2);
-                if(nullptr == vertex2)
-                {
-#ifdef _SRE_DEBUG_
-                   _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
-#endif // _SRE_DEBUG_
-                   return;
-                }
-                Output((BasicIOElement*)vertex2);
-                m_pCurrentHandleVbuffer->SetMark(actualIndex2, true);
-            }
-            if(!(m_pCurrentHandleVbuffer->GetMark(actualIndex3)))
-            {
-                BYTE* vertex3=m_pCurrentHandleVbuffer->GetVertex(actualIndex3);
-                if(nullptr == vertex3)
-                {
-#ifdef _SRE_DEBUG_
-                   _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
-#endif // _SRE_DEBUG_
-                   return;
-                }
-                Output((BasicIOElement*)vertex3);
-                m_pCurrentHandleVbuffer->SetMark(actualIndex3, true);
-            }
+            g_log.Write("InputAssem Output:");
 
+            SendVertex(actualIndex1);
+            SendVertex(actualIndex2);
+            SendVertex(actualIndex3);
         }
         else
         {
@@ -232,27 +206,84 @@ namespace SRE {
             m_pCurrentHandleIbuffer = m_indexBuffers.front();
             m_indexBuffers.pop();
             m_currentIndex = 0;
+            m_pCurrentHandleVbuffer->ResetMark(false);
         }
+
+    }
+
+    void InputAssembler::SendVertex(INT & actualIndex)
+    {
+        _index_ver_* v=new _index_ver_();
+        if(nullptr == v)
+        {
+#ifdef _SRE_DEBUG_
+            _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
+#endif // _SRE_DEBUG_
+            return;
+        }
+        if(!(m_pCurrentHandleVbuffer->GetMark(actualIndex)))
+        {
+            BYTE* vertex=m_pCurrentHandleVbuffer->GetVertex(actualIndex);
+            if(nullptr == vertex)
+            {
+#ifdef _SRE_DEBUG_
+               _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
+#endif // _SRE_DEBUG_
+               return;
+            }
+
+            v->vertex = vertex;
+            m_pCurrentHandleVbuffer->SetMark(actualIndex, true);
+        }
+        else
+        {
+            v->vertex = nullptr;
+        }
+        v->index = actualIndex;
+        Output((BasicIOElement*)v);
+        g_log.WriteKV("vertex index", actualIndex);
     }
 
     void InputAssembler::OnCancel()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("InputAssembler Cancel!");
+#endif // _SRE_DEBUG_
+    }
 
     void InputAssembler::OnPause()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("InputAssembler Pause!");
+#endif // _SRE_DEBUG_
+    }
 
     void InputAssembler::OnResume()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("InputAssembler Resume!");
+#endif // _SRE_DEBUG_
+    }
 
     void InputAssembler::OnRunError()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("InputAssembler Run Error!");
+#endif // _SRE_DEBUG_
+    }
 
     void InputAssembler::OnRunFinish()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("InputAssembler Run Finish!");
+#endif // _SRE_DEBUG_
+    }
 
     void InputAssembler::OnStart()
     {
-        m_pCurrentHandleVbuffer->ResetMark(false);
+#ifdef _SRE_DEBUG_
+        g_log.Write("InputAssembler Start!");
+#endif // _SRE_DEBUG_
     }
 
 
@@ -262,54 +293,106 @@ namespace SRE {
 	//
 	//
 	//===========================================
-    void VertexProcesser::SetVertexShader(VertexShader * vshader)
+    void VertexProcessor::SetVertexShader(VertexShader * vshader)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_pVertexShader = vshader;
     }
 
-    void VertexProcesser::SetVariableBuffer(VariableBuffer* varbuffer)
+    void VertexProcessor::SetVariableBuffer(VariableBuffer* varbuffer)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_pVariableBuffer = varbuffer;
     }
 
-    void VertexProcesser::HandleElement()
+    void VertexProcessor::HandleElement()
     {
-        BYTE* vertex = (BYTE*)(GetInput());
-        if(nullptr == vertex)
+        _index_ver_* v = (_index_ver_*)(GetInput());
+        g_log.Write("Vertex Process:");
+        bool  found = false;
+        USINT coverIndex = 0;
+        USINT threshold = 65528;
+
+        for(USINT i=0; i<3; i++)
         {
-            Output(nullptr);
-            return;
+            if(v->index == m_cachedVertexIndex[i])
+            {
+                Output((BasicIOElement*)m_cachedVertex[i]);
+                found = true;
+                m_cachedPriority[i]=1;
+                g_log.WriteKV("Found", v->index);
+                continue;
+            }
+            else
+            {
+                m_cachedPriority[i]=m_cachedPriority[i]<<1;
+            }
+
+            if(m_cachedPriority[i]&threshold)
+                coverIndex = i;
         }
-        else
+
+        if(!found)
         {
-            VSOutput * out = m_pVertexShader->Run(vertex);
+            VSOutput * out = m_pVertexShader->Run(v->vertex);
             if(nullptr != out)
+            {
                 Output((BasicIOElement*)out);
+                m_cachedVertex[coverIndex] = out;
+                m_cachedVertexIndex[coverIndex] = v->index;
+                m_cachedPriority[coverIndex] = 1;
+                g_log.WriteKV("Not Found, replace", v->index, (INT)coverIndex);
+            }
         }
-        delete vertex;
+
+        delete v;
     }
 
-    void VertexProcesser::OnCancel()
-    {}
+    void VertexProcessor::OnCancel()
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("VertexProcessor Cancel!");
+#endif // _SRE_DEBUG_
+    }
 
-    void VertexProcesser::OnPause()
-    {}
+    void VertexProcessor::OnPause()
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("VertexProcessor Pause!");
+#endif // _SRE_DEBUG_
+    }
 
-    void VertexProcesser::OnResume()
-    {}
+    void VertexProcessor::OnResume()
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("VertexProcessor Resume!");
+#endif // _SRE_DEBUG_
+    }
 
-    void VertexProcesser::OnRunError()
-    {}
+    void VertexProcessor::OnRunError()
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("VertexProcessor Run Error!");
+#endif // _SRE_DEBUG_
+    }
 
-    void VertexProcesser::OnRunFinish()
-    {}
+    void VertexProcessor::OnRunFinish()
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("VertexProcessor Run Finish!");
+#endif // _SRE_DEBUG_
+    }
 
-    void VertexProcesser::OnStart()
+    void VertexProcessor::OnStart()
     {
         if(nullptr == m_pVertexShader) this->Cancel();
-        if(nullptr == m_pVariableBuffer) this->Cancel();
+
+#ifdef _SRE_DEBUG_
+        if(nullptr == m_pVariableBuffer)
+           g_log.Write("VertexProcessor->variable buffer is null");
+
+        g_log.Write("VertexProcessor Start!");
+#endif // _SRE_DEBUG_
     }
 
 
@@ -438,40 +521,64 @@ namespace SRE {
     }
 
     void PrimitiveAssembler::OnCancel()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("PrimitiveAssembler Cancel!");
+#endif // _SRE_DEBUG_
+    }
 
     void PrimitiveAssembler::OnPause()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("PrimitiveAssembler Pause!");
+#endif // _SRE_DEBUG_
+    }
 
     void PrimitiveAssembler::OnResume()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("PrimitiveAssembler Resume!");
+#endif // _SRE_DEBUG_
+    }
 
     void PrimitiveAssembler::OnRunError()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("PrimitiveAssembler Run Error!");
+#endif // _SRE_DEBUG_
+    }
 
     void PrimitiveAssembler::OnRunFinish()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("PrimitiveAssembler Run Finish!");
+#endif // _SRE_DEBUG_
+    }
 
     void PrimitiveAssembler::OnStart()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("PrimitiveAssembler Start!");
+#endif // _SRE_DEBUG_
+    }
 
 
 
     //===========================================
-	//Class VertexPostProcesser functions
+	//Class VertexPostProcessor functions
 	//
     //
     //I use Sutherland and Hodgman Clipping Algorithm
 	//===========================================
-	bool VertexPostProcesser::TriangleClipping()
+	bool VertexPostProcessor::TriangleClipping()
 	{
 	    if(m_pCurrentTriangle->v[0].vertex.w <= 0) return false;
 	    if(m_pCurrentTriangle->v[1].vertex.w <= 0) return false;
 	    if(m_pCurrentTriangle->v[2].vertex.w <= 0) return false;
 
-	    m_vlist[0].push_back(_vertex_(m_pCurrentTriangle->v[0].vertex, -1, 0, 0));
-	    m_vlist[0].push_back(_vertex_(m_pCurrentTriangle->v[1].vertex, -1, 1, 1));
-	    m_vlist[0].push_back(_vertex_(m_pCurrentTriangle->v[2].vertex, -1, 2, 2));
+	    m_vlist[0].push_back(_vertex_(m_pCurrentTriangle->v[0].vertex, 0, 0, 0));
+	    m_vlist[0].push_back(_vertex_(m_pCurrentTriangle->v[1].vertex, 0, 1, 1));
+	    m_vlist[0].push_back(_vertex_(m_pCurrentTriangle->v[2].vertex, 0, 2, 2));
 
 	    INT src = 0, des = 1;
 	    INT counter = 0;
@@ -533,7 +640,7 @@ namespace SRE {
 
         if(counter == 18)
         {//do not need to clip any vertex
-            m_triangles.push(*m_pCurrentTriangle);
+            m_triangles.push_back(*m_pCurrentTriangle);
             return true;
         }
         else if(counter == -18)
@@ -551,19 +658,26 @@ namespace SRE {
 
             lerpNormal = Lerp(m_pCurrentTriangle->v[it->s].normal, m_pCurrentTriangle->v[it->e].normal,  it->t);
             lerpUVW = Lerp(m_pCurrentTriangle->v[it->s].texcoord,  m_pCurrentTriangle->v[it->e].texcoord,it->t);
-            VSOutput _v2(it->v, lerpNormal, lerpUVW);
-            VSOutput& v2 = _v2;
+            VSOutput  v2(it->v, lerpNormal, lerpUVW);
 
             while(it != m_vlist[src].end())
             {
                 it++;
-                lerpNormal = Lerp(m_pCurrentTriangle->v[it->s].normal, m_pCurrentTriangle->v[it->e].normal,  it->t);
-                lerpUVW = Lerp(m_pCurrentTriangle->v[it->s].texcoord,  m_pCurrentTriangle->v[it->e].texcoord,it->t);
-                VSOutput v3(it->v, lerpNormal, lerpUVW);
-
-                _Triangle_ triangle(v1, v2, v3);
-                m_triangles.push(triangle);
-                v2 = v3;
+                if(it->t > 0)
+                {
+                    lerpNormal = Lerp(m_pCurrentTriangle->v[it->s].normal, m_pCurrentTriangle->v[it->e].normal,  it->t);
+                    lerpUVW = Lerp(m_pCurrentTriangle->v[it->s].texcoord,  m_pCurrentTriangle->v[it->e].texcoord,it->t);
+                    VSOutput v3(it->v, lerpNormal, lerpUVW);
+                    _Triangle_ triangle(v1, v2, v3);
+                    v2 = v3;
+                    m_triangles.push_back(triangle);
+                }
+                else
+                {
+                    _Triangle_ triangle(v1, v2, m_pCurrentTriangle->v[it->s]);
+                    v2 = m_pCurrentTriangle->v[it->s];
+                    m_triangles.push_back(triangle);
+                }
             }
 
         }
@@ -574,32 +688,52 @@ namespace SRE {
         return true;
 	}
 
-	void VertexPostProcesser::PerspectiveDivide()
+	void VertexPostProcessor::PerspectiveDivide()
 	{
-	    while(!m_triangles.empty())
+	    std::list<_Triangle_>::iterator it=m_triangles.begin();
+	    while(it != m_triangles.end())
         {
-            _Triangle_ triangle = m_triangles.front();
-            m_triangles.pop();
-
             for(INT i=0; i<3; i++)
             {
-               triangle.v[i].vertex.x = triangle.v[i].vertex.x/triangle.v[i].vertex.w;
-               triangle.v[i].vertex.y = triangle.v[i].vertex.y/triangle.v[i].vertex.w;
-               triangle.v[i].vertex.z = triangle.v[i].vertex.z/triangle.v[i].vertex.w;
+               it->v[i].vertex.x = it->v[i].vertex.x/it->v[i].vertex.w;
+               it->v[i].vertex.y = it->v[i].vertex.y/it->v[i].vertex.w;
+               it->v[i].vertex.z = it->v[i].vertex.z/it->v[i].vertex.w;
             }
+
+            it++;
         }
 	}
 
-	void VertexPostProcesser::ViewportTranform()
+	void VertexPostProcessor::ViewportTranform()
 	{
+	    std::list<_Triangle_>::iterator it=m_triangles.begin();
+	    FLOAT halfH = m_viewportHeight/2.0f;
+	    FLOAT halfW = m_viewportWidth/2.0f;
+
 	    while(!m_triangles.empty())
         {
+            for(INT i=0; i<3; i++)
+            {
+               it->v[i].vertex.x = it->v[i].vertex.x*  halfW  + halfW;
+               it->v[i].vertex.y = it->v[i].vertex.y*(-halfH) + halfH;
+            }
 
+            _Triangle_* out = new _Triangle_(it->v[0], it->v[1], it->v[2]);
+             if(nullptr == out)
+            {
+#ifdef _SRE_DEBUG_
+                   _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
+#endif // _SRE_DEBUG_
+                   break;
+            }
+            Output((BasicIOElement*)out);
+            it++;
         }
 
+        m_triangles.clear();
 	}
 
-    void VertexPostProcesser::HandleElement()
+    void VertexPostProcessor::HandleElement()
     {
         m_pCurrentTriangle = (_Triangle_*)GetInput();
 
@@ -614,22 +748,22 @@ namespace SRE {
         m_pCurrentTriangle = nullptr;
     }
 
-    void VertexPostProcesser::OnCancel()
+    void VertexPostProcessor::OnCancel()
     {}
 
-    void VertexPostProcesser::OnPause()
+    void VertexPostProcessor::OnPause()
     {}
 
-    void VertexPostProcesser::OnResume()
+    void VertexPostProcessor::OnResume()
     {}
 
-    void VertexPostProcesser::OnRunError()
+    void VertexPostProcessor::OnRunError()
     {}
 
-    void VertexPostProcesser::OnRunFinish()
+    void VertexPostProcessor::OnRunFinish()
     {}
 
-    void VertexPostProcesser::OnStart()
+    void VertexPostProcessor::OnStart()
     {}
 
 

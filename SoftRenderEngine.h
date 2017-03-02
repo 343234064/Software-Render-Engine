@@ -27,6 +27,7 @@
 #include "SRE_Resources.h"
 #include "SRE_Mesh.h"
 #include "SRE_PipeLine.h"
+#include "SRE_Shader.h"
 
 
 

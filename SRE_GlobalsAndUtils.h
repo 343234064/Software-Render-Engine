@@ -93,19 +93,17 @@ namespace SRE {
 
     class BasicIOElement;
     class BasicObserver;
-    class BasicThread;
     class CallBackFunctions;
     class BasicProcessor;
     class BasePipeLine;
 
-    class _Triangle_;
-
     class SREPipeLine;
-    class VertexProcesser;
-    class VertexPostProcesser;
+    class InputAssembler;
+    class VertexProcessor;
+    class VertexPostProcessor;
     class PrimitiveAssembler;
     class Rasterizer;
-    class PixelProcesser;
+    class PixelProcessor;
     class OutputMerger;
 
     class VariableBuffer;
@@ -122,10 +120,11 @@ namespace SRE {
     //Type definitions
     //
     //==============================
-    typedef float         FLOAT;
-    typedef int             INT;
-    typedef unsigned int  SREVAR;
-    typedef unsigned char BYTE;
+    typedef float              FLOAT;
+    typedef int                INT;
+    typedef unsigned short int USINT;
+    typedef unsigned int       SREVAR;
+    typedef unsigned char      BYTE;
 
     typedef Vector    VEC;
 	typedef Vector2   VEC2;

@@ -34,11 +34,18 @@ protected:
 struct vertex
 {
 
-    FLOAT ver[3];
-    FLOAT nor[3];
+    VEC3  ver;
+    VEC3  nor;
+
     FLOAT a1;
     FLOAT a2;
 };
+
+VSOutput* myVS(BYTE* v, VariableBuffer* varbuffer)
+{
+    VSOutput * out = new VSOutput();
+    return out;
+}
 
 
 
@@ -49,13 +56,13 @@ int main()
     vertex vertexes[10];
     for(int i=0; i<10; i++)
     {
-        vertexes[i].ver[0] = 0.1+i;
-        vertexes[i].ver[1] = 0.2+i;
-        vertexes[i].ver[2] = 0.3+i;
+        vertexes[i].ver.x = 0.1+i;
+        vertexes[i].ver.y = 0.2+i;
+        vertexes[i].ver.z = 0.3+i;
 
-        vertexes[i].nor[0] = 0.9+i;
-        vertexes[i].nor[1] = 0.8+i;
-        vertexes[i].nor[2] = 0.7+i;
+        vertexes[i].nor.x = 0.9+i;
+        vertexes[i].nor.y = 0.8+i;
+        vertexes[i].nor.z = 0.7+i;
 
         vertexes[i].a1 = 0.11+i;
         vertexes[i].a2 = 0.21+i;
@@ -72,25 +79,37 @@ int main()
     else
         cout<<"fail"<<endl;
 
-    INT index[13]={0,1,2,3,6,-1,9,7,5,4,0,2,3};
+    //INT index[13]={0,1,2,3,6,-1,9,7,5,4,0,2,3};
+    INT index[7]={0,1,2,3,4,5,6};
 
     Buffer<INT>* ibuffer;
-    BufferDescript bd(13,1,1,SRE_TYPE_INDEXBUFFER,0);
+    BufferDescript bd(7,1,1,SRE_TYPE_INDEXBUFFER,0);
     RESULT re2=CreateBuffer(bd, index, &ibuffer);
     if(re2==RESULT::SUCC)
         cout<<"SUCC"<<endl;
     else
         cout<<"FAIL"<<endl;
 
-    BasicIOBuffer<BasicIOElement*> outputBuffer;
+    BasicIOBuffer<BasicIOElement*> IAoutputBuffer;
+    BasicIOBuffer<BasicIOElement*> VPoutputBuffer;
     Observer observer;
+    ConstantBuffer conbuffer;
+    VariableBuffer varbuffer;
+    conbuffer.primitiveTopology = SRE_PRIMITIVETYPE_TRIANGLEFAN;
 
-    InputAssembler IA(&outputBuffer, &observer);
-
-
+    InputAssembler IA(&IAoutputBuffer, &observer, &conbuffer);
     IA.SetVertexAndIndexBuffers(vbuffer, ibuffer);
-    IA.Run();
 
+    CallBackVShader* callback = &myVS;
+    VertexShader vshader(callback);
+    VertexProcessor VP(&IAoutputBuffer, &VPoutputBuffer, &observer, &vshader, &varbuffer);
+
+    g_log.Write("==============================================");
+    IA.Start();
+    VP.Start();
+
+    IA.Release();
+    VP.Release();
     cout<<"main end"<<endl;
 }
 
