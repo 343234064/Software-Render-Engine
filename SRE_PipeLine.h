@@ -20,7 +20,9 @@
 #include "SRE_Shader.h"
 #include "SRE_GlobalsAndUtils.h"
 
-
+#include <iostream>
+using std::cout;
+using std::endl;
 namespace SRE {
     //=============================
 	//Class Basic I/O Buffer
@@ -41,9 +43,9 @@ namespace SRE {
         void push(T data)
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            //cout<<"IN PUSH"<<endl;
             m_queue.push(data);
             m_cond.notify_one();
+
         }
 
         std::shared_ptr<T> wait_and_pop()
@@ -56,7 +58,7 @@ namespace SRE {
             return res;
         }
 
-        std::shared_ptr<T> topp()
+        std::shared_ptr<T> top()
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             std::shared_ptr<T> res(std::make_shared<T>(m_queue.front()));
@@ -120,40 +122,6 @@ namespace SRE {
 
 
     //=============================
-	//Class BasicThread
-	//
-	//
-	//=============================
-    class BasicThread
-    {
-    public:
-        BasicThread():
-            m_thread()
-        {}
-        ~BasicThread()
-        {
-            if(m_thread.joinable())
-               m_thread.join();
-        }
-
-        template<typename Callable, typename... Args>
-        void StartThread(Callable&& call, Args&&... args)
-        {
-            m_thread = std::thread(call, args...);
-        }
-
-        BasicThread(BasicThread & other) = delete;
-        BasicThread & operator=(BasicThread & other) = delete;
-
-
-    private:
-        std::thread m_thread;
-
-    };
-
-
-
-    //=============================
 	//Class CallBackFunctions
 	//
 	//
@@ -161,7 +129,8 @@ namespace SRE {
     class CallBackFunctions
     {
     public:
-        virtual ~CallBackFunctions(){}
+        virtual ~CallBackFunctions()
+        {}
         virtual void HandleElement()=0;
         virtual void OnCancel()=0;
         virtual void OnPause()=0;
@@ -213,17 +182,17 @@ namespace SRE {
         void SetInputQueue(BasicIOBuffer<BasicIOElement*> * inputQueue)
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            this->m_pInputQueue = inputQueue;
+            m_pInputQueue = inputQueue;
         }
         void SetOutputQueue(BasicIOBuffer<BasicIOElement*> * outpueQueue)
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            this->m_pOutputQueue = outpueQueue;
+            m_pOutputQueue = outpueQueue;
         }
         void SetObserver(BasicObserver  * observer)
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            this->m_pObserver = observer;
+            m_pObserver = observer;
         }
 
 
@@ -235,9 +204,14 @@ namespace SRE {
 
         void SetCallBacks(CallBackFunctions * callbacks)
         {
-            this->m_callBacks = callbacks;
+            m_callBacks = callbacks;
         }
 
+        void Release()
+        {
+            if(m_thread.joinable())
+               m_thread.join();
+        }
 
         BasicProcessor(const BasicProcessor & other) = delete;
         BasicProcessor & operator=(const BasicProcessor & other) = delete;
@@ -250,7 +224,7 @@ namespace SRE {
         BasicIOBuffer<BasicIOElement*> *    m_pInputQueue;
         BasicIOBuffer<BasicIOElement*> *    m_pOutputQueue;
         BasicObserver  *                    m_pObserver;
-        BasicThread                         m_thread;
+        std::thread                         m_thread;
         CallBackFunctions   *               m_callBacks;
 
         bool m_Cancel;
@@ -337,12 +311,38 @@ namespace SRE {
 
 
     //=============================
-	//Class _Triangle_
-	//
-	//a temp structure for IO
+	//Temp structures for IO
 	//=============================
+	struct _index_ver_
+	{//A temp data structure used for skipping vertex process
+	   INT index;
+	   BYTE* vertex;
+
+	   _index_ver_(INT i, BYTE* v):
+	       index(i),
+	       vertex(v)
+       {}
+       _index_ver_():
+	       index(-2),
+	       vertex(nullptr)
+       {}
+
+	};
+
+    struct _vertex_
+	{//A temp data structure used for clipping
+	    VERTEX4 v;
+	    FLOAT   t;
+	    INT     s;
+	    INT     e;
+
+        _vertex_(VERTEX4& _v, FLOAT _t, INT _s, INT _e):
+            v(_v),t(_t),s(_s),e(_e)
+        {}
+	};
+
 	class _Triangle_:public BasicIOElement
-	{
+	{//A temp data structure for primitive output
     public:
         _Triangle_(VSOutput& v1, VSOutput& v2, VSOutput& v3)
         {
@@ -376,7 +376,8 @@ namespace SRE {
             m_currentIndex(0),
             m_currentIndex2(0)
         {}
-        virtual ~InputAssembler(){}
+        virtual ~InputAssembler()
+        {}
 
 
         void HandleElement();
@@ -394,6 +395,9 @@ namespace SRE {
         void SetConstantBuffer(const ConstantBuffer * cbuffer);
 
     private:
+        void SendVertex(INT & actualIndex);
+
+    private:
         BasicIOBuffer<VertexBuffer*>  m_vertexBuffers;
         std::queue<Buffer<INT>*>      m_indexBuffers;
         const ConstantBuffer *        m_pConstantBuffer;
@@ -409,15 +413,15 @@ namespace SRE {
 
 
     //=============================
-	//Class VertexProcesser
+	//Class VertexProcessor
 	//
 	//
 	//
 	//=============================
-    class VertexProcesser:public BasicProcessor, public CallBackFunctions
+    class VertexProcessor:public BasicProcessor, public CallBackFunctions
     {
     public:
-        VertexProcesser(BasicIOBuffer<BasicIOElement*> * input=nullptr,
+        VertexProcessor(BasicIOBuffer<BasicIOElement*> * input=nullptr,
                         BasicIOBuffer<BasicIOElement*> * output=nullptr,
                         BasicObserver * observer=nullptr,
                         VertexShader*   vshader=nullptr,
@@ -425,8 +429,18 @@ namespace SRE {
             BasicProcessor(input, output, observer, this),
             m_pVertexShader(vshader),
             m_pVariableBuffer(variablebuffer)
-        {}
-        virtual ~VertexProcesser();
+        {
+            m_cachedVertex[0]=nullptr;
+            m_cachedVertex[1]=nullptr;
+            m_cachedVertex[2]=nullptr;
+            m_cachedVertexIndex[0]=-1;
+            m_cachedVertexIndex[1]=-1;
+            m_cachedVertexIndex[2]=-1;
+            m_cachedPriority[0]=4;
+            m_cachedPriority[1]=2;
+            m_cachedPriority[2]=1;
+        }
+        virtual ~VertexProcessor(){};
 
         void HandleElement();
         void OnCancel();
@@ -439,12 +453,16 @@ namespace SRE {
         void SetVertexShader(VertexShader * vshader);
         void SetVariableBuffer(VariableBuffer* varbuffer);
 
-        VertexProcesser(const VertexProcesser & other) = delete;
-        VertexProcesser & operator=(const VertexProcesser & other) = delete;
+        VertexProcessor(const VertexProcessor & other) = delete;
+        VertexProcessor & operator=(const VertexProcessor & other) = delete;
 
     private:
         VertexShader*     m_pVertexShader;
         VariableBuffer*   m_pVariableBuffer;
+
+        VSOutput*         m_cachedVertex[3];
+        USINT             m_cachedVertexIndex[3];
+        USINT             m_cachedPriority[3];
     };
 
 
@@ -504,34 +522,24 @@ namespace SRE {
 
 
     //=============================
-	//Class VertexPostProcesser
+	//Class VertexPostProcessor
 	//
 	//ccv:
 	//x: (-1,1)
 	//y: (-1,1)
 	//z: ( 0,1)
 	//=============================
-	struct _vertex_
-	{//A temp data structure used for clipping
-	    VERTEX4 v;
-	    FLOAT   t;
-	    INT     s;
-	    INT     e;
-
-        _vertex_(VERTEX4& _v, FLOAT _t, INT _s, INT _e):
-            v(_v),t(_t),s(_s),e(_e)
-        {}
-	};
-
-    class VertexPostProcesser:public BasicProcessor, public CallBackFunctions
+    class VertexPostProcessor:public BasicProcessor, public CallBackFunctions
     {
     public:
-        VertexPostProcesser(BasicIOBuffer<BasicIOElement*> * input=nullptr,
+        VertexPostProcessor(BasicIOBuffer<BasicIOElement*> * input=nullptr,
                             BasicIOBuffer<BasicIOElement*> * output=nullptr,
                             BasicObserver * observer=nullptr):
             BasicProcessor(input, output, observer, this),
+            m_pCurrentTriangle(nullptr),
             m_clipEpsilon(0.01),
-            m_pCurrentTriangle(nullptr)
+            m_viewportHeight(600),
+            m_viewportWidth(800)
         {
             m_clipPlane[0]=-1;m_clipPlaneNormal[0].x= 1;
             m_clipPlane[1]= 1;m_clipPlaneNormal[1].x=-1;
@@ -541,7 +549,7 @@ namespace SRE {
             m_clipPlane[5]=-1;m_clipPlaneNormal[5].z=-1;
 
         }
-        virtual ~VertexPostProcesser()
+        virtual ~VertexPostProcessor()
         {
             if(nullptr != m_pCurrentTriangle)
                 delete m_pCurrentTriangle;
@@ -559,25 +567,36 @@ namespace SRE {
         void SetClipPlaneY(FLOAT _y){m_clipPlane[2]=_y;m_clipPlane[3]=-_y;}
         void SetClipPlaneZ(FLOAT _z){m_clipPlane[4]=_z;m_clipPlane[5]=-_z;}
         void SetClipEpsilon(FLOAT eps){m_clipEpsilon = eps;}
+        void SetViewPortHeight(USINT height)
+        {
+            if(height>0) m_viewportHeight = height;
+        }
+        void SetViewPortWidth(USINT width)
+        {
+            if(width>0) m_viewportWidth = width;
+        }
 
 
-        VertexPostProcesser(const VertexPostProcesser & other) = delete;
-        VertexPostProcesser & operator=(const VertexPostProcesser & other) = delete;
+        VertexPostProcessor(const VertexPostProcessor & other) = delete;
+        VertexPostProcessor & operator=(const VertexPostProcessor & other) = delete;
 
     protected:
         bool TriangleClipping();//clip in cvv
         void PerspectiveDivide();//then divided by w
-        void ViewportTranform();//
-
+        void ViewportTranform();//transform x to range:(0,width)
+                                //transform y to range:(0,height)
+                                //origin on left top
     protected:
+        _Triangle_*  m_pCurrentTriangle;
         FLOAT        m_clipPlane[6];//-x, x, -y, y, -z, z
         VEC3         m_clipPlaneNormal[6];
         FLOAT        m_clipEpsilon;
-        _Triangle_*  m_pCurrentTriangle;
+        USINT        m_viewportHeight;
+        USINT        m_viewportWidth;
 
     private:
         std::list<_vertex_>    m_vlist[2];
-        std::queue<_Triangle_> m_triangles;
+        std::list<_Triangle_>  m_triangles;
 
 
 
@@ -610,20 +629,20 @@ namespace SRE {
 
 
     //=============================
-	//Class PixelProcesser
+	//Class PixelProcessor
 	//
 	//
 	//
 	//=============================
-    class PixelProcesser:public BasicProcessor
+    class PixelProcessor:public BasicProcessor
     {
     public:
-        PixelProcesser(BasicIOBuffer<BasicIOElement> * input=nullptr,
+        PixelProcessor(BasicIOBuffer<BasicIOElement> * input=nullptr,
                        BasicIOBuffer<BasicIOElement> * output=nullptr,
                        BasicObserver * observer=nullptr):
              BasicProcessor(input, output, observer)
         {}
-        virtual ~PixelProcesser();
+        virtual ~PixelProcessor();
 
         void Run();
         void NextStage();
