@@ -164,7 +164,8 @@ namespace SRE {
             m_thread(),
             m_callBacks(callbacks),
             m_Cancel(false),
-            m_Pause(false)
+            m_Pause(false),
+            m_Started(false)
         {}
         virtual ~BasicProcessor()
         {}
@@ -229,6 +230,7 @@ namespace SRE {
 
         bool m_Cancel;
         bool m_Pause;
+        bool m_Started;
 	};
 
 
@@ -313,11 +315,13 @@ namespace SRE {
     //=============================
 	//Temp structures for IO
 	//=============================
-	struct _index_ver_
+	class _index_ver_
 	{//A temp data structure used for skipping vertex process
+     public:
 	   INT index;
 	   BYTE* vertex;
 
+     public:
 	   _index_ver_(INT i, BYTE* v):
 	       index(i),
 	       vertex(v)
@@ -326,7 +330,13 @@ namespace SRE {
 	       index(-2),
 	       vertex(nullptr)
        {}
+       ~_index_ver_()
+       {
+           delete vertex;
+       }
 
+       _index_ver_(const _index_ver_ & other) = delete;
+       _index_ver_ & operator=(const _index_ver_ & other) = delete;
 	};
 
     struct _vertex_
@@ -344,14 +354,16 @@ namespace SRE {
 	class _Triangle_:public BasicIOElement
 	{//A temp data structure for primitive output
     public:
-        _Triangle_(VSOutput& v1, VSOutput& v2, VSOutput& v3)
+        _Triangle_(VSOutput & v1, VSOutput & v2, VSOutput & v3)
         {
             v[0]=v1;v[1]=v2;v[2]=v3;
         }
-        virtual ~_Triangle_(){}
+        virtual ~_Triangle_()
+        {
+        }
 
     public:
-        VSOutput v[3];
+        VSOutput  v[3];
 	};
 
 
@@ -430,9 +442,6 @@ namespace SRE {
             m_pVertexShader(vshader),
             m_pVariableBuffer(variablebuffer)
         {
-            m_cachedVertex[0]=nullptr;
-            m_cachedVertex[1]=nullptr;
-            m_cachedVertex[2]=nullptr;
             m_cachedVertexIndex[0]=-1;
             m_cachedVertexIndex[1]=-1;
             m_cachedVertexIndex[2]=-1;
@@ -440,7 +449,9 @@ namespace SRE {
             m_cachedPriority[1]=2;
             m_cachedPriority[2]=1;
         }
-        virtual ~VertexProcessor(){};
+        virtual ~VertexProcessor()
+        {
+        }
 
         void HandleElement();
         void OnCancel();
@@ -460,7 +471,7 @@ namespace SRE {
         VertexShader*     m_pVertexShader;
         VariableBuffer*   m_pVariableBuffer;
 
-        VSOutput*         m_cachedVertex[3];
+        VSOutput          m_cachedVertex[3];
         USINT             m_cachedVertexIndex[3];
         USINT             m_cachedPriority[3];
     };
@@ -478,20 +489,11 @@ namespace SRE {
     public:
         PrimitiveAssembler(BasicIOBuffer<BasicIOElement*> * input=nullptr,
                         BasicIOBuffer<BasicIOElement*> * output=nullptr,
-                        BasicObserver * observer=nullptr,
-                        const ConstantBuffer * constbuffer=nullptr):
-            BasicProcessor(input, output, observer, this),
-            m_pConstantBuffer(constbuffer),
-            m_pCachedVertex1(nullptr),
-            m_pCachedVertex2(nullptr)
+                        BasicObserver * observer=nullptr):
+            BasicProcessor(input, output, observer, this)
         {}
         virtual ~PrimitiveAssembler()
-        {
-            if(nullptr != m_pCachedVertex1)
-                delete m_pCachedVertex1;
-            if(nullptr != m_pCachedVertex2)
-                delete m_pCachedVertex2;
-        }
+        {}
 
         void HandleElement();
         void OnCancel();
@@ -501,20 +503,8 @@ namespace SRE {
         void OnRunFinish();
         void OnStart();
 
-        void SetConstantBuffer(const ConstantBuffer * cbuffer);
-
         PrimitiveAssembler(const PrimitiveAssembler & other) = delete;
         PrimitiveAssembler & operator=(const PrimitiveAssembler & other) = delete;
-
-    private:
-        void TriangleList();
-        void TriangleFan();
-        void TriangleStrip();
-
-    protected:
-        const ConstantBuffer * m_pConstantBuffer;
-        BYTE* m_pCachedVertex1;
-        BYTE* m_pCachedVertex2;
 
 
     };

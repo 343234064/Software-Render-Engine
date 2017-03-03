@@ -165,6 +165,16 @@ namespace SRE {
         return *this;
 	}
 
+    VEC2 & Vector2::operator = (const VEC & vec) {
+
+        if(this == &vec)
+            return *this;
+
+        this->x=vec.x;
+        this->y=0.0f;
+
+        return *this;
+	}
 
 	VEC2 operator * (FLOAT factor, const VEC2 & vec) {
 
@@ -217,6 +227,30 @@ namespace SRE {
         this->x=vec.x;
         this->y=vec.y;
         this->z=vec.z;
+
+        return *this;
+	}
+
+	VEC3 & Vector3::operator = (const VEC2 & vec) {
+
+        if(this == &vec)
+            return *this;
+
+        this->x=vec.x;
+        this->y=vec.y;
+        this->z=0.0f;
+
+        return *this;
+	}
+
+	VEC3 & Vector3::operator = (const VEC & vec) {
+
+        if(this == &vec)
+            return *this;
+
+        this->x=vec.x;
+        this->y=0.0f;
+        this->z=0.0f;
 
         return *this;
 	}
@@ -280,6 +314,44 @@ namespace SRE {
         return *this;
 	}
 
+	VEC4 & Vector4::operator = (const VEC3 & vec) {
+
+        if(this == &vec)
+            return *this;
+
+        this->x=vec.x;
+        this->y=vec.y;
+        this->z=vec.z;
+        this->w=0.0f;
+
+        return *this;
+	}
+
+    VEC4 & Vector4::operator = (const VEC2 & vec) {
+
+        if(this == &vec)
+            return *this;
+
+        this->x=vec.x;
+        this->y=vec.y;
+        this->z=0.0f;
+        this->w=0.0f;
+
+        return *this;
+	}
+
+    VEC4 & Vector4::operator = (const VEC & vec) {
+
+        if(this == &vec)
+            return *this;
+
+        this->x=vec.x;
+        this->y=0.0f;
+        this->z=0.0f;
+        this->w=0.0f;
+
+        return *this;
+	}
 
 	VEC4 operator * (FLOAT factor, const VEC4 & vec) {
 

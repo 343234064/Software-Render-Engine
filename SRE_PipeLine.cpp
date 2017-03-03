@@ -38,9 +38,12 @@ namespace SRE {
         }
 #endif // _SRE_DEBUGLOG_
 
-        if(nullptr != m_callBacks)
-            m_callBacks->OnStart();
-        m_thread = std::thread(&BasicProcessor::Run, this);
+        if(!m_Started)
+        {
+           if(nullptr != m_callBacks)
+              m_callBacks->OnStart();
+           m_thread = std::thread(&BasicProcessor::Run, this);
+        }
     }
 
 
@@ -86,6 +89,7 @@ namespace SRE {
         if(nullptr != m_callBacks)
             m_callBacks->OnRunFinish();
 
+        m_Started = false;
         return;
     }
 
@@ -317,7 +321,16 @@ namespace SRE {
         {
             if(v->index == m_cachedVertexIndex[i])
             {
-                Output((BasicIOElement*)m_cachedVertex[i]);
+                VSOutput * out = new VSOutput(m_cachedVertex[i]);
+                if(nullptr != out)
+                {
+                    Output((BasicIOElement*)out);
+                }
+#ifdef _SRE_DEBUG_
+                else
+                    _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
+#endif // _SRE_DEBUG_
+
                 found = true;
                 m_cachedPriority[i]=1;
                 g_log.WriteKV("Found", v->index);
@@ -338,11 +351,12 @@ namespace SRE {
             if(nullptr != out)
             {
                 Output((BasicIOElement*)out);
-                m_cachedVertex[coverIndex] = out;
+                m_cachedVertex[coverIndex] = *out;
                 m_cachedVertexIndex[coverIndex] = v->index;
                 m_cachedPriority[coverIndex] = 1;
                 g_log.WriteKV("Not Found, replace", v->index, (INT)coverIndex);
             }
+
         }
 
         delete v;
@@ -404,120 +418,33 @@ namespace SRE {
 	//
 	//
 	//===========================================
-    void PrimitiveAssembler::SetConstantBuffer(const ConstantBuffer * cbuffer)
+    void PrimitiveAssembler::HandleElement()
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_pConstantBuffer = cbuffer;
-    }
-
-	void PrimitiveAssembler::TriangleList()
-	{
 	    VSOutput* v1=(VSOutput*)GetInput();
 	    VSOutput* v2=(VSOutput*)GetInput();
 	    VSOutput* v3=(VSOutput*)GetInput();
 
-        if(nullptr == v1 || nullptr == v2 || nullptr == v3)
-            return;
+        if(nullptr != v1 && nullptr != v2 && nullptr != v3)
+        {
+            _Triangle_* out = new _Triangle_(*v1, *v2, *v3);
 
-        _Triangle_* out = new _Triangle_(*v1, *v2, *v3);
+            if(nullptr != out)
+            {
+                 Output((BasicIOElement*)out);
+                 g_log.Write("Primitive Output:");
+                 g_log.WriteKV("Triangle:", v1->vertex.x, v2->vertex.x, v3->vertex.x);
+            }
+            else
+            {
+#ifdef _SRE_DEBUG_
+               _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
+#endif // _SRE_DEBUG_
+            }
+        }
+
         delete v1;
         delete v2;
         delete v3;
-
-        if(nullptr == out)
-        {
-#ifdef _SRE_DEBUG_
-                   _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
-#endif // _SRE_DEBUG_
-                   return;
-        }
-        Output((BasicIOElement*)out);
-	}
-
-	void PrimitiveAssembler::TriangleFan()
-	{
-	    VSOutput* v3 = nullptr;
-	    if(nullptr == m_pCachedVertex1)
-        {
-            m_pCachedVertex1 = (BYTE*)(GetInput());
-            m_pCachedVertex2 = (BYTE*)(GetInput());
-        }
-        else
-        {
-            v3 = (VSOutput*)(GetInput());
-            if(nullptr == v3)
-            {
-                delete m_pCachedVertex1;
-                delete m_pCachedVertex2;
-                m_pCachedVertex1 = nullptr;
-                return;
-            }
-        }
-
-        _Triangle_* out = new _Triangle_(*((VSOutput*)m_pCachedVertex1), *((VSOutput*)m_pCachedVertex2), *v3);
-        if(nullptr == out)
-        {
-#ifdef _SRE_DEBUG_
-                   _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
-#endif // _SRE_DEBUG_
-                   return;
-        }
-        Output((BasicIOElement*)out);
-
-        delete m_pCachedVertex2;
-        m_pCachedVertex2 = (BYTE*)v3;
-	}
-
-	void PrimitiveAssembler::TriangleStrip()
-	{
-	    VSOutput* v3 = nullptr;
-	    if(nullptr == m_pCachedVertex1)
-        {
-            m_pCachedVertex1 = (BYTE*)GetInput();
-            m_pCachedVertex2 = (BYTE*)GetInput();
-        }
-        else
-        {
-            v3 = (VSOutput*)GetInput();
-            if(nullptr == v3)
-            {
-                delete m_pCachedVertex1;
-                delete m_pCachedVertex2;
-                m_pCachedVertex1 = nullptr;
-                return;
-            }
-        }
-
-        _Triangle_* out = new _Triangle_(*((VSOutput*)m_pCachedVertex1), *((VSOutput*)m_pCachedVertex2), *v3);
-        if(nullptr == out)
-        {
-#ifdef _SRE_DEBUG_
-                   _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
-#endif // _SRE_DEBUG_
-                   return;
-        }
-        Output((BasicIOElement*)out);
-
-        delete m_pCachedVertex1;
-        m_pCachedVertex1 = m_pCachedVertex2;
-        m_pCachedVertex2 = (BYTE*)v3;
-	}
-
-    void PrimitiveAssembler::HandleElement()
-    {
-        if(m_pConstantBuffer->primitiveTopology == SRE_PRIMITIVETYPE_TRIANGLELIST)
-        {
-            TriangleList();
-        }
-        else if(m_pConstantBuffer->primitiveTopology == SRE_PRIMITIVETYPE_TRIANGLEFAN)
-        {
-            TriangleFan();
-        }
-        else if(m_pConstantBuffer->primitiveTopology == SRE_PRIMITIVETYPE_TRIANGLESTRIP)
-        {
-            TriangleStrip();
-        }
-
     }
 
     void PrimitiveAssembler::OnCancel()
@@ -773,6 +700,7 @@ namespace SRE {
 	//
 	//
 	//===========================================
+    /*
     Technique & Technique::operator=(const Technique & other)
     {
         if(this != &other)
@@ -782,7 +710,7 @@ namespace SRE {
         }
 
         return *this;
-    }
+    }*/
 
 
     void Technique::ReleasePassList()

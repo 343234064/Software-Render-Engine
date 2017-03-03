@@ -53,15 +53,15 @@ namespace SRE {
             normal(*n),
             texcoord(*uvw)
         {}
-
-        virtual ~VSOutput(){}
-
-        VSOutput & operator=(const VSOutput & other)
+        VSOutput(const VSOutput & other)
         {
             vertex = other.vertex;
             normal = other.normal;
             texcoord = other.texcoord;
         }
+
+        virtual ~VSOutput(){}
+
     public:
         VERTEX4 vertex;
         VEC3    normal;
@@ -165,7 +165,7 @@ namespace SRE {
         //void        SetVertexSource(INT index, void* vertexData, void* indexData);
         //move to device layer
 
-        Technique &  operator=(const Technique & other);
+        //Technique &  operator=(const Technique & other);
 
     protected:
         std::string             m_name;
@@ -218,7 +218,7 @@ namespace SRE {
 
 
 
-        RenderPass & operator=(const RenderPass &);
+        //RenderPass & operator=(const RenderPass &);
 
     protected:
         void        StartPipeLine();
