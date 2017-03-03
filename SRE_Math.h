@@ -188,6 +188,8 @@ namespace SRE {
 		VEC2    operator +  (const VEC2 &) const;
 		VEC2    operator -  (const VEC2 &) const;
 		VEC2 &  operator =  (const VEC2 &);
+        VEC2 &  operator =  (const VEC  &);
+
 		friend VEC2 operator *  (FLOAT, const VEC2 &);
 		friend VEC2 operator *  (const VEC2 &, FLOAT);
 
@@ -224,6 +226,9 @@ namespace SRE {
 		VEC3    operator +  (const VEC3 &) const;
 		VEC3    operator -  (const VEC3 &) const;
 		VEC3 &  operator =  (const VEC3 &);
+        VEC3 &  operator =  (const VEC2 &);
+        VEC3 &  operator =  (const VEC  &);
+
 		friend VEC3 operator *  (FLOAT, const VEC3 &);
         friend VEC3 operator *  (const VEC3 &, FLOAT);
 
@@ -262,6 +267,9 @@ namespace SRE {
 		VEC4    operator +  (const VEC4 &) const;
 		VEC4    operator -  (const VEC4 &) const;
         VEC4 &  operator =  (const VEC4 &);
+        VEC4 &  operator =  (const VEC3 &);
+        VEC4 &  operator =  (const VEC2 &);
+        VEC4 &  operator =  (const VEC  &);
 		friend VEC4 operator *  (FLOAT, const VEC4 &);
 		friend VEC4 operator *  (const VEC4 &, FLOAT);
 

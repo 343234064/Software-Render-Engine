@@ -42,6 +42,13 @@ struct vertex
 VSOutput* myVS(BYTE* v, VariableBuffer* varbuffer)
 {
     VSOutput * out = new VSOutput();
+
+    vertex* ver = (vertex*)v;
+    out->vertex = ver->ver;
+    out->normal = ver->nor;
+    out->texcoord.x = ver->a1;
+    out->texcoord.y = ver->a2;
+
     return out;
 }
 
@@ -88,24 +95,30 @@ int main()
 
     BasicIOBuffer<BasicIOElement*> IAoutputBuffer;
     BasicIOBuffer<BasicIOElement*> VPoutputBuffer;
+    BasicIOBuffer<BasicIOElement*> PAoutputBuffer;
     Observer observer;
     ConstantBuffer conbuffer;
     VariableBuffer varbuffer;
-    conbuffer.primitiveTopology = SRE_PRIMITIVETYPE_TRIANGLEFAN;
+    conbuffer.primitiveTopology = SRE_PRIMITIVETYPE_TRIANGLESTRIP;
 
     InputAssembler IA(&IAoutputBuffer, &observer, &conbuffer);
     IA.SetVertexAndIndexBuffers(vbuffer, ibuffer);
+    IA.SetVertexAndIndexBuffers(vbuffer, nullptr);
 
     CallBackVShader* callback = &myVS;
     VertexShader vshader(callback);
     VertexProcessor VP(&IAoutputBuffer, &VPoutputBuffer, &observer, &vshader, &varbuffer);
 
+    PrimitiveAssembler PA(&VPoutputBuffer, &PAoutputBuffer, &observer);
+
     g_log.Write("==============================================");
     IA.Start();
     VP.Start();
+    PA.Start();
 
     IA.Release();
     VP.Release();
+    PA.Release();
     cout<<"main end"<<endl;
 }
 
