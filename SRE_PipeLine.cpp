@@ -497,201 +497,279 @@ namespace SRE {
     //
     //I use Sutherland and Hodgman Clipping Algorithm
 	//===========================================
-	bool VertexPostProcessor::TriangleClipping()
+    void VertexPostProcessor::SetClipPlaneX(FLOAT Distance_PlaneToOrigin, VEC3& normal)
+    {
+        m_clipPlaneDistance[0] = Distance_PlaneToOrigin;
+        m_clipPlaneDistance[1] = Distance_PlaneToOrigin;
+
+        m_clipPlaneNormal[0] = normal;
+        m_clipPlaneNormal[1] = -normal;
+    }
+
+    void VertexPostProcessor::SetClipPlaneY(FLOAT Distance_PlaneToOrigin, VEC3& normal)
+    {
+        m_clipPlaneDistance[2] = Distance_PlaneToOrigin;
+        m_clipPlaneDistance[3] = Distance_PlaneToOrigin;
+
+        m_clipPlaneNormal[2] = normal;
+        m_clipPlaneNormal[3] = -normal;
+    }
+
+    void VertexPostProcessor::SetClipPlaneZ(FLOAT Distance_PlaneToOrigin, VEC3& normal)
+    {
+        m_clipPlaneDistance[4] = Distance_PlaneToOrigin;
+        m_clipPlaneDistance[5] = Distance_PlaneToOrigin;
+
+        m_clipPlaneNormal[4] = normal;
+        m_clipPlaneNormal[5] = -normal;
+    }
+
+	void VertexPostProcessor::TriangleClipping()
 	{
-	    if(m_pCurrentTriangle->v[0].vertex.w <= 0) return false;
-	    if(m_pCurrentTriangle->v[1].vertex.w <= 0) return false;
-	    if(m_pCurrentTriangle->v[2].vertex.w <= 0) return false;
+	    if(m_pCurrentTriangle->v[0].vertex.w <= 0) return;
+	    if(m_pCurrentTriangle->v[1].vertex.w <= 0) return;
+	    if(m_pCurrentTriangle->v[2].vertex.w <= 0) return;
 
 	    m_vlist[0].push_back(_vertex_(m_pCurrentTriangle->v[0].vertex, 0, 0, 0));
 	    m_vlist[0].push_back(_vertex_(m_pCurrentTriangle->v[1].vertex, 0, 1, 1));
 	    m_vlist[0].push_back(_vertex_(m_pCurrentTriangle->v[2].vertex, 0, 2, 2));
 
-	    INT src = 0, des = 1;
-	    INT counter = 0;
-        std::list<_vertex_>::iterator it;
+	    USINT src = 0, des = 1;
+        bool  discard = false;
+        std::list<_vertex_>::iterator it,it2;
 
-        for(INT i=0; i<6; i++)
+        for(USINT i=0; i<6; i++)
         {//for all 6 plane
+            it=m_vlist[src].begin();
 
             while(true)
-            {//for each edge in m_vlist[src]
+            {//for each vertex in m_vlist[src]
 
-                it=m_vlist[src].begin();
                 _vertex_ va = *it++;
+                if(it == m_vlist[src].end())
+                   it++;
                 _vertex_ vb = *it;
 
-                FLOAT Da = Dot((VEC3*)&(va.v), m_clipPlaneNormal+i)-m_clipPlane[i];
-                FLOAT Db = Dot((VEC3*)&(vb.v), m_clipPlaneNormal+i)-m_clipPlane[i];
+                FLOAT Da = va.v.x*m_clipPlaneNormal[i].x+va.v.y*m_clipPlaneNormal[i].y+va.v.z*m_clipPlaneNormal[i].z+m_clipPlaneDistance[i];
+                FLOAT Db = vb.v.x*m_clipPlaneNormal[i].x+vb.v.y*m_clipPlaneNormal[i].y+vb.v.z*m_clipPlaneNormal[i].z+m_clipPlaneDistance[i];
 
                 if(Da >= m_clipEpsilon)
                 {
                     if(Db >= m_clipEpsilon)
                     {
                         m_vlist[des].push_back(vb);
-                        counter++;
                     }
                     else
                     {
                         FLOAT t = fabs(Da)/(fabs(Da)+fabs(Db));
-                        VERTEX4 lerpVertex = Lerp(va.v, vb.v, t);
-                        m_vlist[des].push_back(_vertex_(lerpVertex, t, va.s, vb.e));
+                        if(t>0)
+                        {
+                            VERTEX4 lerpVertex = Lerp(va.v, vb.v, t);
+                            m_vlist[des].push_back(_vertex_(lerpVertex, t, va.s, vb.e));
+                        }
                     }
-
                 }
                 else if(Db >= m_clipEpsilon)
                 {
                     FLOAT t = fabs(Da)/(fabs(Da)+fabs(Db));
-                    VERTEX4 lerpVertex = Lerp(va.v, vb.v, t);
-                    m_vlist[des].push_back(_vertex_(lerpVertex, t, va.s, vb.e));
-
+                    if(t<1)
+                    {
+                        VERTEX4 lerpVertex = Lerp(va.v, vb.v, t);
+                        m_vlist[des].push_back(_vertex_(lerpVertex, t, va.s, vb.e));
+                    }
                     m_vlist[des].push_back(vb);
-                }
-                else
-                {
-                    counter--;
                 }
 
                 if(it == m_vlist[src].begin())
-                {
-                    break;
-                }
-
+                   break;
             }
 
-            m_vlist[src].clear();
-            src = !src;
-            des = !des;
+            //check if we have vertex output and then swap the destination and source
+            if(!m_vlist[des].empty())
+            {
+                m_vlist[src].clear();
+                src = !src;
+                des = !des;
+            }
+            else
+            {
+                discard = true;
+                break;
+            }
+
         }
 
+         g_log.Write("Clipping Output");
+         it=m_vlist[src].begin();
+         while(it!=m_vlist[src].end())
+         {
+            _vertex_ v = *it++;
+            g_log.WriteKV("VLIST:",v.v.x, v.v.y, v.v.z, v.v.w);
+         }
 
-        if(counter == 18)
-        {//do not need to clip any vertex
-            m_triangles.push_back(*m_pCurrentTriangle);
-            return true;
-        }
-        else if(counter == -18)
+
+        if(discard)
         {//we need to clip all vertexes
-            return false;
+
+            g_log.WriteKV("CTri v1:", m_pCurrentTriangle->v[0].vertex.x, m_pCurrentTriangle->v[0].vertex.y, m_pCurrentTriangle->v[0].vertex.z);
+            g_log.WriteKV("CTri v2:", m_pCurrentTriangle->v[1].vertex.x, m_pCurrentTriangle->v[1].vertex.y, m_pCurrentTriangle->v[1].vertex.z);
+            g_log.WriteKV("CTri v3:", m_pCurrentTriangle->v[2].vertex.x, m_pCurrentTriangle->v[2].vertex.y, m_pCurrentTriangle->v[2].vertex.z);
+            g_log.Write("Do Clip All");
+            return;
+        }
+        if(m_vlist[src].size()<=3)
+        {//do not need to clip any vertex
+            OtherTranforms(m_pCurrentTriangle->v[0]);
+            OtherTranforms(m_pCurrentTriangle->v[1]);
+            OtherTranforms(m_pCurrentTriangle->v[2]);
+            SendTriangle(m_pCurrentTriangle->v[0], m_pCurrentTriangle->v[1], m_pCurrentTriangle->v[2]);
+
+            g_log.WriteKV("CTri v1:", m_pCurrentTriangle->v[0].vertex.x, m_pCurrentTriangle->v[0].vertex.y, m_pCurrentTriangle->v[0].vertex.z);
+            g_log.WriteKV("CTri v2:", m_pCurrentTriangle->v[1].vertex.x, m_pCurrentTriangle->v[1].vertex.y, m_pCurrentTriangle->v[1].vertex.z);
+            g_log.WriteKV("CTri v3:", m_pCurrentTriangle->v[2].vertex.x, m_pCurrentTriangle->v[2].vertex.y, m_pCurrentTriangle->v[2].vertex.z);
+            g_log.Write("Do Not Clip");
+            return;
         }
         else
         {//we need to cut the triangle
+            g_log.Write("Do Clipped ");
             it = m_vlist[src].begin();
 
-            VEC3 lerpNormal = Lerp(m_pCurrentTriangle->v[it->s].normal, m_pCurrentTriangle->v[it->e].normal, it->t);
-            VEC3 lerpUVW = Lerp(m_pCurrentTriangle->v[it->s].texcoord,  m_pCurrentTriangle->v[it->e].texcoord,it->t);
-            VSOutput v1(it->v, lerpNormal, lerpUVW);
+            VSOutput v1(it->v);
+            v1.LerpAttriValue(m_pCurrentTriangle->v[it->s], m_pCurrentTriangle->v[it->e], it->t);
+            OtherTranforms(v1);
             it++;
 
-            lerpNormal = Lerp(m_pCurrentTriangle->v[it->s].normal, m_pCurrentTriangle->v[it->e].normal,  it->t);
-            lerpUVW = Lerp(m_pCurrentTriangle->v[it->s].texcoord,  m_pCurrentTriangle->v[it->e].texcoord,it->t);
-            VSOutput  v2(it->v, lerpNormal, lerpUVW);
+            VSOutput  v2(it->v);
+            v2.LerpAttriValue(m_pCurrentTriangle->v[it->s], m_pCurrentTriangle->v[it->e], it->t);
+            OtherTranforms(v2);
+            it++;
 
             while(it != m_vlist[src].end())
             {
-                it++;
+
                 if(it->t > 0)
                 {
-                    lerpNormal = Lerp(m_pCurrentTriangle->v[it->s].normal, m_pCurrentTriangle->v[it->e].normal,  it->t);
-                    lerpUVW = Lerp(m_pCurrentTriangle->v[it->s].texcoord,  m_pCurrentTriangle->v[it->e].texcoord,it->t);
-                    VSOutput v3(it->v, lerpNormal, lerpUVW);
-                    _Triangle_ triangle(v1, v2, v3);
+                    VSOutput v3(it->v);
+                    v3.LerpAttriValue(m_pCurrentTriangle->v[it->s], m_pCurrentTriangle->v[it->e], it->t);
+                    OtherTranforms(v3);
+
+                    SendTriangle(v1, v2, v3);
+
+
+            g_log.WriteKV("CTri v1:", v1.vertex.x, v1.vertex.y, v1.vertex.z);
+            g_log.WriteKV("CTri v2:", v2.vertex.x, v2.vertex.y, v2.vertex.z);
+            g_log.WriteKV("CTri v3:", v3.vertex.x, v3.vertex.y, v3.vertex.z);
+            g_log.Write("Clipped");
                     v2 = v3;
-                    m_triangles.push_back(triangle);
                 }
                 else
                 {
-                    _Triangle_ triangle(v1, v2, m_pCurrentTriangle->v[it->s]);
+                    OtherTranforms(m_pCurrentTriangle->v[it->s]);
+                    SendTriangle(v1, v2, m_pCurrentTriangle->v[it->s]);
+
+
+            g_log.WriteKV("CTri v1:", v1.vertex.x, v1.vertex.y, v1.vertex.z);
+            g_log.WriteKV("CTri v2:", v2.vertex.x, v2.vertex.y, v2.vertex.z);
+            g_log.WriteKV("CTri v3:", m_pCurrentTriangle->v[it->s].vertex.x, m_pCurrentTriangle->v[it->s].vertex.y, m_pCurrentTriangle->v[it->s].vertex.z);
+            g_log.Write("Clipped");
+
                     v2 = m_pCurrentTriangle->v[it->s];
-                    m_triangles.push_back(triangle);
                 }
+                it++;
             }
-
         }
 
-        m_vlist[0].clear();
-        m_vlist[1].clear();
-
-        return true;
+        return;
 	}
 
-	void VertexPostProcessor::PerspectiveDivide()
+	void VertexPostProcessor::OtherTranforms(VSOutput & input)
 	{
-	    std::list<_Triangle_>::iterator it=m_triangles.begin();
-	    while(it != m_triangles.end())
-        {
-            for(INT i=0; i<3; i++)
-            {
-               it->v[i].vertex.x = it->v[i].vertex.x/it->v[i].vertex.w;
-               it->v[i].vertex.y = it->v[i].vertex.y/it->v[i].vertex.w;
-               it->v[i].vertex.z = it->v[i].vertex.z/it->v[i].vertex.w;
-            }
 
-            it++;
-        }
+        //Perspective Divide
+        input.vertex.x = input.vertex.x/input.vertex.w;
+        input.vertex.y = input.vertex.y/input.vertex.w;
+        input.vertex.z = input.vertex.z/input.vertex.w;
+
+        //Viewport Transform
+        input.vertex.x = input.vertex.x*  m_viewportWidthHalf   + m_viewportWidthHalf;
+        input.vertex.y = input.vertex.y*(-m_viewportHeightHalf) + m_viewportHeightHalf;
+
 	}
 
-	void VertexPostProcessor::ViewportTranform()
+	void VertexPostProcessor::SendTriangle(VSOutput & v1, VSOutput & v2, VSOutput & v3)
 	{
-	    std::list<_Triangle_>::iterator it=m_triangles.begin();
-	    FLOAT halfH = m_viewportHeight/2.0f;
-	    FLOAT halfW = m_viewportWidth/2.0f;
-
-	    while(!m_triangles.empty())
+        _Triangle_* out = new _Triangle_(v1, v2, v3);
+        if(nullptr == out)
         {
-            for(INT i=0; i<3; i++)
-            {
-               it->v[i].vertex.x = it->v[i].vertex.x*  halfW  + halfW;
-               it->v[i].vertex.y = it->v[i].vertex.y*(-halfH) + halfH;
-            }
-
-            _Triangle_* out = new _Triangle_(it->v[0], it->v[1], it->v[2]);
-             if(nullptr == out)
-            {
 #ifdef _SRE_DEBUG_
-                   _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
+            _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
 #endif // _SRE_DEBUG_
-                   break;
-            }
-            Output((BasicIOElement*)out);
-            it++;
+            return;
         }
-
-        m_triangles.clear();
+        Output((BasicIOElement*)out);
 	}
 
     void VertexPostProcessor::HandleElement()
     {
-        m_pCurrentTriangle = (_Triangle_*)GetInput();
-
+        m_pCurrentTriangle = (_Triangle_*)(GetInput());
+        g_log.Write("HANDLE ELEMENT");
         if(nullptr != m_pCurrentTriangle)
-          if(TriangleClipping())
-          {
-              PerspectiveDivide();
-              ViewportTranform();
-          }
+        {
+           TriangleClipping();
 
+           m_vlist[0].clear();
+           m_vlist[1].clear();
+
+        }
+
+        g_log.Write("HANDLE ELEMENT END");
         delete m_pCurrentTriangle;
         m_pCurrentTriangle = nullptr;
     }
 
     void VertexPostProcessor::OnCancel()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("VertexPostProcessor Cancel!");
+#endif // _SRE_DEBUG_
+    }
 
     void VertexPostProcessor::OnPause()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("VertexPostProcessor Pause!");
+#endif // _SRE_DEBUG_
+    }
 
     void VertexPostProcessor::OnResume()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("VertexPostProcessor Resume!");
+#endif // _SRE_DEBUG_
+    }
 
     void VertexPostProcessor::OnRunError()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("VertexPostProcessor Run Error!");
+#endif // _SRE_DEBUG_
+    }
 
     void VertexPostProcessor::OnRunFinish()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("VertexPostProcessor Run Finish!");
+#endif // _SRE_DEBUG_
+    }
 
     void VertexPostProcessor::OnStart()
-    {}
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("VertexPostProcessor Start!");
+#endif // _SRE_DEBUG_
+    }
+
 
 
 

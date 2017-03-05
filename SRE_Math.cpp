@@ -101,6 +101,10 @@ namespace SRE {
 		return VEC(x - vec.x);
 	}
 
+    VEC Vector::operator - () const {
+
+		return VEC(-x);
+	}
 
 	VEC & Vector::operator = (const VEC & vec) {
 
@@ -124,6 +128,27 @@ namespace SRE {
 		return VEC(factor * vec.x);
 	}
 
+	VEC operator + (FLOAT factor, const VEC & vec) {
+
+		return VEC(factor + vec.x);
+	}
+
+
+    VEC operator + (const VEC & vec, FLOAT factor) {
+
+		return VEC(factor + vec.x);
+	}
+
+	VEC operator - (FLOAT factor, const VEC & vec) {
+
+		return VEC(factor - vec.x);
+	}
+
+
+    VEC operator - (const VEC & vec, FLOAT factor) {
+
+		return VEC(factor - vec.x);
+	}
 
 	//=============================
 	//2D vector operations
@@ -154,6 +179,11 @@ namespace SRE {
 	}
 
 
+	VEC2 Vector2::operator - () const {
+
+		return VEC2(-x, -y);
+	}
+
 	VEC2 & Vector2::operator = (const VEC2 & vec) {
 
         if(this == &vec)
@@ -181,12 +211,30 @@ namespace SRE {
 		return VEC2(factor * vec.x, factor*vec.y);
 	}
 
-
     VEC2 operator * (const VEC2 & vec, FLOAT factor) {
 
 		return VEC2(factor * vec.x, factor*vec.y);
 	}
 
+	VEC2 operator + (FLOAT factor, const VEC2 & vec) {
+
+		return VEC2(factor + vec.x, factor + vec.y);
+	}
+
+    VEC2 operator + (const VEC2 & vec, FLOAT factor) {
+
+		return VEC2(factor + vec.x, factor + vec.y);
+	}
+
+	VEC2 operator - (FLOAT factor, const VEC2 & vec) {
+
+		return VEC2(factor - vec.x, factor - vec.y);
+	}
+
+    VEC2 operator - (const VEC2 & vec, FLOAT factor) {
+
+		return VEC2(factor - vec.x, factor - vec.y);
+	}
 
 	//=============================
 	//3D vector operations
@@ -218,6 +266,11 @@ namespace SRE {
 		return VEC3(x - vec.x, y - vec.y, z - vec.z);
 	}
 
+
+	VEC3 Vector3::operator - () const {
+
+		return VEC3(-x, -y, -z);
+	}
 
 	VEC3 & Vector3::operator = (const VEC3 & vec) {
 
@@ -261,12 +314,30 @@ namespace SRE {
 		return VEC3(factor * vec.x, factor*vec.y, factor*vec.z);
 	}
 
-
     VEC3 operator * (const VEC3 & vec, FLOAT factor) {
 
 		return VEC3(factor * vec.x, factor*vec.y, factor*vec.z);
 	}
 
+	VEC3 operator + (FLOAT factor, const VEC3 & vec) {
+
+		return VEC3(factor + vec.x, factor + vec.y, factor + vec.z);
+	}
+
+    VEC3 operator + (const VEC3 & vec, FLOAT factor) {
+
+		return VEC3(factor + vec.x, factor + vec.y, factor + vec.z);
+	}
+
+	VEC3 operator - (FLOAT factor, const VEC3 & vec) {
+
+		return VEC3(factor - vec.x, factor - vec.y, factor - vec.z);
+	}
+
+    VEC3 operator - (const VEC3 & vec, FLOAT factor) {
+
+		return VEC3(factor - vec.x, factor - vec.y, factor - vec.z);
+	}
 
 	//=============================
 	//4D vector operations
@@ -300,6 +371,10 @@ namespace SRE {
 		return VEC4(x - vec.x, y - vec.y, z - vec.z, w - vec.w);
 	}
 
+	VEC4 Vector4::operator - () const {
+
+		return VEC4(-x, -y, -z, -w);
+	}
 
 	VEC4 & Vector4::operator = (const VEC4 & vec) {
 
@@ -358,14 +433,30 @@ namespace SRE {
 		return VEC4(factor * vec.x, factor*vec.y, factor*vec.z, factor*vec.w);
 	}
 
-
     VEC4 operator * (const VEC4 & vec, FLOAT factor) {
 
 		return VEC4(factor * vec.x, factor*vec.y, factor*vec.z, factor*vec.w);
 	}
 
+	VEC4 operator + (FLOAT factor, const VEC4 & vec) {
 
+		return VEC4(factor + vec.x, factor + vec.y, factor + vec.z, factor + vec.w);
+	}
 
+    VEC4 operator + (const VEC4 & vec, FLOAT factor) {
+
+		return VEC4(factor + vec.x, factor + vec.y, factor + vec.z, factor + vec.w);
+	}
+
+	VEC4 operator - (FLOAT factor, const VEC4 & vec) {
+
+		return VEC4(factor - vec.x, factor - vec.y, factor - vec.z, factor - vec.w);
+	}
+
+    VEC4 operator - (const VEC4 & vec, FLOAT factor) {
+
+		return VEC4(factor - vec.x, factor - vec.y, factor - vec.z, factor - vec.w);
+	}
 
 
 	//=============================
@@ -733,7 +824,7 @@ namespace SRE {
 	//
 	//vector4
 	//=============================
-    VEC2 Lerp(const VEC2 & starting, const VEC2 & ending, FLOAT factor)
+    VEC2 Lerp(VEC2 & starting, VEC2 & ending, FLOAT factor)
     {
         return VEC2(starting.x+factor*(ending.x-starting.x),
                     starting.y+factor*(ending.y-starting.y));
@@ -745,7 +836,7 @@ namespace SRE {
 	//
 	//vector4
 	//=============================
-    VEC3 Lerp(const VEC3 & starting, const VEC3 & ending, FLOAT factor)
+    VEC3 Lerp(VEC3 & starting, VEC3 & ending, FLOAT factor)
     {
         return VEC3(starting.x+factor*(ending.x-starting.x),
                     starting.y+factor*(ending.y-starting.y),
@@ -758,7 +849,7 @@ namespace SRE {
 	//
 	//vector4
 	//=============================
-    VEC4 Lerp(const VEC4 & starting, const VEC4 & ending, FLOAT factor)
+    VEC4 Lerp(VEC4 & starting, VEC4 & ending, FLOAT factor)
     {
         return VEC4(starting.x+factor*(ending.x-starting.x),
                     starting.y+factor*(ending.y-starting.y),

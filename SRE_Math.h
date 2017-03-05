@@ -43,9 +43,9 @@ namespace SRE {
 	PVEC2   Normalize(PVEC2 vec);
 	PVEC3   Normalize(PVEC3 vec);
 	PVEC4   Normalize(PVEC4 vec);
-    VEC2    Lerp(const VEC2 & starting, const VEC2 & ending, FLOAT factor);
-    VEC3    Lerp(const VEC3 & starting, const VEC3 & ending, FLOAT factor);
-    VEC4    Lerp(const VEC4 & starting, const VEC4 & ending, FLOAT factor);
+    VEC2    Lerp(VEC2 & starting, VEC2 & ending, FLOAT factor);
+    VEC3    Lerp(VEC3 & starting, VEC3 & ending, FLOAT factor);
+    VEC4    Lerp(VEC4 & starting, VEC4 & ending, FLOAT factor);
 
 
 	//=============================
@@ -157,9 +157,14 @@ namespace SRE {
 		bool   operator != (const VEC &) const;
 		VEC    operator +  (const VEC &) const;
 		VEC    operator -  (const VEC &) const;
+		VEC    operator -  () const;
 		VEC &  operator =  (const VEC &);
-		friend VEC operator *  (FLOAT, const VEC &);
 		friend VEC operator *  (const VEC &, FLOAT);
+		friend VEC operator *  (FLOAT, const VEC &);
+		friend VEC operator +  (const VEC &, FLOAT);
+		friend VEC operator +  (FLOAT, const VEC &);
+		friend VEC operator -  (const VEC &, FLOAT);
+		friend VEC operator -  (FLOAT, const VEC &);
 
 	public:
 		FLOAT x ;
@@ -187,11 +192,16 @@ namespace SRE {
 		bool    operator != (const VEC2 &) const;
 		VEC2    operator +  (const VEC2 &) const;
 		VEC2    operator -  (const VEC2 &) const;
+		VEC2    operator -  () const;
 		VEC2 &  operator =  (const VEC2 &);
         VEC2 &  operator =  (const VEC  &);
 
 		friend VEC2 operator *  (FLOAT, const VEC2 &);
 		friend VEC2 operator *  (const VEC2 &, FLOAT);
+		friend VEC2 operator +  (FLOAT, const VEC2 &);
+		friend VEC2 operator +  (const VEC2 &, FLOAT);
+		friend VEC2 operator -  (FLOAT, const VEC2 &);
+		friend VEC2 operator -  (const VEC2 &, FLOAT);
 
 	public:
 		FLOAT y;
@@ -225,12 +235,17 @@ namespace SRE {
 		bool    operator != (const VEC3 &) const;
 		VEC3    operator +  (const VEC3 &) const;
 		VEC3    operator -  (const VEC3 &) const;
+		VEC3    operator -  () const;
 		VEC3 &  operator =  (const VEC3 &);
         VEC3 &  operator =  (const VEC2 &);
         VEC3 &  operator =  (const VEC  &);
 
 		friend VEC3 operator *  (FLOAT, const VEC3 &);
         friend VEC3 operator *  (const VEC3 &, FLOAT);
+		friend VEC3 operator +  (FLOAT, const VEC3 &);
+        friend VEC3 operator +  (const VEC3 &, FLOAT);
+		friend VEC3 operator -  (FLOAT, const VEC3 &);
+        friend VEC3 operator -  (const VEC3 &, FLOAT);
 
 	public:
 		FLOAT z;
@@ -266,12 +281,18 @@ namespace SRE {
 		bool    operator != (const VEC4 &) const;
 		VEC4    operator +  (const VEC4 &) const;
 		VEC4    operator -  (const VEC4 &) const;
+		VEC4    operator -  () const;
         VEC4 &  operator =  (const VEC4 &);
         VEC4 &  operator =  (const VEC3 &);
         VEC4 &  operator =  (const VEC2 &);
         VEC4 &  operator =  (const VEC  &);
 		friend VEC4 operator *  (FLOAT, const VEC4 &);
 		friend VEC4 operator *  (const VEC4 &, FLOAT);
+		friend VEC4 operator +  (FLOAT, const VEC4 &);
+		friend VEC4 operator +  (const VEC4 &, FLOAT);
+		friend VEC4 operator -  (FLOAT, const VEC4 &);
+		friend VEC4 operator -  (const VEC4 &, FLOAT);
+
 
 	public:
 		FLOAT w;

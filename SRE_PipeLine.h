@@ -527,16 +527,16 @@ namespace SRE {
                             BasicObserver * observer=nullptr):
             BasicProcessor(input, output, observer, this),
             m_pCurrentTriangle(nullptr),
-            m_clipEpsilon(0.01),
-            m_viewportHeight(600),
-            m_viewportWidth(800)
+            m_clipEpsilon(0.00),
+            m_viewportHeightHalf(300),
+            m_viewportWidthHalf(400)
         {
-            m_clipPlane[0]=-1;m_clipPlaneNormal[0].x= 1;
-            m_clipPlane[1]= 1;m_clipPlaneNormal[1].x=-1;
-            m_clipPlane[2]=-1;m_clipPlaneNormal[2].y= 1;
-            m_clipPlane[3]= 1;m_clipPlaneNormal[3].y=-1;
-            m_clipPlane[4]= 0;m_clipPlaneNormal[4].z= 1;
-            m_clipPlane[5]=-1;m_clipPlaneNormal[5].z=-1;
+            m_clipPlaneDistance[0]= 1;m_clipPlaneNormal[0].x= 1;
+            m_clipPlaneDistance[1]= 1;m_clipPlaneNormal[1].x=-1;
+            m_clipPlaneDistance[2]= 1;m_clipPlaneNormal[2].y= 1;
+            m_clipPlaneDistance[3]= 1;m_clipPlaneNormal[3].y=-1;
+            m_clipPlaneDistance[4]= 0;m_clipPlaneNormal[4].z= 1;
+            m_clipPlaneDistance[5]= 1;m_clipPlaneNormal[5].z=-1;
 
         }
         virtual ~VertexPostProcessor()
@@ -553,17 +553,17 @@ namespace SRE {
         void OnRunFinish();
         void OnStart();
 
-        void SetClipPlaneX(FLOAT _x){m_clipPlane[0]=_x;m_clipPlane[1]=-_x;}
-        void SetClipPlaneY(FLOAT _y){m_clipPlane[2]=_y;m_clipPlane[3]=-_y;}
-        void SetClipPlaneZ(FLOAT _z){m_clipPlane[4]=_z;m_clipPlane[5]=-_z;}
+        void SetClipPlaneX(FLOAT Distance_PlaneToOrigin, VEC3& normal);
+        void SetClipPlaneY(FLOAT Distance_PlaneToOrigin, VEC3& normal);
+        void SetClipPlaneZ(FLOAT Distance_PlaneToOrigin, VEC3& normal);
         void SetClipEpsilon(FLOAT eps){m_clipEpsilon = eps;}
-        void SetViewPortHeight(USINT height)
+        void SetViewportHeight(USINT height)
         {
-            if(height>0) m_viewportHeight = height;
+            if(height>0) m_viewportHeightHalf = height/2;
         }
-        void SetViewPortWidth(USINT width)
+        void SetViewportWidth(USINT width)
         {
-            if(width>0) m_viewportWidth = width;
+            if(width>0) m_viewportWidthHalf = width/2;
         }
 
 
@@ -571,22 +571,23 @@ namespace SRE {
         VertexPostProcessor & operator=(const VertexPostProcessor & other) = delete;
 
     protected:
-        bool TriangleClipping();//clip in cvv
-        void PerspectiveDivide();//then divided by w
-        void ViewportTranform();//transform x to range:(0,width)
-                                //transform y to range:(0,height)
-                                //origin on left top
+        void TriangleClipping();                //clip in cvv
+        void OtherTranforms(VSOutput & input);  //then divided by w
+                                                //transform x to range:(0,width)
+                                                //transform y to range:(0,height)
+                                                //origin on left top
+        void SendTriangle(VSOutput & v1, VSOutput & v2, VSOutput & v3);
+
     protected:
         _Triangle_*  m_pCurrentTriangle;
-        FLOAT        m_clipPlane[6];//-x, x, -y, y, -z, z
+        FLOAT        m_clipPlaneDistance[6];//-x, x, -y, y, -z, z
         VEC3         m_clipPlaneNormal[6];
         FLOAT        m_clipEpsilon;
-        USINT        m_viewportHeight;
-        USINT        m_viewportWidth;
+        USINT        m_viewportHeightHalf;
+        USINT        m_viewportWidthHalf;//data type should be considered
 
     private:
         std::list<_vertex_>    m_vlist[2];
-        std::list<_Triangle_>  m_triangles;
 
 
 

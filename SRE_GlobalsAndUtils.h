@@ -122,6 +122,7 @@ namespace SRE {
     //==============================
     typedef float              FLOAT;
     typedef int                INT;
+    typedef short int          SINT;
     typedef unsigned short int USINT;
     typedef unsigned int       SREVAR;
     typedef unsigned char      BYTE;

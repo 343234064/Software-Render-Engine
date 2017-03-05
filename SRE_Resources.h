@@ -289,6 +289,7 @@ namespace SRE {
     protected:
         VertexBuffer(INT vertexNumber=0, INT vertexSize=0, SREVAR dataFormat=0, void* vertexes=nullptr):
              m_vertexes(nullptr),
+             m_marks(nullptr),
              m_vertexNum(vertexNumber),
              m_attriSize(0),
              m_vertexDimen(0),

@@ -33,6 +33,11 @@ namespace SRE {
             normal(),
             texcoord()
         {}
+        VSOutput(VERTEX4& v):
+            vertex(v),
+            normal(),
+            texcoord()
+        {}
         VSOutput(VERTEX4& v, VEC3& n, VEC2& uv):
             vertex(v),
             normal(n),
@@ -53,14 +58,30 @@ namespace SRE {
             normal(*n),
             texcoord(*uvw)
         {}
-        VSOutput(const VSOutput & other)
-        {
-            vertex = other.vertex;
-            normal = other.normal;
-            texcoord = other.texcoord;
-        }
+        VSOutput(const VSOutput & other):
+            vertex(other.vertex),
+            normal(other.normal),
+            texcoord(other.texcoord)
+        {}
 
         virtual ~VSOutput(){}
+
+        VSOutput & LerpAllValue(VSOutput & v1, VSOutput & v2, FLOAT t)
+        {
+            vertex = Lerp(v1.vertex, v2.vertex, t);
+            normal = Lerp(v1.normal, v2.normal, t);
+            texcoord = Lerp(v1.texcoord, v2.texcoord, t);
+
+            return *this;
+        }
+
+        VSOutput & LerpAttriValue(VSOutput & v1, VSOutput & v2, FLOAT t)
+        {
+            normal = Lerp(v1.normal, v2.normal, t);
+            texcoord = Lerp(v1.texcoord, v2.texcoord, t);
+
+            return *this;
+        }
 
     public:
         VERTEX4 vertex;
