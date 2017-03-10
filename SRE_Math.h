@@ -31,6 +31,7 @@ namespace SRE {
 	//
 	//=============================
 	PVEC3   Cross    (PVEC3   out, CPVEC3 vec1, CPVEC3 vec2);
+	VEC3    Cross    (VEC3 out, VEC3 vec1, VEC3 vec2);
 	FLOAT   Dot      (CPVEC  vec1, CPVEC  vec2);
 	FLOAT   Dot      (CPVEC2 vec1, CPVEC2 vec2);
 	FLOAT   Dot      (CPVEC3 vec1, CPVEC3 vec2);

@@ -25,8 +25,6 @@ namespace SRE {
 	//=============================
     RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer** out);
 
-    template<typename T>
-    RESULT CreateBuffer(BufferDescript & descript, T * initData, Buffer<T>** out);
 
 
     //=============================
@@ -82,6 +80,7 @@ namespace SRE {
 	//BufferType: what is this buffer uses for
 	//DataFlag: data format
 	//=============================
+	/*
 	class BufferDescript
 	{
     public:
@@ -107,7 +106,7 @@ namespace SRE {
         SREVAR m_DataFormat;
 
 
-	};
+	};*/
 
 
 
@@ -122,6 +121,22 @@ namespace SRE {
 	class Buffer: public BaseContainer, public BasicIOElement
 	{
     public:
+        Buffer(INT bufferSize, T * initData):
+               m_bufferSize(bufferSize),
+               m_data(nullptr)
+        {
+            if(m_bufferSize > 0)
+            {
+                m_data.reset(new T[m_bufferSize]);
+                if(nullptr != initData)
+                {
+                   T * dest = this->m_data.get();
+	               std::copy(initData, initData + m_bufferSize, dest);
+                }
+            }
+            else
+                m_bufferSize = 0;
+        }
         virtual ~Buffer()
         {
            m_data.reset(nullptr);
@@ -132,15 +147,7 @@ namespace SRE {
         void  Reset(const T & resetData);
         INT   GetBufferSize() const
         {
-            return m_descript.m_BufferSize;
-        }
-        SREVAR GetBufferUsage() const
-        {
-            return m_descript.m_BufferType;
-        }
-        SREVAR GetBufferDataFormat() const
-        {
-            return m_descript.m_DataFormat;
+            return m_bufferSize;
         }
 
 
@@ -148,23 +155,9 @@ namespace SRE {
         Buffer & operator=(const Buffer & other) = delete;
 
     protected:
-        Buffer(BufferDescript & bufferDescript, T * initData):
-               m_data(nullptr),
-               m_descript(bufferDescript)
-        {
-            m_data.reset(new T[m_descript.m_BufferSize]);
-            if(nullptr != initData)
-            {
-               T * dest = this->m_data.get();
-	           std::copy(initData, initData + m_descript.m_BufferSize, dest);
-            }
-        }
-
-
-        friend RESULT CreateBuffer<>(BufferDescript & descript, T * initData, Buffer<T>** out);
-    protected:
+        INT                                   m_bufferSize;
         std::unique_ptr<T, array_deleter<T>>  m_data;
-        BufferDescript                        m_descript;
+
 
 
 	};
@@ -176,19 +169,6 @@ namespace SRE {
 	//
 	//
 	//=============================
-	/*
-	template <typename T>
-	Buffer<T>::Buffer(const Buffer & other):
-	    BaseContainer(),
-	    m_descript(other.m_descript),
-        m_data(nullptr)
-	{
-        this->m_data.reset(new T[this->m_descript.m_BufferSize]);
-        T * source = other.m_data.get();
-        T * dest = this->m_data.get();
-	    std::copy(source, source + this->m_descript.m_BufferSize, dest);
-	}*/
-
 	template <typename T>
 	void Buffer<T>::Reset(const T & resetData)
 	{
@@ -200,7 +180,7 @@ namespace SRE {
 	    }
 #endif
 
-        int i=0 , n=this->m_descript.m_BufferSize;
+        int i=0 , n=m_bufferSize;
         while(i<n)
           this->m_data.get()[i++] = resetData;
 
@@ -217,7 +197,7 @@ namespace SRE {
             return;
 	    }
 
-	    if(pos >= this->m_descript.m_BufferSize || pos < 0)
+	    if(pos >= m_bufferSize || pos < 0)
         {
             _ERRORLOG(SRE_ERROR_INVALIDARG);
             return;
@@ -236,7 +216,7 @@ namespace SRE {
             throw;
 	    }
 
-	    if(pos >= this->m_descript.m_BufferSize || pos < 0)
+	    if(pos >= m_bufferSize || pos < 0)
         {
             _ERRORLOG(SRE_ERROR_INVALIDARG);
             throw;
@@ -246,6 +226,91 @@ namespace SRE {
         return this->m_data.get()[pos];
 	}
 
+
+
+    //=============================
+	//Class SynBuffer
+	//
+	//*Synchronized*
+	//Buffer which is for storing data
+	//
+	//=============================
+	template <typename T>
+	class SynBuffer: public BaseContainer, public BasicIOElement
+	{
+    public:
+        SynBuffer(INT bufferSize, T * initData):
+               m_bufferSize(bufferSize),
+               m_mutex(),
+               m_data(nullptr)
+        {
+            if(m_bufferSize > 0)
+            {
+                m_data.reset(new T[m_bufferSize]);
+                if(nullptr != initData)
+                {
+                   T * dest = this->m_data.get();
+	               std::copy(initData, initData + m_bufferSize, dest);
+                }
+            }
+            else
+                m_bufferSize = 0;
+        }
+        virtual ~SynBuffer()
+        {
+           m_data.reset(nullptr);
+        }
+
+        void  SetData(INT pos, const T & data);
+        T  &  GetData(INT pos);
+        void  Reset(const T & resetData);
+        INT   GetBufferSize() const
+        {
+            return m_bufferSize;
+        }
+
+
+        SynBuffer(const SynBuffer & other) = delete;
+        SynBuffer & operator=(const SynBuffer & other) = delete;
+
+    protected:
+        INT                                   m_bufferSize;
+        std::mutex                            m_mutex;
+        std::unique_ptr<T, array_deleter<T>>  m_data;
+
+	};
+
+
+
+    //=============================
+	//Class SynBuffer functions
+	//
+	//
+	//=============================
+	template <typename T>
+	void SynBuffer<T>::Reset(const T & resetData)
+	{
+        std::lock_guard<std::mutex> lock(m_mutex);
+        int i=0 , n=m_bufferSize;
+        while(i<n)
+          this->m_data.get()[i++] = resetData;
+
+        return;
+	}
+
+	template<typename T>
+	void SynBuffer<T>::SetData(INT pos, const T & data)
+	{
+        std::lock_guard<std::mutex> lock(m_mutex);
+        this->m_data.get()[pos] = data;
+	}
+
+	template<typename T>
+	T & SynBuffer<T>::GetData(INT pos)
+	{
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return this->m_data.get()[pos];
+	}
 
 
 
@@ -330,21 +395,5 @@ namespace SRE {
 	};
 
 
-
-    //=============================
-	//Functions
-	//
-	//=============================
-    template<typename T>
-    RESULT CreateBuffer(BufferDescript & descript, T * initData, Buffer<T>** out)
-    {
-        if(descript.m_BufferSize <=0) return RESULT::FAIL;
-        if(descript.m_perDataSize <=0 || descript.m_perUnitSize <=0) return RESULT::FAIL;
-
-        *out = new Buffer<T>(descript, initData);
-        if(nullptr == *out) return RESULT::OUTMEMORY;
-
-        return RESULT::SUCC;
-    }
 }
 #endif

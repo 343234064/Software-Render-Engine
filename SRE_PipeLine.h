@@ -20,9 +20,6 @@
 #include "SRE_Shader.h"
 #include "SRE_GlobalsAndUtils.h"
 
-#include <iostream>
-using std::cout;
-using std::endl;
 namespace SRE {
     //=============================
 	//Class Basic I/O Buffer
@@ -156,13 +153,14 @@ namespace SRE {
                        BasicObserver     * observer=nullptr,
                        CallBackFunctions * callbacks=nullptr):
             BaseTask(),
-            m_cond(),
-            m_mutex(),
             m_pInputQueue(input),
             m_pOutputQueue(output),
             m_pObserver(observer),
             m_thread(),
             m_callBacks(callbacks),
+            m_mutex(),
+            m_cond(),
+            m_resMutex(),
             m_Cancel(false),
             m_Pause(false),
             m_Started(false)
@@ -208,18 +206,10 @@ namespace SRE {
             m_callBacks = callbacks;
         }
 
-        void Release()
-        {
-            if(m_thread.joinable())
-               m_thread.join();
-        }
+        void Release();
 
         BasicProcessor(const BasicProcessor & other) = delete;
         BasicProcessor & operator=(const BasicProcessor & other) = delete;
-
-    protected:
-        std::condition_variable             m_cond;
-        std::mutex                          m_mutex;
 
     private:
         BasicIOBuffer<BasicIOElement*> *    m_pInputQueue;
@@ -227,11 +217,20 @@ namespace SRE {
         BasicObserver  *                    m_pObserver;
         std::thread                         m_thread;
         CallBackFunctions   *               m_callBacks;
+        std::mutex                          m_mutex;
+
+    protected:
+        std::condition_variable             m_cond;
+        std::mutex                          m_resMutex;
 
         bool m_Cancel;
         bool m_Pause;
         bool m_Started;
+
+
+
 	};
+
 
 
 
@@ -351,6 +350,7 @@ namespace SRE {
         {}
 	};
 
+
 	class _Triangle_:public BasicIOElement
 	{//A temp data structure for primitive output
     public:
@@ -364,6 +364,29 @@ namespace SRE {
 
     public:
         VSOutput  v[3];
+	};
+
+	template<typename T>
+	class _pixelBlock_:public BasicIOElement
+	{
+    public:
+        _pixelBlock_(USINT _x=0, USINT _y=0, std::shared_ptr<T> _data=nullptr):
+            x(_x),
+            y(_y),
+            tempData(_data)
+        {}
+        _pixelBlock_(const _pixelBlock_<T> & other):
+            x(other.x),
+            y(other.y),
+            tempData(other.tempData)
+        {}
+        virtual ~_pixelBlock_()
+        {}
+
+    public:
+	    USINT x;
+	    USINT y;
+	    std::shared_ptr<T> tempData;
 	};
 
 
@@ -537,7 +560,6 @@ namespace SRE {
             m_clipPlaneDistance[3]= 1;m_clipPlaneNormal[3].y=-1;
             m_clipPlaneDistance[4]= 0;m_clipPlaneNormal[4].z= 1;
             m_clipPlaneDistance[5]= 1;m_clipPlaneNormal[5].z=-1;
-
         }
         virtual ~VertexPostProcessor()
         {
@@ -556,7 +578,7 @@ namespace SRE {
         void SetClipPlaneX(FLOAT Distance_PlaneToOrigin, VEC3& normal);
         void SetClipPlaneY(FLOAT Distance_PlaneToOrigin, VEC3& normal);
         void SetClipPlaneZ(FLOAT Distance_PlaneToOrigin, VEC3& normal);
-        void SetClipEpsilon(FLOAT eps){m_clipEpsilon = eps;}
+        void SetClipTolerance(FLOAT tolerance){m_clipEpsilon = tolerance;}
         void SetViewportHeight(USINT height)
         {
             if(height>0) m_viewportHeightHalf = height/2;
@@ -575,7 +597,8 @@ namespace SRE {
         void OtherTranforms(VSOutput & input);  //then divided by w
                                                 //transform x to range:(0,width)
                                                 //transform y to range:(0,height)
-                                                //origin on left top
+                                                //origin (0,0) is on left-top corner
+                                                //(width, height) is on right-bottom corner
         void SendTriangle(VSOutput & v1, VSOutput & v2, VSOutput & v3);
 
     protected:
@@ -589,36 +612,138 @@ namespace SRE {
     private:
         std::list<_vertex_>    m_vlist[2];
 
-
-
     };
 
 
-    /*
+
     //=============================
 	//Class Rasterizer
 	//
 	//
 	//
 	//=============================
-    class Rasterizer:public BasicProcessor
+    class Rasterizer:public BasicProcessor, public CallBackFunctions
     {
     public:
-        Rasterizer(BasicIOBuffer<BasicIOElement> * input=nullptr,
-                   BasicIOBuffer<BasicIOElement> * output=nullptr,
-                   BasicObserver * observer=nullptr):
-            BasicProcessor(input, output, observer)
+        Rasterizer(BasicIOBuffer<BasicIOElement*> * input=nullptr,
+                   BasicIOBuffer<BasicIOElement*> * output=nullptr,
+                   BasicObserver * observer=nullptr,
+                   const ConstantBuffer * cbuffer=nullptr,
+                   USINT samplePixelBlockSize=16):
+            BasicProcessor(input, output, observer, this),
+            m_pConstantBuffer(cbuffer),
+            m_pCurrentTriangle(nullptr),
+            m_subProcessors(),
+            m_subIndex(0),
+            m_perPixelBlockSize(samplePixelBlockSize)
         {}
-        virtual ~Rasterizer();
+        virtual ~Rasterizer()
+        {
+            if(nullptr != m_pCurrentTriangle)
+                delete m_pCurrentTriangle;
+        }
+
+        void HandleElement();
+        void OnCancel();
+        void OnPause();
+        void OnResume();
+        void OnRunError();
+        void OnRunFinish();
+        void OnStart();
+
+        void AddSubProcessor(USINT num=4, USINT sampleStep=1);
+        void RemoveSubProcessor(USINT num);
+        void SetConstantBuffer(const ConstantBuffer * cbuffer);
+        void SetSamplePixelBlockSize(USINT blockSize);
+        void SetSampleStep(USINT sampleStep);
+        void CancelSubProcessor();
+
+        Rasterizer(const Rasterizer & other) = delete;
+        Rasterizer & operator=(const Rasterizer & other) = delete;
+
+    protected:
+        bool BackFaceCulling();//Using cross product(CCW, CW mode will give different result) to calculate face normal
+                               //and then test the face normal with the eye ray
+                               //if BackFaceCulling return true, we send this triangle to rasterizer
+
+    protected:
+        const ConstantBuffer *      m_pConstantBuffer;
+        _Triangle_ *                m_pCurrentTriangle;
+
+        std::vector<SubRasterizer>  m_subProcessors;
+
+        USINT                       m_subIndex;
+        USINT                       m_perPixelBlockSize;
 
 
-        void Run();
-        void NextStage();
-        void PassArgument(SREVAR usage, void * argu);
     };
 
 
 
+    //=============================
+	//Class SubRasterizer
+	//
+	//Default run on 16x16 pixel block
+	//=============================
+	class SubRasterizer
+	{
+    public:
+        SubRasterizer(USINT sampleStep=0):
+            m_inputQueue(),
+            m_thread(),
+            m_cond(),
+            m_mutex(),
+            m_cancel(false),
+            m_started(false),
+            m_spTriangle(),
+            m_sampleStep(sampleStep)
+        {}
+        SubRasterizer(const SubRasterizer & other):
+            m_inputQueue(other.m_inputQueue),
+            m_thread(),
+            m_cond(),
+            m_mutex(),
+            m_cancel(other.m_cancel),
+            m_started(other.m_started),
+            m_spTriangle(other.m_spTriangle),
+            m_sampleStep(other.m_sampleStep)
+        {}
+        virtual ~SubRasterizer()
+        {}
+
+        void Start();
+        void Cancel();
+
+        void SetSampleStep(USINT sampleStep){m_sampleStep = sampleStep;}
+        void PushTask(_pixelBlock_<_Triangle_> & task);
+
+        SubRasterizer & operator=(const SubRasterizer & other) = delete;
+//////////////////////////////////////////
+        USINT                        m_num;
+//////////////////////////////////////////
+    protected:
+        void ScanConversion();
+        void GetTask(USINT & x, USINT & y);
+
+    protected:
+        std::queue<_pixelBlock_<_Triangle_>>
+                                     m_inputQueue;
+        std::thread                  m_thread;
+        std::condition_variable      m_cond;
+        std::mutex                   m_mutex;
+
+        bool                         m_cancel;
+        bool                         m_started;
+
+        std::shared_ptr<_Triangle_>  m_spTriangle;
+        USINT                        m_sampleStep;
+
+
+	};
+
+
+
+    /*
     //=============================
 	//Class PixelProcessor
 	//
@@ -710,6 +835,7 @@ namespace SRE {
         ConstantBuffer():
             primitiveTopology(SRE_PRIMITIVETYPE_TRIANGLELIST),
             FillMode(SRE_FILLMODE_SOLID),
+            CullEnable(SRE_TRUE),
             CullMode(SRE_CULLMODE_CCW),
             ZEnable(SRE_TRUE)
         {}
@@ -718,6 +844,7 @@ namespace SRE {
     public:
         SREVAR primitiveTopology;
         SREVAR FillMode;
+        SREVAR CullEnable;
         SREVAR CullMode;
         SREVAR ZEnable;
 	};

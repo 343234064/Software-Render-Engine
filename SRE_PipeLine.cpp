@@ -43,6 +43,7 @@ namespace SRE {
            if(nullptr != m_callBacks)
               m_callBacks->OnStart();
            m_thread = std::thread(&BasicProcessor::Run, this);
+           m_Started = true;
         }
     }
 
@@ -53,9 +54,9 @@ namespace SRE {
         {
             if(m_Cancel)
             {
-                g_log.Write("m_cancel true");
                 if(nullptr != m_callBacks)
                    m_callBacks->OnCancel();
+                m_Cancel = false;
                 break;
             }
 
@@ -105,9 +106,9 @@ namespace SRE {
 
     void BasicProcessor::Resume()
     {
-        m_Pause = false;
         if(nullptr != m_callBacks)
            m_callBacks->OnResume();
+        m_Pause = false;
         m_cond.notify_one();
 
     }
@@ -125,6 +126,12 @@ namespace SRE {
         m_pOutputQueue->push(out);
     }
 
+    void BasicProcessor::Release()
+    {
+        if(m_thread.joinable())
+           m_thread.join();
+
+    }
 
 
 
@@ -135,8 +142,9 @@ namespace SRE {
 	//===========================================
     void InputAssembler::SetVertexAndIndexBuffers(VertexBuffer* vertexBuffer, Buffer<INT>* indexBuffer)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
         m_vertexBuffers.push(vertexBuffer);
+
+        std::lock_guard<std::mutex> lock(m_resMutex);
         m_indexBuffers.push(indexBuffer);
 
         m_cond.notify_one();
@@ -144,7 +152,6 @@ namespace SRE {
 
     void InputAssembler::SetConstantBuffer(const ConstantBuffer * cbuffer)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
         m_pConstantBuffer = cbuffer;
     }
 
@@ -198,8 +205,6 @@ namespace SRE {
                 return;
             }
 
-            g_log.Write("InputAssem Output:");
-
             SendVertex(actualIndex1);
             SendVertex(actualIndex2);
             SendVertex(actualIndex3);
@@ -207,8 +212,11 @@ namespace SRE {
         else
         {
             m_vertexBuffers.wait_and_pop(m_pCurrentHandleVbuffer);
-            m_pCurrentHandleIbuffer = m_indexBuffers.front();
-            m_indexBuffers.pop();
+            {
+                std::lock_guard<std::mutex> lock(m_resMutex);
+                m_pCurrentHandleIbuffer = m_indexBuffers.front();
+                m_indexBuffers.pop();
+            }
             m_currentIndex = 0;
             m_pCurrentHandleVbuffer->ResetMark(false);
         }
@@ -245,7 +253,6 @@ namespace SRE {
         }
         v->index = actualIndex;
         Output((BasicIOElement*)v);
-        g_log.WriteKV("vertex index", actualIndex);
     }
 
     void InputAssembler::OnCancel()
@@ -299,20 +306,17 @@ namespace SRE {
 	//===========================================
     void VertexProcessor::SetVertexShader(VertexShader * vshader)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
         m_pVertexShader = vshader;
     }
 
     void VertexProcessor::SetVariableBuffer(VariableBuffer* varbuffer)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
         m_pVariableBuffer = varbuffer;
     }
 
     void VertexProcessor::HandleElement()
     {
         _index_ver_* v = (_index_ver_*)(GetInput());
-        g_log.Write("Vertex Process:");
         bool  found = false;
         USINT coverIndex = 0;
         USINT threshold = 65528;
@@ -333,7 +337,6 @@ namespace SRE {
 
                 found = true;
                 m_cachedPriority[i]=1;
-                g_log.WriteKV("Found", v->index);
                 continue;
             }
             else
@@ -354,7 +357,6 @@ namespace SRE {
                 m_cachedVertex[coverIndex] = *out;
                 m_cachedVertexIndex[coverIndex] = v->index;
                 m_cachedPriority[coverIndex] = 1;
-                g_log.WriteKV("Not Found, replace", v->index, (INT)coverIndex);
             }
 
         }
@@ -431,8 +433,6 @@ namespace SRE {
             if(nullptr != out)
             {
                  Output((BasicIOElement*)out);
-                 g_log.Write("Primitive Output:");
-                 g_log.WriteKV("Triangle:", v1->vertex.x, v2->vertex.x, v3->vertex.x);
             }
             else
             {
@@ -599,22 +599,8 @@ namespace SRE {
 
         }
 
-         g_log.Write("Clipping Output");
-         it=m_vlist[src].begin();
-         while(it!=m_vlist[src].end())
-         {
-            _vertex_ v = *it++;
-            g_log.WriteKV("VLIST:",v.v.x, v.v.y, v.v.z, v.v.w);
-         }
-
-
         if(discard)
         {//we need to clip all vertexes
-
-            g_log.WriteKV("CTri v1:", m_pCurrentTriangle->v[0].vertex.x, m_pCurrentTriangle->v[0].vertex.y, m_pCurrentTriangle->v[0].vertex.z);
-            g_log.WriteKV("CTri v2:", m_pCurrentTriangle->v[1].vertex.x, m_pCurrentTriangle->v[1].vertex.y, m_pCurrentTriangle->v[1].vertex.z);
-            g_log.WriteKV("CTri v3:", m_pCurrentTriangle->v[2].vertex.x, m_pCurrentTriangle->v[2].vertex.y, m_pCurrentTriangle->v[2].vertex.z);
-            g_log.Write("Do Clip All");
             return;
         }
         if(m_vlist[src].size()<=3)
@@ -624,15 +610,10 @@ namespace SRE {
             OtherTranforms(m_pCurrentTriangle->v[2]);
             SendTriangle(m_pCurrentTriangle->v[0], m_pCurrentTriangle->v[1], m_pCurrentTriangle->v[2]);
 
-            g_log.WriteKV("CTri v1:", m_pCurrentTriangle->v[0].vertex.x, m_pCurrentTriangle->v[0].vertex.y, m_pCurrentTriangle->v[0].vertex.z);
-            g_log.WriteKV("CTri v2:", m_pCurrentTriangle->v[1].vertex.x, m_pCurrentTriangle->v[1].vertex.y, m_pCurrentTriangle->v[1].vertex.z);
-            g_log.WriteKV("CTri v3:", m_pCurrentTriangle->v[2].vertex.x, m_pCurrentTriangle->v[2].vertex.y, m_pCurrentTriangle->v[2].vertex.z);
-            g_log.Write("Do Not Clip");
             return;
         }
         else
         {//we need to cut the triangle
-            g_log.Write("Do Clipped ");
             it = m_vlist[src].begin();
 
             VSOutput v1(it->v);
@@ -655,24 +636,12 @@ namespace SRE {
                     OtherTranforms(v3);
 
                     SendTriangle(v1, v2, v3);
-
-
-            g_log.WriteKV("CTri v1:", v1.vertex.x, v1.vertex.y, v1.vertex.z);
-            g_log.WriteKV("CTri v2:", v2.vertex.x, v2.vertex.y, v2.vertex.z);
-            g_log.WriteKV("CTri v3:", v3.vertex.x, v3.vertex.y, v3.vertex.z);
-            g_log.Write("Clipped");
                     v2 = v3;
                 }
                 else
                 {
                     OtherTranforms(m_pCurrentTriangle->v[it->s]);
                     SendTriangle(v1, v2, m_pCurrentTriangle->v[it->s]);
-
-
-            g_log.WriteKV("CTri v1:", v1.vertex.x, v1.vertex.y, v1.vertex.z);
-            g_log.WriteKV("CTri v2:", v2.vertex.x, v2.vertex.y, v2.vertex.z);
-            g_log.WriteKV("CTri v3:", m_pCurrentTriangle->v[it->s].vertex.x, m_pCurrentTriangle->v[it->s].vertex.y, m_pCurrentTriangle->v[it->s].vertex.z);
-            g_log.Write("Clipped");
 
                     v2 = m_pCurrentTriangle->v[it->s];
                 }
@@ -685,7 +654,6 @@ namespace SRE {
 
 	void VertexPostProcessor::OtherTranforms(VSOutput & input)
 	{
-
         //Perspective Divide
         input.vertex.x = input.vertex.x/input.vertex.w;
         input.vertex.y = input.vertex.y/input.vertex.w;
@@ -695,6 +663,9 @@ namespace SRE {
         input.vertex.x = input.vertex.x*  m_viewportWidthHalf   + m_viewportWidthHalf;
         input.vertex.y = input.vertex.y*(-m_viewportHeightHalf) + m_viewportHeightHalf;
 
+        //viewport :800 : 600
+        //CVV      :  1 :   1
+        //this may need to be corrected
 	}
 
 	void VertexPostProcessor::SendTriangle(VSOutput & v1, VSOutput & v2, VSOutput & v3)
@@ -713,7 +684,6 @@ namespace SRE {
     void VertexPostProcessor::HandleElement()
     {
         m_pCurrentTriangle = (_Triangle_*)(GetInput());
-        g_log.Write("HANDLE ELEMENT");
         if(nullptr != m_pCurrentTriangle)
         {
            TriangleClipping();
@@ -723,7 +693,6 @@ namespace SRE {
 
         }
 
-        g_log.Write("HANDLE ELEMENT END");
         delete m_pCurrentTriangle;
         m_pCurrentTriangle = nullptr;
     }
@@ -772,6 +741,233 @@ namespace SRE {
 
 
 
+
+    //===========================================
+	//Class Rasterizer functions
+	//
+	//
+	//===========================================
+	void Rasterizer::SetConstantBuffer(const ConstantBuffer * cbuffer)
+	{
+        m_pConstantBuffer = cbuffer;
+	}
+
+	void Rasterizer::SetSamplePixelBlockSize(USINT blockSize)
+	{
+	    if(m_Started) return;
+	    m_perPixelBlockSize = blockSize;
+    }
+
+	void Rasterizer::HandleElement()
+	{
+	    m_pCurrentTriangle = (_Triangle_*)GetInput();
+        if(nullptr == m_pCurrentTriangle) return;
+
+        //if cull mode is enable, then test back face and cull
+        if(m_pConstantBuffer->CullEnable == SRE_TRUE)
+        {
+            if(!BackFaceCulling())
+            {
+                delete m_pCurrentTriangle;
+                m_pCurrentTriangle = nullptr;
+            }
+        }
+
+        //calculate bounding box
+        USINT x_min = std::min(m_pCurrentTriangle->v[0].vertex.x, std::min(m_pCurrentTriangle->v[1].vertex.x, m_pCurrentTriangle->v[2].vertex.x));
+        USINT x_max = std::max(m_pCurrentTriangle->v[0].vertex.x, std::max(m_pCurrentTriangle->v[1].vertex.x, m_pCurrentTriangle->v[2].vertex.y));
+        USINT y_min = std::min(m_pCurrentTriangle->v[0].vertex.y, std::min(m_pCurrentTriangle->v[1].vertex.y, m_pCurrentTriangle->v[2].vertex.x));
+        USINT y_max = std::max(m_pCurrentTriangle->v[0].vertex.y, std::max(m_pCurrentTriangle->v[1].vertex.y, m_pCurrentTriangle->v[2].vertex.y));
+
+        g_log.WriteKV("Rasterizer get tri v1:", m_pCurrentTriangle->v[0].vertex.x, m_pCurrentTriangle->v[0].vertex.y,m_pCurrentTriangle->v[0].vertex.z,m_pCurrentTriangle->v[0].vertex.w);
+        g_log.WriteKV("Rasterizer get tri v2:", m_pCurrentTriangle->v[1].vertex.x, m_pCurrentTriangle->v[1].vertex.y,m_pCurrentTriangle->v[1].vertex.z,m_pCurrentTriangle->v[1].vertex.w);
+        g_log.WriteKV("Rasterizer get tri v3:", m_pCurrentTriangle->v[2].vertex.x, m_pCurrentTriangle->v[2].vertex.y,m_pCurrentTriangle->v[2].vertex.z,m_pCurrentTriangle->v[2].vertex.w);
+
+        g_log.WriteKV("Rasterizer tri bounding box:", x_min, x_max, y_min, y_max);
+
+
+        //split the bounding box into m_perPixelBlockSize X m_perPixelBlockSize size pixel blocks
+        //and put these pixel block to the sub-processors to wait for handle
+        USINT processorNum=m_subProcessors.size(),startX=x_min, startY=y_min;
+        std::shared_ptr<_Triangle_> triangle(m_pCurrentTriangle);
+
+        std::lock_guard<std::mutex> lock(m_resMutex);
+        for(startY=y_min; startY<y_max; startY+=m_perPixelBlockSize)
+        {
+            for(startX=x_min; startX<x_max; startX+=m_perPixelBlockSize)
+            {
+                _pixelBlock_<_Triangle_> block(startX, startY, triangle);
+                m_subProcessors[m_subIndex++].PushTask(block);
+
+                if(m_subIndex == processorNum) m_subIndex=0;
+            }
+        }
+
+	}
+
+	bool Rasterizer::BackFaceCulling()
+	{
+	    return true;
+	}
+
+	void Rasterizer::AddSubProcessor(USINT num, USINT sampleStep)
+	{
+	    if(sampleStep <= 0) return;
+	    std::lock_guard<std::mutex> lock(m_resMutex);
+	    while(num>0)
+        {
+            m_subProcessors.push_back(SubRasterizer(sampleStep));
+            num--;
+        }
+//////////////////////////////////
+        INT i=0;
+        while(i<m_subProcessors.size())
+        {
+            m_subProcessors[i++].m_num=i;
+        }
+//////////////////////////////////
+	}
+
+	void Rasterizer::RemoveSubProcessor(USINT num)
+	{
+	    std::lock_guard<std::mutex> lock(m_resMutex);
+        while(num>0 && !m_subProcessors.empty())
+        {
+            m_subProcessors.pop_back();
+            num--;
+        }
+	}
+
+	void Rasterizer::SetSampleStep(USINT sampleStep)
+	{
+        if(sampleStep <= 0) return;
+        std::lock_guard<std::mutex> lock(m_resMutex);
+        INT index=0;
+        while(index < m_subProcessors.size())
+            m_subProcessors[index++].SetSampleStep(sampleStep);
+	}
+
+	void Rasterizer::CancelSubProcessor()
+	{
+        INT i=0, num=m_subProcessors.size();
+        while(i<num)
+        {
+            m_subProcessors[i++].Cancel();
+        }
+	}
+
+    void Rasterizer::OnCancel()
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("Rasterizer Cancel!");
+#endif // _SRE_DEBUG_
+    }
+
+    void Rasterizer::OnPause()
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("Rasterizer Pause!");
+#endif // _SRE_DEBUG_
+    }
+
+    void Rasterizer::OnResume()
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("Rasterizer Resume!");
+#endif // _SRE_DEBUG_
+    }
+
+    void Rasterizer::OnRunError()
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("Rasterizer Run Error!");
+#endif // _SRE_DEBUG_
+    }
+
+    void Rasterizer::OnRunFinish()
+    {
+        CancelSubProcessor();
+
+#ifdef _SRE_DEBUG_
+        g_log.Write("Rasterizer Run Finish!");
+#endif // _SRE_DEBUG_
+    }
+
+    void Rasterizer::OnStart()
+    {
+        INT index=0;
+        while(index < m_subProcessors.size())
+            m_subProcessors[index++].Start();
+
+#ifdef _SRE_DEBUG_
+        g_log.Write("Rasterizer Start!");
+#endif // _SRE_DEBUG_
+    }
+
+
+
+    //===========================================
+	//Class SubRasterizer functions
+	//
+	//
+	//===========================================
+	void SubRasterizer::Start()
+	{
+        if(!m_started)
+        {
+           m_thread = std::thread(&SubRasterizer::ScanConversion, this);
+           m_started = true;
+        }
+	}
+
+	void SubRasterizer::Cancel()
+	{
+	    if(m_started)
+           m_cancel = true;
+	}
+
+	void SubRasterizer::PushTask(_pixelBlock_<_Triangle_> & task)
+	{
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_inputQueue.push(task);
+        m_cond.notify_one();
+	}
+
+	void SubRasterizer::GetTask(USINT & x, USINT & y)
+	{
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_cond.wait(lock, [this]{return !m_inputQueue.empty();});
+        _pixelBlock_<_Triangle_> task = m_inputQueue.front();
+
+        x = task.x;
+        y = task.y;
+        m_spTriangle = task.tempData;
+
+        m_inputQueue.pop();
+	}
+
+	void SubRasterizer::ScanConversion()
+	{
+        while(true)
+        {
+            if(m_cancel)
+            {
+               m_cancel = false;
+               break;
+            }
+
+            USINT sx, sy;
+            GetTask(sx, sy);
+
+            //g_log.WriteKV("SubRaster NUM:", m_num);
+            //g_log.WriteKV("Get Task:", sx, sy);
+            //g_log.WriteKV("Task trangle:", m_spTriangle->v[0].vertex.x, m_spTriangle->v[1].vertex.x, m_spTriangle->v[2].vertex.x);
+
+
+        }
+
+        m_started = false;
+	}
 
     //===========================================
 	//Class Technique functions

@@ -482,6 +482,14 @@ namespace SRE {
 	}
 
 
+    VEC3 Cross(VEC3 out, VEC3 vec1, VEC3 vec2) {
+
+
+      return VEC3(vec1.y*vec2.z - vec1.z*vec2.y,
+		          vec1.z*vec2.x - vec1.x*vec2.z,
+		          vec1.x*vec2.y - vec1.y*vec2.x);
+
+	}
 	//=============================
 	//Dot product
 	//

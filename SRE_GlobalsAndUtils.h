@@ -103,6 +103,7 @@ namespace SRE {
     class VertexPostProcessor;
     class PrimitiveAssembler;
     class Rasterizer;
+    class SubRasterizer;
     class PixelProcessor;
     class OutputMerger;
 
@@ -161,9 +162,9 @@ namespace SRE {
     typedef Quaternion * PQUAT;
     typedef const Quaternion * CPQUAT;
 
-    typedef std::unique_ptr<VERTEX4, array_deleter<VERTEX4>> unique_vertex4_array;
-    typedef std::unique_ptr<INT, array_deleter<INT>>         unique_int_array;
-    typedef std::unique_ptr<BYTE, array_deleter<BYTE>>       unique_byte_array;
+    typedef std::unique_ptr<VERTEX4, array_deleter<VERTEX4>>                   unique_vertex4_array;
+    typedef std::unique_ptr<INT, array_deleter<INT>>                           unique_int_array;
+    typedef std::unique_ptr<BYTE, array_deleter<BYTE>>                         unique_byte_array;
     typedef std::unique_ptr<unique_int_array, array_deleter<unique_int_array>> unique_int_matrix;
 
     typedef VSOutput* (CallBackVShader)(BYTE*, VariableBuffer*);
@@ -268,14 +269,15 @@ namespace SRE {
     const SREVAR SRE_MATRIXTYPE_VIEWPROJECT=0x10000074;
     const SREVAR SRE_MATRIXTYPE_WORLDVIEWPROJECT=0x10000075;
 
-    const SREVAR SRE_TYPE_VERTEXBUFFER=0x10000090;
-    const SREVAR SRE_TYPE_INDEXBUFFER=0x10000091;
-    const SREVAR SRE_TYPE_RENDERBUFFER=0x10000092;
-    const SREVAR SRE_TYPE_VSHADER=0x10000093;
-    const SREVAR SRE_TYPE_PSHADER=0x10000094;
+    const SREVAR SRE_MESSAGE_RUNERROR=0x10000090;
+    //const SREVAR SRE_TYPE_VERTEXBUFFER=0x10000090;
+    //const SREVAR SRE_TYPE_INDEXBUFFER=0x10000091;
+    //const SREVAR SRE_TYPE_RENDERBUFFER=0x10000092;
+    //const SREVAR SRE_TYPE_VSHADER=0x10000093;
+    //const SREVAR SRE_TYPE_PSHADER=0x10000094;
 
 
-    const SREVAR SRE_MESSAGE_RUNERROR=0x10000200;
+
 
 
 

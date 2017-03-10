@@ -101,27 +101,23 @@ int main()
         cout<<"fail"<<endl;
 
     //INT index[13]={0,1,2,3,6,-1,9,7,5,4,0,2,3};
-    INT index[9]={0,1,2,3,4,5,6,7,8};
+    INT index[3]={3,4,5};
 
-    Buffer<INT>* ibuffer;
-    BufferDescript bd(9,1,1,SRE_TYPE_INDEXBUFFER,0);
-    RESULT re2=CreateBuffer(bd, index, &ibuffer);
-    if(re2==RESULT::SUCC)
-        cout<<"SUCC"<<endl;
-    else
-        cout<<"FAIL"<<endl;
+    Buffer<INT> ibuffer(3, index);
 
     BasicIOBuffer<BasicIOElement*> IAoutputBuffer;
     BasicIOBuffer<BasicIOElement*> VPoutputBuffer;
     BasicIOBuffer<BasicIOElement*> PAoutputBuffer;
     BasicIOBuffer<BasicIOElement*> VPPoutputBuffer;
+    BasicIOBuffer<BasicIOElement*> RZoutputBuffer;
+
     Observer observer;
     ConstantBuffer conbuffer;
     VariableBuffer varbuffer;
     conbuffer.primitiveTopology = SRE_PRIMITIVETYPE_TRIANGLELIST;
 
     InputAssembler IA(&IAoutputBuffer, &observer, &conbuffer);
-    IA.SetVertexAndIndexBuffers(vbuffer, ibuffer);
+    IA.SetVertexAndIndexBuffers(vbuffer, &ibuffer);
 
     CallBackVShader* callback = &myVS;
     VertexShader vshader(callback);
@@ -131,16 +127,23 @@ int main()
 
     VertexPostProcessor VPP(&PAoutputBuffer, &VPPoutputBuffer, &observer);
 
+    Rasterizer RZ(&VPPoutputBuffer, &RZoutputBuffer, &observer, &conbuffer);
+    RZ.AddSubProcessor(4);
+
+
     g_log.Write("==============================================");
     IA.Start();
     VP.Start();
     PA.Start();
     VPP.Start();
+    RZ.Start();
 
     IA.Release();
     VP.Release();
     PA.Release();
     VPP.Release();
+    RZ.Release();
+    RZ.CancelSubProcessor();
     cout<<"main end"<<endl;
 }
 
