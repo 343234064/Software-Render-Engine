@@ -113,12 +113,14 @@ namespace SRE {
 
     }
 
-    BasicIOElement* BasicProcessor::GetInput()
+    std::shared_ptr<BasicIOElement> BasicProcessor::GetInput()
     {
-        BasicIOElement * element;
-        m_pInputQueue->wait_and_pop(element);
+        return m_pInputQueue->wait_and_pop();
+    }
 
-        return element;
+    void BasicProcessor::Output(std::shared_ptr<BasicIOElement> out)
+    {
+        m_pOutputQueue->push(out);
     }
 
     void BasicProcessor::Output(BasicIOElement* out)
@@ -126,7 +128,7 @@ namespace SRE {
         m_pOutputQueue->push(out);
     }
 
-    void BasicProcessor::Release()
+    void BasicProcessor::Join()
     {
         if(m_thread.joinable())
            m_thread.join();
@@ -142,9 +144,8 @@ namespace SRE {
 	//===========================================
     void InputAssembler::SetVertexAndIndexBuffers(VertexBuffer* vertexBuffer, Buffer<INT>* indexBuffer)
     {
-        m_vertexBuffers.push(vertexBuffer);
-
         std::lock_guard<std::mutex> lock(m_resMutex);
+        m_vertexBuffers.push(vertexBuffer);
         m_indexBuffers.push(indexBuffer);
 
         m_cond.notify_one();
@@ -211,12 +212,13 @@ namespace SRE {
         }
         else
         {
-            m_vertexBuffers.wait_and_pop(m_pCurrentHandleVbuffer);
-            {
-                std::lock_guard<std::mutex> lock(m_resMutex);
-                m_pCurrentHandleIbuffer = m_indexBuffers.front();
-                m_indexBuffers.pop();
-            }
+            std::unique_lock<std::mutex> lock(m_resMutex);
+            m_cond.wait(lock, [this]{return !m_vertexBuffers.empty();});
+            m_pCurrentHandleVbuffer = m_vertexBuffers.front();
+            m_pCurrentHandleIbuffer = m_indexBuffers.front();
+            m_vertexBuffers.pop();
+            m_indexBuffers.pop();
+
             m_currentIndex = 0;
             m_pCurrentHandleVbuffer->ResetMark(false);
         }
@@ -316,7 +318,8 @@ namespace SRE {
 
     void VertexProcessor::HandleElement()
     {
-        _index_ver_* v = (_index_ver_*)(GetInput());
+        std::shared_ptr<BasicIOElement> p = GetInput();
+        _index_ver_* v = (_index_ver_*)p.get();
         bool  found = false;
         USINT coverIndex = 0;
         USINT threshold = 65528;
@@ -358,10 +361,7 @@ namespace SRE {
                 m_cachedVertexIndex[coverIndex] = v->index;
                 m_cachedPriority[coverIndex] = 1;
             }
-
         }
-
-        delete v;
     }
 
     void VertexProcessor::OnCancel()
@@ -422,9 +422,12 @@ namespace SRE {
 	//===========================================
     void PrimitiveAssembler::HandleElement()
     {
-	    VSOutput* v1=(VSOutput*)GetInput();
-	    VSOutput* v2=(VSOutput*)GetInput();
-	    VSOutput* v3=(VSOutput*)GetInput();
+        std::shared_ptr<BasicIOElement> pv1=GetInput();
+        std::shared_ptr<BasicIOElement> pv2=GetInput();
+        std::shared_ptr<BasicIOElement> pv3=GetInput();
+	    VSOutput* v1=(VSOutput*)pv1.get();
+	    VSOutput* v2=(VSOutput*)pv2.get();
+	    VSOutput* v3=(VSOutput*)pv3.get();
 
         if(nullptr != v1 && nullptr != v2 && nullptr != v3)
         {
@@ -442,9 +445,6 @@ namespace SRE {
             }
         }
 
-        delete v1;
-        delete v2;
-        delete v3;
     }
 
     void PrimitiveAssembler::OnCancel()
@@ -530,42 +530,41 @@ namespace SRE {
 	    if(m_pCurrentTriangle->v[1].vertex.w <= 0) return;
 	    if(m_pCurrentTriangle->v[2].vertex.w <= 0) return;
 
-	    m_vlist[0].push_back(_vertex_(m_pCurrentTriangle->v[0].vertex, 0, 0, 0));
-	    m_vlist[0].push_back(_vertex_(m_pCurrentTriangle->v[1].vertex, 0, 1, 1));
-	    m_vlist[0].push_back(_vertex_(m_pCurrentTriangle->v[2].vertex, 0, 2, 2));
+	    m_vlist[0].Add_back(_vertex_(m_pCurrentTriangle->v[0].vertex, 0, 0, 0));
+	    m_vlist[0].Add_back(_vertex_(m_pCurrentTriangle->v[1].vertex, 0, 1, 1));
+	    m_vlist[0].Add_back(_vertex_(m_pCurrentTriangle->v[2].vertex, 0, 2, 2));
 
 	    USINT src = 0, des = 1;
         bool  discard = false;
-        std::list<_vertex_>::iterator it,it2;
+        CLList<_vertex_>::Iterator it;
 
         for(USINT i=0; i<6; i++)
         {//for all 6 plane
-            it=m_vlist[src].begin();
+            it = m_vlist[src].Begin();
 
             while(true)
             {//for each vertex in m_vlist[src]
 
-                _vertex_ va = *it++;
-                if(it == m_vlist[src].end())
-                   it++;
-                _vertex_ vb = *it;
+                _vertex_* va = &(it->data);
+                _vertex_* vb = &(it->next->data);
+                it = it->next;
 
-                FLOAT Da = va.v.x*m_clipPlaneNormal[i].x+va.v.y*m_clipPlaneNormal[i].y+va.v.z*m_clipPlaneNormal[i].z+m_clipPlaneDistance[i];
-                FLOAT Db = vb.v.x*m_clipPlaneNormal[i].x+vb.v.y*m_clipPlaneNormal[i].y+vb.v.z*m_clipPlaneNormal[i].z+m_clipPlaneDistance[i];
+                FLOAT Da = va->v.x*m_clipPlaneNormal[i].x+va->v.y*m_clipPlaneNormal[i].y+va->v.z*m_clipPlaneNormal[i].z+m_clipPlaneDistance[i];
+                FLOAT Db = vb->v.x*m_clipPlaneNormal[i].x+vb->v.y*m_clipPlaneNormal[i].y+vb->v.z*m_clipPlaneNormal[i].z+m_clipPlaneDistance[i];
 
                 if(Da >= m_clipEpsilon)
                 {
                     if(Db >= m_clipEpsilon)
                     {
-                        m_vlist[des].push_back(vb);
+                        m_vlist[des].Add_back(*vb);
                     }
                     else
                     {
                         FLOAT t = fabs(Da)/(fabs(Da)+fabs(Db));
                         if(t>0)
                         {
-                            VERTEX4 lerpVertex = Lerp(va.v, vb.v, t);
-                            m_vlist[des].push_back(_vertex_(lerpVertex, t, va.s, vb.e));
+                            VERTEX4 lerpVertex = Lerp(va->v, vb->v, t);
+                            m_vlist[des].Add_back(_vertex_(lerpVertex, t, va->s, vb->e));
                         }
                     }
                 }
@@ -574,20 +573,20 @@ namespace SRE {
                     FLOAT t = fabs(Da)/(fabs(Da)+fabs(Db));
                     if(t<1)
                     {
-                        VERTEX4 lerpVertex = Lerp(va.v, vb.v, t);
-                        m_vlist[des].push_back(_vertex_(lerpVertex, t, va.s, vb.e));
+                        VERTEX4 lerpVertex = Lerp(va->v, vb->v, t);
+                        m_vlist[des].Add_back(_vertex_(lerpVertex, t, va->s, vb->e));
                     }
-                    m_vlist[des].push_back(vb);
+                    m_vlist[des].Add_back(*vb);
                 }
 
-                if(it == m_vlist[src].begin())
+                if(it == m_vlist[src].Begin())
                    break;
             }
 
             //check if we have vertex output and then swap the destination and source
-            if(!m_vlist[des].empty())
+            if(!m_vlist[des].Empty())
             {
-                m_vlist[src].clear();
+                m_vlist[src].Clear();
                 src = !src;
                 des = !des;
             }
@@ -603,7 +602,7 @@ namespace SRE {
         {//we need to clip all vertexes
             return;
         }
-        if(m_vlist[src].size()<=3)
+        if(m_vlist[src].Size()<=3)
         {//do not need to clip any vertex
             OtherTranforms(m_pCurrentTriangle->v[0]);
             OtherTranforms(m_pCurrentTriangle->v[1]);
@@ -614,25 +613,27 @@ namespace SRE {
         }
         else
         {//we need to cut the triangle
-            it = m_vlist[src].begin();
+            it = m_vlist[src].Begin();
+            _vertex_* vp = &(it->data);
 
-            VSOutput v1(it->v);
-            v1.LerpAttriValue(m_pCurrentTriangle->v[it->s], m_pCurrentTriangle->v[it->e], it->t);
+            VSOutput v1(vp->v);
+            v1.LerpAttriValue(m_pCurrentTriangle->v[vp->s], m_pCurrentTriangle->v[vp->e], vp->t);
             OtherTranforms(v1);
-            it++;
+            it = it->next;
 
-            VSOutput  v2(it->v);
-            v2.LerpAttriValue(m_pCurrentTriangle->v[it->s], m_pCurrentTriangle->v[it->e], it->t);
+            vp = &(it->data);
+            VSOutput  v2(vp->v);
+            v2.LerpAttriValue(m_pCurrentTriangle->v[vp->s], m_pCurrentTriangle->v[vp->e], vp->t);
             OtherTranforms(v2);
-            it++;
+            it = it->next;
 
-            while(it != m_vlist[src].end())
+            while(it != m_vlist[src].Begin())
             {
-
-                if(it->t > 0)
+                vp = &(it->data);
+                if(vp->t > 0)
                 {
-                    VSOutput v3(it->v);
-                    v3.LerpAttriValue(m_pCurrentTriangle->v[it->s], m_pCurrentTriangle->v[it->e], it->t);
+                    VSOutput v3(vp->v);
+                    v3.LerpAttriValue(m_pCurrentTriangle->v[vp->s], m_pCurrentTriangle->v[vp->e], vp->t);
                     OtherTranforms(v3);
 
                     SendTriangle(v1, v2, v3);
@@ -640,12 +641,12 @@ namespace SRE {
                 }
                 else
                 {
-                    OtherTranforms(m_pCurrentTriangle->v[it->s]);
-                    SendTriangle(v1, v2, m_pCurrentTriangle->v[it->s]);
+                    OtherTranforms(m_pCurrentTriangle->v[vp->s]);
+                    SendTriangle(v1, v2, m_pCurrentTriangle->v[vp->s]);
 
-                    v2 = m_pCurrentTriangle->v[it->s];
+                    v2 = m_pCurrentTriangle->v[vp->s];
                 }
-                it++;
+                it = it->next;
             }
         }
 
@@ -683,17 +684,17 @@ namespace SRE {
 
     void VertexPostProcessor::HandleElement()
     {
-        m_pCurrentTriangle = (_Triangle_*)(GetInput());
+        std::shared_ptr<BasicIOElement> p = GetInput();
+        m_pCurrentTriangle = (_Triangle_*)p.get();
         if(nullptr != m_pCurrentTriangle)
         {
            TriangleClipping();
 
-           m_vlist[0].clear();
-           m_vlist[1].clear();
+           m_vlist[0].Clear();
+           m_vlist[1].Clear();
 
         }
 
-        delete m_pCurrentTriangle;
         m_pCurrentTriangle = nullptr;
     }
 
@@ -760,7 +761,8 @@ namespace SRE {
 
 	void Rasterizer::HandleElement()
 	{
-	    m_pCurrentTriangle = (_Triangle_*)GetInput();
+	    std::shared_ptr<BasicIOElement> pTriangle = GetInput();
+	    m_pCurrentTriangle = (_Triangle_*)pTriangle.get();
         if(nullptr == m_pCurrentTriangle) return;
 
         //if cull mode is enable, then test back face and cull
@@ -768,8 +770,8 @@ namespace SRE {
         {
             if(!BackFaceCulling())
             {
-                delete m_pCurrentTriangle;
                 m_pCurrentTriangle = nullptr;
+                return;
             }
         }
 
@@ -789,14 +791,13 @@ namespace SRE {
         //split the bounding box into m_perPixelBlockSize X m_perPixelBlockSize size pixel blocks
         //and put these pixel block to the sub-processors to wait for handle
         USINT processorNum=m_subProcessors.size(),startX=x_min, startY=y_min;
-        std::shared_ptr<_Triangle_> triangle(m_pCurrentTriangle);
 
         std::lock_guard<std::mutex> lock(m_resMutex);
         for(startY=y_min; startY<y_max; startY+=m_perPixelBlockSize)
         {
             for(startX=x_min; startX<x_max; startX+=m_perPixelBlockSize)
             {
-                _pixelBlock_<_Triangle_> block(startX, startY, triangle);
+                _pixelBlock_<BasicIOElement> block(startX, startY, pTriangle);
                 m_subProcessors[m_subIndex++].PushTask(block);
 
                 if(m_subIndex == processorNum) m_subIndex=0;
@@ -926,7 +927,7 @@ namespace SRE {
            m_cancel = true;
 	}
 
-	void SubRasterizer::PushTask(_pixelBlock_<_Triangle_> & task)
+	void SubRasterizer::PushTask(_pixelBlock_<BasicIOElement> & task)
 	{
         std::lock_guard<std::mutex> lock(m_mutex);
         m_inputQueue.push(task);
@@ -937,7 +938,7 @@ namespace SRE {
 	{
         std::unique_lock<std::mutex> lock(m_mutex);
         m_cond.wait(lock, [this]{return !m_inputQueue.empty();});
-        _pixelBlock_<_Triangle_> task = m_inputQueue.front();
+        _pixelBlock_<BasicIOElement> task = m_inputQueue.front();
 
         x = task.x;
         y = task.y;
@@ -984,7 +985,7 @@ namespace SRE {
         }
 
         return *this;
-    }*/
+    }
 
 
     void Technique::ReleasePassList()
@@ -1140,7 +1141,7 @@ namespace SRE {
     {
         return this->m_name;
     }
-
+    */
 
 
 

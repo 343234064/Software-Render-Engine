@@ -22,6 +22,9 @@
 
 #ifdef _SRE_DEBUG_
 #include "SRE_DebugLog.h"
+#include <iostream>
+using std::cout;
+using std::endl;
 #endif
 
 #include <math.h>
@@ -35,7 +38,6 @@
 #include <memory>
 #include <stdlib.h>
 #include <condition_variable>
-
 
 
 
@@ -116,6 +118,7 @@ namespace SRE {
     class Technique;
     class RenderPass;
 
+    class Device;
 
     //==============================
     //Type definitions
@@ -166,6 +169,10 @@ namespace SRE {
     typedef std::unique_ptr<INT, array_deleter<INT>>                           unique_int_array;
     typedef std::unique_ptr<BYTE, array_deleter<BYTE>>                         unique_byte_array;
     typedef std::unique_ptr<unique_int_array, array_deleter<unique_int_array>> unique_int_matrix;
+    //typedef std::shared_ptr<Color3>                                            shared_color_array;
+    //typedef std::shared_ptr<shared_color_array, array_deleter<shared_color_array>>
+    //                                                                           shared_color_matrix;
+
 
     typedef VSOutput* (CallBackVShader)(BYTE*, VariableBuffer*);
     //typedef PSOutput* (CallBackPShader)(PSInput *, );
@@ -360,8 +367,6 @@ namespace SRE {
     };
 
 
-
-
     //=============================
 	//Class IMeshManager
 	//
@@ -376,7 +381,6 @@ namespace SRE {
 
 
     };
-
 
 
     //=============================
@@ -394,6 +398,138 @@ namespace SRE {
 	};
 
 
+
+    //=============================
+	//Class CircleLinkList
+	//
+	//=============================
+    template<typename T>
+    class CLList
+    {
+    public:
+        class LNode
+        {
+        public:
+           LNode(T& d, LNode* n=nullptr):
+             data(d), next(n)
+           {}
+           LNode():
+             data(), next(nullptr)
+           {}
+           T      data;
+           LNode* next;
+
+        };
+        typedef LNode* Iterator;
+
+        CLList():
+           m_head(new LNode()),
+           m_tail(m_head),
+           m_curr(m_head),
+           m_size(0)
+        {
+            m_tail->next = m_head;
+            m_head->next = m_tail;
+        }
+
+        ~CLList()
+        {
+           Clear();
+           delete m_head;
+        }
+
+        void Clear()
+        {
+            if(m_size>0)
+            {
+                LNode* nextNode;
+                m_curr = m_head->next;
+                while(m_size>0)
+                {
+                    nextNode = m_curr->next;
+                    delete m_curr;
+                    m_curr = nextNode;
+                    m_size--;
+                }
+
+                m_tail = m_head;
+                m_curr = m_head;
+                m_tail->next = m_head;
+                m_head->next = m_tail;
+            }
+        }
+
+        void Add_back(T data)
+        {
+            LNode* node = new LNode(data, m_head->next);
+            m_tail->next = node;
+            m_tail = node;
+            m_size++;
+        }
+
+        Iterator Begin()
+        {
+            return m_curr->next;
+        }
+
+        T*   GetCurrentP()
+        {
+            return &(m_curr->data);
+        }
+
+        T*   GetNextP()
+        {
+            return &(m_curr->next->data);
+        }
+
+        T    GetCurrent()
+        {
+            return m_curr->data;
+        }
+
+        T    GetNext()
+        {
+            return m_curr->next->data;
+        }
+
+        void ResetCursor()
+        {
+            m_curr = m_head->next;
+        }
+
+        void Next()
+        {
+            m_curr = m_curr->next;
+        }
+
+        bool isEnd() const
+        {
+            return m_curr == m_head->next ? true : false;
+        }
+
+        bool Empty() const
+        {
+            return m_size<=0;
+        }
+
+        INT  Size() const
+        {
+            return m_size;
+        }
+
+        CLList& operator++()
+        {
+            m_curr = m_curr->next;
+            return *this;
+        }
+
+    private:
+        LNode* m_head;
+        LNode* m_tail;
+        LNode* m_curr;
+        INT    m_size;
+
+    };
 }
 
 

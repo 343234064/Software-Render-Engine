@@ -34,7 +34,7 @@ namespace SRE {
     //Output error message
     //
     //==============================
-    void LOG(const char * filename, const int line, ERROR error)
+    void LOG(const char * filename, const int line, SR_ERR error)
     {
 
         switch (error)

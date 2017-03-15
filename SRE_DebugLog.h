@@ -19,13 +19,14 @@
 
 #define LOG_FILE_NAME  ".\\DebugLog.txt"
 #define _ERRORLOG(error) LOG(__FILE__, __LINE__, error)
+#define _ERRORMSG(error) g_log.Error(__FILE__, __LINE__, error)
 
 namespace SRE{
     //==============================
     //Type definitions
     //
     //==============================
-    typedef const unsigned int ERROR;
+    typedef const unsigned int SR_ERR;
 
     const int TIME_FORMAT_LENGTH = 22;
 
@@ -34,11 +35,11 @@ namespace SRE{
     //Error type
     //
     //==============================
-    ERROR SRE_ERROR_FAIL=0xFFFFFFFF;
-    ERROR SRE_ERROR_INVALIDARG=0xFFFFFFFE;
-    ERROR SRE_ERROR_OUTOFMEMORY=0xFFFFFFFD;
-    ERROR SRE_ERROR_NULLPOINTER=0xFFFFFFFC;
-    ERROR SRE_ERROR_DIVIDEBYZERO=0xFFFFFFFB;
+    SR_ERR SRE_ERROR_FAIL=0xFFFFFFFF;
+    SR_ERR SRE_ERROR_INVALIDARG=0xFFFFFFFE;
+    SR_ERR SRE_ERROR_OUTOFMEMORY=0xFFFFFFFD;
+    SR_ERR SRE_ERROR_NULLPOINTER=0xFFFFFFFC;
+    SR_ERR SRE_ERROR_DIVIDEBYZERO=0xFFFFFFFB;
 
 
 
@@ -47,7 +48,7 @@ namespace SRE{
     //Function declarations
     //
     //==============================
-    void LOG(const char * filename, const int line, ERROR error);
+    void LOG(const char * filename, const int line, SR_ERR error);
     char* GetTime();
 
 
@@ -129,8 +130,8 @@ namespace SRE{
             fout.close();
             delete[] time;
         }
-        template<typename FILE, typename LINE, typename ERROR>
-        void Error(FILE f, LINE l, ERROR e)
+        template<typename FILE, typename LINE, typename _ERROR>
+        void Error(FILE f, LINE l, _ERROR e)
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             std::ofstream fout(LOG_FILE_NAME, std::ios_base::app);

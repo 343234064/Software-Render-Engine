@@ -35,21 +35,35 @@ namespace SRE {
             m_mutex(),
             m_cond()
         {}
-        virtual ~BasicIOBuffer(){}
+        virtual ~BasicIOBuffer()
+        {}
 
         void push(T data)
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            m_queue.push(data);
+            m_queue.push(std::make_shared(data));
             m_cond.notify_one();
+        }
 
+        void push(T* pdata)
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_queue.push(std::shared_ptr<T>(pdata));
+            m_cond.notify_one();
+        }
+
+        void push(std::shared_ptr<T> pdata)
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_queue.push(pdata);
+            m_cond.notify_one();
         }
 
         std::shared_ptr<T> wait_and_pop()
         {
-            std::lock_guard<std::mutex> lock(m_mutex);
+            std::unique_lock<std::mutex> lock(m_mutex);
             m_cond.wait(lock, [this]{return !m_queue.empty();});
-            std::shared_ptr<T> res(std::make_shared<T>(m_queue.front()));
+            std::shared_ptr<T> res = m_queue.front();
             m_queue.pop();
 
             return res;
@@ -58,22 +72,24 @@ namespace SRE {
         std::shared_ptr<T> top()
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            std::shared_ptr<T> res(std::make_shared<T>(m_queue.front()));
+            std::shared_ptr<T> res = m_queue.front();
             return res;
         }
 
-        void wait_and_pop(T & out)
+        void wait_and_pop(T ** out)
         {
             std::unique_lock<std::mutex> lock(m_mutex);
             m_cond.wait(lock, [this]{return !m_queue.empty();});
-            out = m_queue.front();
+            std::shared_ptr<T> p = m_queue.front();
+            *out = p.get();
             m_queue.pop();
         }
 
-        void top(T & out)
+        void top(T ** out)
         {
             std::unique_lock<std::mutex> lock(m_mutex);
-            out = m_queue.front();
+            std::shared_ptr<T> p = m_queue.front();
+            *out = p.get();
         }
 
         bool empty() const
@@ -86,10 +102,11 @@ namespace SRE {
         BasicIOBuffer & operator=(const BasicIOBuffer & other) = delete;
 
     protected:
-        std::queue<T>  m_queue;
-        std::mutex     m_mutex;
+        std::queue<std::shared_ptr<T>>
+                                         m_queue;
+        std::mutex                       m_mutex;
         std::condition_variable
-                       m_cond;
+                                         m_cond;
 
 
 	};
@@ -148,8 +165,8 @@ namespace SRE {
 	class BasicProcessor:public BaseTask
 	{
     public:
-        BasicProcessor(BasicIOBuffer<BasicIOElement*> * input=nullptr,
-                       BasicIOBuffer<BasicIOElement*> * output=nullptr,
+        BasicProcessor(BasicIOBuffer<BasicIOElement> * input=nullptr,
+                       BasicIOBuffer<BasicIOElement> * output=nullptr,
                        BasicObserver     * observer=nullptr,
                        CallBackFunctions * callbacks=nullptr):
             BaseTask(),
@@ -175,15 +192,16 @@ namespace SRE {
         void Resume();
         void Cancel();
 
-        BasicIOElement* GetInput();
-        void            Output(BasicIOElement *out);
+        std::shared_ptr<BasicIOElement> GetInput();
+        void            Output(std::shared_ptr<BasicIOElement> out);
+        void            Output(BasicIOElement* out);
 
-        void SetInputQueue(BasicIOBuffer<BasicIOElement*> * inputQueue)
+        void SetInputQueue(BasicIOBuffer<BasicIOElement> * inputQueue)
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             m_pInputQueue = inputQueue;
         }
-        void SetOutputQueue(BasicIOBuffer<BasicIOElement*> * outpueQueue)
+        void SetOutputQueue(BasicIOBuffer<BasicIOElement> * outpueQueue)
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             m_pOutputQueue = outpueQueue;
@@ -206,14 +224,14 @@ namespace SRE {
             m_callBacks = callbacks;
         }
 
-        void Release();
+        void Join();
 
         BasicProcessor(const BasicProcessor & other) = delete;
         BasicProcessor & operator=(const BasicProcessor & other) = delete;
 
     private:
-        BasicIOBuffer<BasicIOElement*> *    m_pInputQueue;
-        BasicIOBuffer<BasicIOElement*> *    m_pOutputQueue;
+        BasicIOBuffer<BasicIOElement> *     m_pInputQueue;
+        BasicIOBuffer<BasicIOElement> *     m_pOutputQueue;
         BasicObserver  *                    m_pObserver;
         std::thread                         m_thread;
         CallBackFunctions   *               m_callBacks;
@@ -348,6 +366,9 @@ namespace SRE {
         _vertex_(VERTEX4& _v, FLOAT _t, INT _s, INT _e):
             v(_v),t(_t),s(_s),e(_e)
         {}
+        _vertex_():
+            v(),t(0),s(0),e(0)
+        {}
 	};
 
 
@@ -399,9 +420,9 @@ namespace SRE {
 	class InputAssembler:public BasicProcessor, public CallBackFunctions
 	{
     public:
-        InputAssembler(BasicIOBuffer<BasicIOElement*> * output=nullptr,
-                       BasicObserver * observer=nullptr,
-                       const ConstantBuffer * constbuffer=nullptr):
+        InputAssembler(BasicIOBuffer<BasicIOElement> * output=nullptr,
+                       BasicObserver *                 observer=nullptr,
+                       const ConstantBuffer *          constbuffer=nullptr):
             BasicProcessor(nullptr, output, observer, this),
             m_vertexBuffers(),
             m_indexBuffers(),
@@ -433,7 +454,7 @@ namespace SRE {
         void SendVertex(INT & actualIndex);
 
     private:
-        BasicIOBuffer<VertexBuffer*>  m_vertexBuffers;
+        std::queue<VertexBuffer*>     m_vertexBuffers;
         std::queue<Buffer<INT>*>      m_indexBuffers;
         const ConstantBuffer *        m_pConstantBuffer;
 
@@ -456,8 +477,8 @@ namespace SRE {
     class VertexProcessor:public BasicProcessor, public CallBackFunctions
     {
     public:
-        VertexProcessor(BasicIOBuffer<BasicIOElement*> * input=nullptr,
-                        BasicIOBuffer<BasicIOElement*> * output=nullptr,
+        VertexProcessor(BasicIOBuffer<BasicIOElement> * input=nullptr,
+                        BasicIOBuffer<BasicIOElement> * output=nullptr,
                         BasicObserver * observer=nullptr,
                         VertexShader*   vshader=nullptr,
                         VariableBuffer* variablebuffer=nullptr):
@@ -510,8 +531,8 @@ namespace SRE {
     class PrimitiveAssembler:public BasicProcessor, public CallBackFunctions
     {
     public:
-        PrimitiveAssembler(BasicIOBuffer<BasicIOElement*> * input=nullptr,
-                        BasicIOBuffer<BasicIOElement*> * output=nullptr,
+        PrimitiveAssembler(BasicIOBuffer<BasicIOElement> * input=nullptr,
+                        BasicIOBuffer<BasicIOElement>    * output=nullptr,
                         BasicObserver * observer=nullptr):
             BasicProcessor(input, output, observer, this)
         {}
@@ -545,8 +566,8 @@ namespace SRE {
     class VertexPostProcessor:public BasicProcessor, public CallBackFunctions
     {
     public:
-        VertexPostProcessor(BasicIOBuffer<BasicIOElement*> * input=nullptr,
-                            BasicIOBuffer<BasicIOElement*> * output=nullptr,
+        VertexPostProcessor(BasicIOBuffer<BasicIOElement> * input=nullptr,
+                            BasicIOBuffer<BasicIOElement> * output=nullptr,
                             BasicObserver * observer=nullptr):
             BasicProcessor(input, output, observer, this),
             m_pCurrentTriangle(nullptr),
@@ -610,7 +631,7 @@ namespace SRE {
         USINT        m_viewportWidthHalf;//data type should be considered
 
     private:
-        std::list<_vertex_>    m_vlist[2];
+        CLList<_vertex_>    m_vlist[2];
 
     };
 
@@ -625,8 +646,8 @@ namespace SRE {
     class Rasterizer:public BasicProcessor, public CallBackFunctions
     {
     public:
-        Rasterizer(BasicIOBuffer<BasicIOElement*> * input=nullptr,
-                   BasicIOBuffer<BasicIOElement*> * output=nullptr,
+        Rasterizer(BasicIOBuffer<BasicIOElement> * input=nullptr,
+                   BasicIOBuffer<BasicIOElement> * output=nullptr,
                    BasicObserver * observer=nullptr,
                    const ConstantBuffer * cbuffer=nullptr,
                    USINT samplePixelBlockSize=16):
@@ -715,7 +736,7 @@ namespace SRE {
         void Cancel();
 
         void SetSampleStep(USINT sampleStep){m_sampleStep = sampleStep;}
-        void PushTask(_pixelBlock_<_Triangle_> & task);
+        void PushTask(_pixelBlock_<BasicIOElement> & task);
 
         SubRasterizer & operator=(const SubRasterizer & other) = delete;
 //////////////////////////////////////////
@@ -726,7 +747,7 @@ namespace SRE {
         void GetTask(USINT & x, USINT & y);
 
     protected:
-        std::queue<_pixelBlock_<_Triangle_>>
+        std::queue<_pixelBlock_<BasicIOElement>>
                                      m_inputQueue;
         std::thread                  m_thread;
         std::condition_variable      m_cond;
@@ -735,7 +756,8 @@ namespace SRE {
         bool                         m_cancel;
         bool                         m_started;
 
-        std::shared_ptr<_Triangle_>  m_spTriangle;
+        std::shared_ptr<BasicIOElement>
+                                     m_spTriangle;
         USINT                        m_sampleStep;
 
 

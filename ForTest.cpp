@@ -1,18 +1,12 @@
 #include <iostream>
+#include <sstream>
 #include <stdio.h>
-#include <cstring>
-#include <memory>
-#include <map>
-#include <list>
 #include "SoftRenderEngine.h"
-
 
 using namespace SRE;
 using  std::cout;
 using  std::endl;
 using  std::unique_ptr;
-
-
 
 class Observer:public BasicObserver
 {
@@ -27,18 +21,19 @@ protected:
     }
 };
 
-
-
-
-
 struct vertex
 {
-
     VEC3  ver;
     VEC3  nor;
 
     FLOAT a1;
     FLOAT a2;
+
+    friend std::ostream& operator<<(std::ostream& out, const vertex& s)
+    {
+        out<<s.a1;
+        return out;
+    }
 };
 
 VSOutput* myVS(BYTE* v, VariableBuffer* varbuffer)
@@ -56,8 +51,125 @@ VSOutput* myVS(BYTE* v, VariableBuffer* varbuffer)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////////////////
+//
+/////////////////////////////////////////////////////////////////////////////////////////
+Window_view    main_view;
+Device         main_device;
+WindowsAdapter win_adapter;
+
+void OnResize(INT width, INT height)
+{
+    main_device.Resize(width, height);;
+}
+
+void OnFrame()
+{
+    static DWORD lastTime = GetTickCount();
+    static INT FPS = 0;
+    DWORD nowTime = GetTickCount();
+
+    if(nowTime - lastTime > 1000)
+    {
+        std::string text = "SoftwareEngine -ver0.01 -FPS:";
+        std::string sFPS;
+        std::stringstream sstream;
+        sstream <<FPS;
+        sstream >>sFPS;
+        main_view.SetTitle((text+sFPS).data());
+
+        lastTime = nowTime;
+        FPS = 0;
+    }
+    else
+        FPS++;
+
+    main_device.ClearFrame(0);
+
+    //
+
+    main_device.Present();
+}
 
 
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR sCmdLine, int iShow)
+{
+    USINT width = 800, height = 600;
+
+    if(main_view.Create(hInstance, "SoftwareEngine -ver0.01 -FPS:0", width, height))
+    {
+        win_adapter.SetHDC(main_view.GetHDC());
+        RESULT re = main_device.Create(3, width, height, &win_adapter);
+        if(re == RESULT::SUCC)
+        {
+           SetWndCallBackOnResize(&OnResize);
+           SetWndCallBackOnFrame(&OnFrame);
+
+           main_view.ShowWindow();
+           main_view.MsgLoop();
+        }
+    }
+    else
+    {
+        MessageBox(nullptr, "ERROR", "Create Window Failed", MB_OK | MB_ICONERROR);
+    }
+
+    main_view.Destroy();
+
+    return 0;
+}
+/////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+int main()
+{
+    CLList<vertex> mylist;
+    vertex vertexes[2];
+    for(int i=0; i<2; i++)
+    {
+        vertexes[i].ver.x = 0.1+i;
+        vertexes[i].ver.y = 0.2+i;
+        vertexes[i].ver.z = 0.3+i;
+
+        vertexes[i].nor.x = 0.9+i;
+        vertexes[i].nor.y = 0.8+i;
+        vertexes[i].nor.z = 0.7+i;
+
+        vertexes[i].a1 = 0.11+i;
+        vertexes[i].a2 = 0.21+i;
+    }
+    cout<<mylist.Empty()<<endl;
+    for(int i=0; i<2; i++)
+       mylist.Add_back(vertexes[i]);
+
+    cout<<mylist.Empty()<<endl;
+    cout<<"size:"<<mylist.Size()<<endl;
+
+    CLList<vertex>::Iterator it=mylist.Begin();
+    do
+    {
+        vertex* va = &(it->data);
+        vertex* vb = &(it->next->data);
+        it=it->next;
+
+        cout<<va->a1<<endl;
+        cout<<vb->a1<<endl;
+
+
+    }while(it!=mylist.Begin());
+
+    mylist.Clear();
+    cout<<"size:"<<mylist.Size()<<endl;
+
+    CLList<int> mylist2;
+    cout<<sizeof(mylist)<<endl;
+    cout<<sizeof(mylist2)<<endl;
+
+}
+*/
+
+/*
 int main()
 {
 
@@ -138,12 +250,12 @@ int main()
     VPP.Start();
     RZ.Start();
 
-    IA.Release();
-    VP.Release();
-    PA.Release();
-    VPP.Release();
-    RZ.Release();
+    IA.Join();
+    VP.Join();
+    PA.Join();
+    VPP.Join();
+    RZ.Join();
     RZ.CancelSubProcessor();
     cout<<"main end"<<endl;
 }
-
+*/

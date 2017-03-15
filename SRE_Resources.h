@@ -34,34 +34,36 @@ namespace SRE {
     class Color3
     {
     public:
-        Color3(const BYTE & r, const BYTE & g, const BYTE & b)
+        Color3(const BYTE & b=0, const BYTE & g=0, const BYTE & r=0)
         {
-            rgb[0]=r;
-            rgb[1]=g;
-            rgb[2]=b;
+            bgr[0]=b;
+            bgr[1]=g;
+            bgr[2]=r;
         }
 
         ~Color3(){}
 
     public:
-        BYTE rgb[3];
+        BYTE bgr[3];
 
     };
 
     class Color4
     {
     public:
-        Color4(const BYTE & a, const BYTE & r, const BYTE & g, const BYTE & b)
+        Color4(const BYTE & b=0, const BYTE & g=0, const BYTE & r=0, const BYTE & a=0)
         {
-            argb[0]=a;
-            argb[1]=r;
-            argb[2]=g;
-            argb[3]=b;
+            bgra[0]=b;
+            bgra[1]=g;
+            bgra[2]=r;
+            bgra[3]=a;
         }
-        ~Color4();
+
+        ~Color4(){}
 
     public:
-        BYTE argb[4];
+        BYTE bgra[4];
+
     };
 
 

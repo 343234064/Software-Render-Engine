@@ -190,7 +190,7 @@ namespace SRE {
 
     protected:
         std::string             m_name;
-        std::list<RenderPass*>  m_PassList;
+        std::list<RenderPass>  m_PassList;
 
     };
 
