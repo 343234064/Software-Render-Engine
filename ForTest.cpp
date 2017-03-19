@@ -99,7 +99,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR sCmdLine,
     if(main_view.Create(hInstance, "SoftwareEngine -ver0.01 -FPS:0", width, height))
     {
         win_adapter.SetHDC(main_view.GetHDC());
-        RESULT re = main_device.Create(3, width, height, &win_adapter);
+        RESULT re = main_device.Create(3, width, height, SRE_FORMAT_PIXEL_R8G8B8, &win_adapter);
         if(re == RESULT::SUCC)
         {
            SetWndCallBackOnResize(&OnResize);

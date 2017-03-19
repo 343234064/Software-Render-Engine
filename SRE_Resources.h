@@ -34,11 +34,11 @@ namespace SRE {
     class Color3
     {
     public:
-        Color3(const BYTE & b=0, const BYTE & g=0, const BYTE & r=0)
+        Color3(const BYTE & _b=0, const BYTE & _g=0, const BYTE & _r=0)
         {
-            bgr[0]=b;
-            bgr[1]=g;
-            bgr[2]=r;
+            bgr[0]=_b;
+            bgr[1]=_g;
+            bgr[2]=_r;
         }
 
         ~Color3(){}
@@ -48,68 +48,20 @@ namespace SRE {
 
     };
 
-    class Color4
+    class Color4:public Color3
     {
     public:
-        Color4(const BYTE & b=0, const BYTE & g=0, const BYTE & r=0, const BYTE & a=0)
-        {
-            bgra[0]=b;
-            bgra[1]=g;
-            bgra[2]=r;
-            bgra[3]=a;
-        }
+        Color4(const BYTE & _b=0, const BYTE & _g=0, const BYTE & _r=0, const BYTE & _a=0):
+            Color3(_b, _g, _r),
+            a(_a)
+        {}
 
         ~Color4(){}
 
     public:
-        BYTE bgra[4];
+        BYTE a;
 
     };
-
-
-
-    //=============================
-	//Class BufferDescript<typename T>
-	//
-	//A buffer description, which used
-	//to create a new buffer
-	//
-	//
-	//BufferSize: how many T are there
-	//            in this buffer
-	//PerUnitSize: the number of T that a whole meaningful data contains
-	//PerDataSize: the size of T
-	//BufferType: what is this buffer uses for
-	//DataFlag: data format
-	//=============================
-	/*
-	class BufferDescript
-	{
-    public:
-        BufferDescript(INT bufferSize = 0,
-                       INT perUnitSize = 1,
-                       INT perDataSize = 1,
-                       SREVAR bufferType = 0,
-                       SREVAR dataFormat = 0):
-            m_BufferSize(bufferSize),
-            m_perUnitSize(perUnitSize),
-            m_perDataSize(perDataSize),
-            m_BufferType(bufferType),
-            m_DataFormat(dataFormat)
-            {}
-        virtual ~BufferDescript(){}
-
-
-    public:
-        INT m_BufferSize;
-        INT m_perUnitSize;
-        INT m_perDataSize;
-        SREVAR m_BufferType;
-        SREVAR m_DataFormat;
-
-
-	};*/
-
 
 
     //=============================
@@ -125,7 +77,8 @@ namespace SRE {
     public:
         Buffer(INT bufferSize, T * initData):
                m_bufferSize(bufferSize),
-               m_data(nullptr)
+               m_data(nullptr),
+               m_pdata(nullptr)
         {
             if(m_bufferSize > 0)
             {
@@ -135,6 +88,7 @@ namespace SRE {
                    T * dest = this->m_data.get();
 	               std::copy(initData, initData + m_bufferSize, dest);
                 }
+                m_pdata = m_data.get();
             }
             else
                 m_bufferSize = 0;
@@ -144,8 +98,8 @@ namespace SRE {
            m_data.reset(nullptr);
         }
 
-        void  SetData(INT pos, const T & data);
-        T  &  GetData(INT pos);
+        inline void  SetData(INT pos, const T & data);
+        inline T  &  GetData(INT pos);
         void  Reset(const T & resetData);
         INT   GetBufferSize() const
         {
@@ -159,6 +113,7 @@ namespace SRE {
     protected:
         INT                                   m_bufferSize;
         std::unique_ptr<T, array_deleter<T>>  m_data;
+        T*                                    m_pdata;
 
 
 
@@ -184,7 +139,7 @@ namespace SRE {
 
         int i=0 , n=m_bufferSize;
         while(i<n)
-          this->m_data.get()[i++] = resetData;
+          m_pdata[i++] = resetData;
 
         return;
 	}
@@ -205,7 +160,7 @@ namespace SRE {
             return;
         }
 #endif
-        this->m_data.get()[pos] = data;
+        m_pdata[pos] = data;
 	}
 
 	template<typename T>
@@ -225,7 +180,7 @@ namespace SRE {
         }
 #endif
 
-        return this->m_data.get()[pos];
+        return m_pdata[pos];
 	}
 
 
@@ -244,7 +199,8 @@ namespace SRE {
         SynBuffer(INT bufferSize, T * initData):
                m_bufferSize(bufferSize),
                m_mutex(),
-               m_data(nullptr)
+               m_data(nullptr),
+               m_pdata(nullptr)
         {
             if(m_bufferSize > 0)
             {
@@ -254,6 +210,7 @@ namespace SRE {
                    T * dest = this->m_data.get();
 	               std::copy(initData, initData + m_bufferSize, dest);
                 }
+                m_pdata = m_data.get();
             }
             else
                 m_bufferSize = 0;
@@ -263,8 +220,8 @@ namespace SRE {
            m_data.reset(nullptr);
         }
 
-        void  SetData(INT pos, const T & data);
-        T  &  GetData(INT pos);
+        inline void  SetData(INT pos, const T & data);
+        inline T  &  GetData(INT pos);
         void  Reset(const T & resetData);
         INT   GetBufferSize() const
         {
@@ -279,6 +236,7 @@ namespace SRE {
         INT                                   m_bufferSize;
         std::mutex                            m_mutex;
         std::unique_ptr<T, array_deleter<T>>  m_data;
+        T*                                    m_pdata;
 
 	};
 
@@ -295,7 +253,7 @@ namespace SRE {
         std::lock_guard<std::mutex> lock(m_mutex);
         int i=0 , n=m_bufferSize;
         while(i<n)
-          this->m_data.get()[i++] = resetData;
+          m_pdata[i++] = resetData;
 
         return;
 	}
@@ -304,16 +262,119 @@ namespace SRE {
 	void SynBuffer<T>::SetData(INT pos, const T & data)
 	{
         std::lock_guard<std::mutex> lock(m_mutex);
-        this->m_data.get()[pos] = data;
+        m_pdata[pos] = data;
 	}
 
 	template<typename T>
 	T & SynBuffer<T>::GetData(INT pos)
 	{
         std::lock_guard<std::mutex> lock(m_mutex);
-        return this->m_data.get()[pos];
+        return m_pdata[pos];
 	}
 
+
+
+
+
+    //=============================
+	//Class SynMatBuffer
+	//
+	//*Synchronized*
+	//2D Buffer which is for storing data
+	//
+	//=============================
+	template <typename T>
+	class SynMatBuffer: public BaseContainer, public BasicIOElement
+	{
+    public:
+        SynMatBuffer():
+               m_width(0),
+               m_height(0),
+               m_mutex(),
+               m_pdata(nullptr)
+        {}
+        virtual ~SynMatBuffer()
+        {
+            for(INT i=0; i<m_height; i++)
+                 delete[] m_pdata[i];
+            delete[] m_pdata;
+        }
+
+        RESULT Create(INT width, INT height);
+        inline void  SetData(INT x, INT y, const T & data);
+        inline T &   GetData(INT x, INT y);
+        void  Reset(const T & resetData);
+        INT   GetBufferHeight() const
+        {
+            return m_height;
+        }
+        INT   GetBufferWidth() const
+        {
+            return m_width;
+        }
+
+
+        SynMatBuffer(const SynMatBuffer & other) = delete;
+        SynMatBuffer & operator=(const SynMatBuffer & other) = delete;
+
+    protected:
+        INT                                   m_width;
+        INT                                   m_height;
+        std::mutex                            m_mutex;
+        T**                                   m_pdata;
+
+	};
+
+
+
+    //=============================
+	//Class SynMatBuffer functions
+	//
+	//
+	//=============================
+	template <typename T>
+	RESULT SynMatBuffer<T>::Create(INT width, INT height)
+	{
+	    if(width<=0 || height<=0) return RESULT::INVALIDARG;
+
+        m_pdata = new T*[height];
+        if(nullptr == m_pdata) return RESULT::OUTMEMORY;
+
+        for(INT i=0; i<height; i++)
+        {
+            m_pdata[i] = new T[width];
+            if(nullptr == m_pdata[i]) return RESULT::OUTMEMORY;
+        }
+
+        m_width = width;
+        m_height = height;
+
+        return RESULT::SUCC;
+	}
+
+	template <typename T>
+	void SynMatBuffer<T>::Reset(const T & resetData)
+	{
+        std::lock_guard<std::mutex> lock(m_mutex);
+        for(INT i=0; i<m_height; i++)
+          for(INT j=0; j<m_width; j++)
+              m_pdata[i][j] = resetData;
+
+	}
+
+	template<typename T>
+	void SynMatBuffer<T>::SetData(INT x, INT y, const T & data)
+	{
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_pdata[y][x] = data;
+	}
+
+	template<typename T>
+	T & SynMatBuffer<T>::GetData(INT x, INT y)
+	{
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_pdata[y][x];
+	}
 
 
 
@@ -343,12 +404,12 @@ namespace SRE {
         VERTEX2 GetVertex2(INT index);
         VERTEX3 GetVertex3(INT index);
         VERTEX4 GetVertex4(INT index);
-        INT     GetVertexNumber();
-        INT     GetVertexDimension();
-        SREVAR  GetVertexFormat();
+        inline INT     GetVertexNumber();
+        inline INT     GetVertexDimension();
+        inline SREVAR  GetVertexFormat();
 
-        void    SetMark(INT index, bool m){m_marks[index]=m;}
-        bool    GetMark(INT index){return m_marks[index];}
+        inline void  SetMark(INT index, bool m){m_marks[index]=m;}
+        inline bool  GetMark(INT index){return m_marks[index];}
         void    ResetMark(bool val){memset(m_marks, val, m_vertexNum*sizeof(bool));}
 
         VertexBuffer & operator=(const VertexBuffer & other) = delete;
@@ -396,6 +457,80 @@ namespace SRE {
         SREVAR         m_vertexFormat;
 	};
 
+    //=============================
+	//Class VertexBuffer functions
+	//=============================
+    INT VertexBuffer::GetVertexNumber()
+    {
+        return m_vertexNum;
+    }
 
+    INT VertexBuffer::GetVertexDimension()
+    {
+        return m_vertexDimen;
+    }
+
+    SREVAR VertexBuffer::GetVertexFormat()
+    {
+        return m_vertexFormat;
+    }
+
+
+    //=============================
+	//Class RenderTexture
+	//
+	//=============================
+	class RenderTexture:public BaseContainer, public BasicIOElement
+	{
+    public:
+        RenderTexture():
+            Format(0),
+            Width(0),
+            Height(0),
+            m_pdata(nullptr),
+            m_byteCount(0)
+        {}
+        RenderTexture(const RenderTexture & other);
+        virtual ~RenderTexture()
+        {
+            delete[] m_pdata;
+        }
+
+        RESULT       Create();
+        void  DrawSquare(USINT sx, USINT sy, USINT ex, USINT ey, Color4);
+        inline void  Draw(USINT px, USINT py, Color4);
+        //inline void  Draw(USINT px, USINT py, BYTE*);
+        inline void  Clear(INT grayLevel);
+
+        //bool CreateFromFile()
+
+        RenderTexture & operator=(const RenderTexture & other);
+
+    public:
+        SREVAR Format;
+        USINT  Width;
+        USINT  Height;
+
+    protected:
+        inline BYTE*  Get(){return m_pdata;}
+
+    protected:
+        BYTE*  m_pdata;
+        USINT  m_byteCount;
+
+	};
+
+    //=============================
+	//Class RenderTexture functions
+	//=============================
+    void  RenderTexture::Draw(USINT px, USINT py, Color4 color)
+    {
+        *((Color4*)m_pdata + py*Width + px) = color;
+    }
+
+    void  RenderTexture::Clear(INT grayLevel)
+    {
+        memset(m_pdata, grayLevel, Width*Height*m_byteCount);
+    }
 }
 #endif

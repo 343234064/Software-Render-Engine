@@ -94,46 +94,7 @@ namespace SRE {
         return;
     }
 
-    void BasicProcessor::Pause()
-    {
-        m_Pause = true;
-    }
 
-    void BasicProcessor::Cancel()
-    {
-        m_Cancel = true;
-    }
-
-    void BasicProcessor::Resume()
-    {
-        if(nullptr != m_callBacks)
-           m_callBacks->OnResume();
-        m_Pause = false;
-        m_cond.notify_one();
-
-    }
-
-    std::shared_ptr<BasicIOElement> BasicProcessor::GetInput()
-    {
-        return m_pInputQueue->wait_and_pop();
-    }
-
-    void BasicProcessor::Output(std::shared_ptr<BasicIOElement> out)
-    {
-        m_pOutputQueue->push(out);
-    }
-
-    void BasicProcessor::Output(BasicIOElement* out)
-    {
-        m_pOutputQueue->push(out);
-    }
-
-    void BasicProcessor::Join()
-    {
-        if(m_thread.joinable())
-           m_thread.join();
-
-    }
 
 
 
@@ -149,11 +110,6 @@ namespace SRE {
         m_indexBuffers.push(indexBuffer);
 
         m_cond.notify_one();
-    }
-
-    void InputAssembler::SetConstantBuffer(const ConstantBuffer * cbuffer)
-    {
-        m_pConstantBuffer = cbuffer;
     }
 
     void InputAssembler::HandleElement()
@@ -306,16 +262,6 @@ namespace SRE {
 	//
 	//
 	//===========================================
-    void VertexProcessor::SetVertexShader(VertexShader * vshader)
-    {
-        m_pVertexShader = vshader;
-    }
-
-    void VertexProcessor::SetVariableBuffer(VariableBuffer* varbuffer)
-    {
-        m_pVariableBuffer = varbuffer;
-    }
-
     void VertexProcessor::HandleElement()
     {
         std::shared_ptr<BasicIOElement> p = GetInput();
@@ -497,33 +443,6 @@ namespace SRE {
     //
     //I use Sutherland and Hodgman Clipping Algorithm
 	//===========================================
-    void VertexPostProcessor::SetClipPlaneX(FLOAT Distance_PlaneToOrigin, VEC3& normal)
-    {
-        m_clipPlaneDistance[0] = Distance_PlaneToOrigin;
-        m_clipPlaneDistance[1] = Distance_PlaneToOrigin;
-
-        m_clipPlaneNormal[0] = normal;
-        m_clipPlaneNormal[1] = -normal;
-    }
-
-    void VertexPostProcessor::SetClipPlaneY(FLOAT Distance_PlaneToOrigin, VEC3& normal)
-    {
-        m_clipPlaneDistance[2] = Distance_PlaneToOrigin;
-        m_clipPlaneDistance[3] = Distance_PlaneToOrigin;
-
-        m_clipPlaneNormal[2] = normal;
-        m_clipPlaneNormal[3] = -normal;
-    }
-
-    void VertexPostProcessor::SetClipPlaneZ(FLOAT Distance_PlaneToOrigin, VEC3& normal)
-    {
-        m_clipPlaneDistance[4] = Distance_PlaneToOrigin;
-        m_clipPlaneDistance[5] = Distance_PlaneToOrigin;
-
-        m_clipPlaneNormal[4] = normal;
-        m_clipPlaneNormal[5] = -normal;
-    }
-
 	void VertexPostProcessor::TriangleClipping()
 	{
 	    if(m_pCurrentTriangle->v[0].vertex.w <= 0) return;
@@ -616,14 +535,12 @@ namespace SRE {
             it = m_vlist[src].Begin();
             _vertex_* vp = &(it->data);
 
-            VSOutput v1(vp->v);
-            v1.LerpAttriValue(m_pCurrentTriangle->v[vp->s], m_pCurrentTriangle->v[vp->e], vp->t);
+            VSOutput v1(vp->v, m_pCurrentTriangle->v[vp->s], m_pCurrentTriangle->v[vp->e], vp->t);
             OtherTranforms(v1);
             it = it->next;
 
             vp = &(it->data);
-            VSOutput  v2(vp->v);
-            v2.LerpAttriValue(m_pCurrentTriangle->v[vp->s], m_pCurrentTriangle->v[vp->e], vp->t);
+            VSOutput  v2(vp->v, m_pCurrentTriangle->v[vp->s], m_pCurrentTriangle->v[vp->e], vp->t);
             OtherTranforms(v2);
             it = it->next;
 
@@ -632,8 +549,7 @@ namespace SRE {
                 vp = &(it->data);
                 if(vp->t > 0)
                 {
-                    VSOutput v3(vp->v);
-                    v3.LerpAttriValue(m_pCurrentTriangle->v[vp->s], m_pCurrentTriangle->v[vp->e], vp->t);
+                    VSOutput v3(vp->v, m_pCurrentTriangle->v[vp->s], m_pCurrentTriangle->v[vp->e], vp->t);
                     OtherTranforms(v3);
 
                     SendTriangle(v1, v2, v3);
@@ -663,6 +579,8 @@ namespace SRE {
         //Viewport Transform
         input.vertex.x = input.vertex.x*  m_viewportWidthHalf   + m_viewportWidthHalf;
         input.vertex.y = input.vertex.y*(-m_viewportHeightHalf) + m_viewportHeightHalf;
+
+        input.vertex.w = 1/fabs(input.vertex.w);
 
         //viewport :800 : 600
         //CVV      :  1 :   1
@@ -748,17 +666,6 @@ namespace SRE {
 	//
 	//
 	//===========================================
-	void Rasterizer::SetConstantBuffer(const ConstantBuffer * cbuffer)
-	{
-        m_pConstantBuffer = cbuffer;
-	}
-
-	void Rasterizer::SetSamplePixelBlockSize(USINT blockSize)
-	{
-	    if(m_Started) return;
-	    m_perPixelBlockSize = blockSize;
-    }
-
 	void Rasterizer::HandleElement()
 	{
 	    std::shared_ptr<BasicIOElement> pTriangle = GetInput();
@@ -790,14 +697,18 @@ namespace SRE {
 
         //split the bounding box into m_perPixelBlockSize X m_perPixelBlockSize size pixel blocks
         //and put these pixel block to the sub-processors to wait for handle
-        USINT processorNum=m_subProcessors.size(),startX=x_min, startY=y_min;
+        USINT processorNum=m_subProcessors.size(), startX=x_min, startY=y_min;
+        USINT distX=m_perPixelBlockSize-1, distY=m_perPixelBlockSize-1;
 
         std::lock_guard<std::mutex> lock(m_resMutex);
         for(startY=y_min; startY<y_max; startY+=m_perPixelBlockSize)
         {
             for(startX=x_min; startX<x_max; startX+=m_perPixelBlockSize)
             {
-                _pixelBlock_<BasicIOElement> block(startX, startY, pTriangle);
+                if((startX+distX) > x_max) distX = x_max-startX;
+                if((startX+distX) > y_max) distY = y_max-startY;
+
+                _pixelBlock_<BasicIOElement> block(startX, startY, distX, distY, pTriangle);
                 m_subProcessors[m_subIndex++].PushTask(block);
 
                 if(m_subIndex == processorNum) m_subIndex=0;
@@ -817,16 +728,10 @@ namespace SRE {
 	    std::lock_guard<std::mutex> lock(m_resMutex);
 	    while(num>0)
         {
-            m_subProcessors.push_back(SubRasterizer(sampleStep));
+            m_subProcessors.push_back(PixelProcessor(sampleStep));
             num--;
         }
-//////////////////////////////////
-        INT i=0;
-        while(i<m_subProcessors.size())
-        {
-            m_subProcessors[i++].m_num=i;
-        }
-//////////////////////////////////
+
 	}
 
 	void Rasterizer::RemoveSubProcessor(USINT num)
@@ -908,46 +813,50 @@ namespace SRE {
 
 
     //===========================================
-	//Class SubRasterizer functions
+	//Class PixelProcessor functions
 	//
 	//
 	//===========================================
-	void SubRasterizer::Start()
+	void PixelProcessor::Start()
 	{
         if(!m_started)
         {
-           m_thread = std::thread(&SubRasterizer::ScanConversion, this);
+           m_thread = std::thread(&PixelProcessor::ScanConversion, this);
            m_started = true;
         }
 	}
 
-	void SubRasterizer::Cancel()
+	void PixelProcessor::Cancel()
 	{
 	    if(m_started)
            m_cancel = true;
 	}
 
-	void SubRasterizer::PushTask(_pixelBlock_<BasicIOElement> & task)
+	void PixelProcessor::PushTask(_pixelBlock_<BasicIOElement> & task)
 	{
         std::lock_guard<std::mutex> lock(m_mutex);
         m_inputQueue.push(task);
         m_cond.notify_one();
 	}
 
-	void SubRasterizer::GetTask(USINT & x, USINT & y)
+	std::shared_ptr<BasicIOElement>
+	PixelProcessor::GetTask(USINT & sx, USINT & sy, USINT & distx, USINT & disty)
 	{
         std::unique_lock<std::mutex> lock(m_mutex);
         m_cond.wait(lock, [this]{return !m_inputQueue.empty();});
         _pixelBlock_<BasicIOElement> task = m_inputQueue.front();
-
-        x = task.x;
-        y = task.y;
-        m_spTriangle = task.tempData;
-
         m_inputQueue.pop();
+
+        sx = task.sx;
+        sy = task.sy;
+        distx = task.distX;
+        disty = task.distY;
+        return task.tempData;
 	}
 
-	void SubRasterizer::ScanConversion()
+
+
+	void PixelProcessor::ScanConversion()
 	{
         while(true)
         {
@@ -957,191 +866,248 @@ namespace SRE {
                break;
             }
 
-            USINT sx, sy;
-            GetTask(sx, sy);
+            std::shared_ptr<BasicIOElement> ptr=GetTask(m_sx, m_sy, m_distX, m_distY);
+            _Triangle_* m_pTri = (_Triangle_*)ptr.get();
 
-            //g_log.WriteKV("SubRaster NUM:", m_num);
-            //g_log.WriteKV("Get Task:", sx, sy);
-            //g_log.WriteKV("Task trangle:", m_spTriangle->v[0].vertex.x, m_spTriangle->v[1].vertex.x, m_spTriangle->v[2].vertex.x);
+            FLOAT area = EdgeFunction2D(m_pTri->v[0].vertex, m_pTri->v[1].vertex, m_pTri->v[2].vertex);
 
+            //simplified-EdgeFunction
+            //w0_new - w0 = -(b.y-a.y)*s
+            //calculate: -(b.y-a.y)*s
+            m_wStepX[0] = -(m_pTri->v[1].vertex.y - m_pTri->v[0].vertex.y)*m_sampleStep;
+            m_wStepX[1] = -(m_pTri->v[2].vertex.y - m_pTri->v[1].vertex.y)*m_sampleStep;
+            m_wStepX[2] = -(m_pTri->v[0].vertex.y - m_pTri->v[2].vertex.y)*m_sampleStep;
 
+            m_wStepY[0] = -(m_pTri->v[1].vertex.x - m_pTri->v[0].vertex.x)*m_sampleStep;
+            m_wStepY[1] = -(m_pTri->v[2].vertex.x - m_pTri->v[1].vertex.x)*m_sampleStep;
+            m_wStepY[2] = -(m_pTri->v[0].vertex.x - m_pTri->v[2].vertex.x)*m_sampleStep;
+
+            FLOAT w00[3], w01[3], w10[3], w11[3];
+            //calculate edgeFunction for 4 corners
+            w00[0]=EdgeFunction2D(m_pTri->v[0].vertex.x, m_pTri->v[0].vertex.y, m_pTri->v[1].vertex.x, m_pTri->v[1].vertex.y, m_sx, m_sy);
+            w00[1]=EdgeFunction2D(m_pTri->v[1].vertex.x, m_pTri->v[1].vertex.y, m_pTri->v[2].vertex.x, m_pTri->v[2].vertex.y, m_sx, m_sy);
+            w00[2]=EdgeFunction2D(m_pTri->v[2].vertex.x, m_pTri->v[2].vertex.y, m_pTri->v[0].vertex.x, m_pTri->v[0].vertex.y, m_sx, m_sy);
+
+            w01[0]=w00[0]+m_distX*m_wStepX[0];
+            w01[1]=w00[1]+m_distX*m_wStepX[1];
+            w01[2]=w00[2]+m_distX*m_wStepX[2];
+
+            w10[0]=w00[0]+m_distY*m_wStepY[0];
+            w10[1]=w00[1]+m_distY*m_wStepY[1];
+            w10[2]=w00[2]+m_distY*m_wStepY[2];
+
+            w11[0]=w01[0]+w10[0]-w00[0];
+            w11[1]=w01[1]+w10[1]-w00[1];
+            w11[2]=w01[2]+w10[2]-w00[2];
+
+            //test 4 corners of the pixel block
+            INT all=0;
+            all+=(w00[0]>=0 && w00[1]>=0 && w00[2]>=0) ? 1: 0;
+            all+=(w01[0]>=0 && w01[1]>=0 && w01[2]>=0) ? 1: 0;
+            all+=(w10[0]>=0 && w10[1]>=0 && w10[2]>=0) ? 1: 0;
+            all+=(w11[0]>=0 && w11[1]>=0 && w11[2]>=0) ? 1: 0;
+
+            if(all >= 4)
+            {//4 corners are all in the triangle
+                w00[0]/=area;w00[1]/=area;w00[2]=1-w00[0]-w00[1];
+                w01[0]/=area;w01[1]/=area;w01[2]=1-w01[0]-w01[1];
+                w10[0]/=area;w10[1]/=area;w10[2]=1-w10[0]-w10[1];
+                w11[0]/=area;w11[1]/=area;w11[2]=1-w11[0]-w11[1];
+
+                if(m_pConstantBuffer->ZEnable == SRE_TRUE)
+                   Scan_ZOn_IOff(w00, w10, w01, w11);
+                else
+                   Scan_ZOff_IOff(w00, w10, w01, w11);
+
+            }
+            else if(all > 0)
+            {//at least 1 corner is in the triangle
+                if(m_pConstantBuffer->ZEnable == SRE_TRUE)
+                   Scan_ZOn_IOn(w00, area);
+                else
+                   Scan_ZOff_IOn(w00, area);
+
+            }//no corner is in the triangle
+             //skip this pixel block
         }
 
         m_started = false;
 	}
 
-    //===========================================
-	//Class Technique functions
-	//
-	//
-	//===========================================
-    /*
-    Technique & Technique::operator=(const Technique & other)
-    {
-        if(this != &other)
+	void PixelProcessor::Scan_ZOn_IOff(FLOAT W00[3], FLOAT W10[3], FLOAT W01[3], FLOAT W11[3])
+	{
+	    USINT  sx, sy, ex = m_sx+m_distX, ey = m_sy+m_distY;
+	    FLOAT  interpolatedZ;
+        bool   drawSquare = m_sampleStep>0 ? true: false;
+
+        PSInput in00(m_pTri->v[0], W00[0], m_pTri->v[1], W00[1], m_pTri->v[2], W00[2]);
+        PSInput in01(m_pTri->v[0], W01[0], m_pTri->v[1], W01[1], m_pTri->v[2], W01[2]);
+        PSInput in10(m_pTri->v[0], W10[0], m_pTri->v[1], W10[1], m_pTri->v[2], W10[2]);
+        PSInput in11(m_pTri->v[0], W11[0], m_pTri->v[1], W11[1], m_pTri->v[2], W11[2]);
+
+        FLOAT factorX = m_sampleStep/(m_distX+1), factorY = m_sampleStep/(m_distY+1);
+        FLOAT fx, fy;
+        for(sy = m_sy, fy = 0; sy <= ey; sy+=m_sampleStep, fy+=factorY)
         {
-            this->m_name = other.m_name;
-            this->m_PassList = other.m_PassList;
-        }
-
-        return *this;
-    }
-
-
-    void Technique::ReleasePassList()
-    {
-        std::list<RenderPass*>::iterator it;
-        RenderPass * pass;
-        for(it=m_PassList.begin(); it!=m_PassList.end();)
-        {
-            pass = (*it);
-            delete pass;
-            m_PassList.erase(it++);
-        }
-    }
-
-
-    void Technique::SetName(std::string name)
-    {
-        m_name = name;
-    }
-
-
-    std::string Technique::GetName()
-    {
-        return m_name;
-    }
-
-
-    INT Technique::GetRenderPassNumber()
-    {
-        return m_PassList.size();
-    }
-
-
-    void Technique::AddRenderPass(RenderPass * renderPass, INT index)
-    {
-        if(nullptr == renderPass)
-        {
-#ifdef _SRE_DEBUG_
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-#endif
-            return;
-        }
-        std::list<RenderPass*>::iterator it;
-        INT i=0;
-        for(it=m_PassList.begin(); it!=m_PassList.end(); it++, i++)
-        {
-            if(i==index)
+            for(sx = m_sx, fx = 0; sx <= ex; sx+=m_sampleStep, fx+=factorX)
             {
-                m_PassList.insert(it, renderPass);
-                break;
-            }
-        }
-    }
+                interpolatedZ = Lerp(in00.vertex.z, in10.vertex.z, in01.vertex.z, in11.vertex.z, fx, fy);
+                if(ZTest(sx, sy, interpolatedZ))
+                {
+                    PSInput in(in00, in10, in01, in11, fx, fy, interpolatedZ);
 
-
-    void Technique::AddRenderPassBack(RenderPass * renderPass)
-    {
-        if(nullptr == renderPass)
-        {
-#ifdef _SRE_DEBUG_
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-#endif
-            return;
-        }
-
-        m_PassList.push_back(renderPass);
-    }
-
-
-    void Technique::RemoveRenderPassByIndex(INT index)
-    {
-        std::list<RenderPass*>::iterator it;
-        INT i=0;
-        for(it=m_PassList.begin(); it!=m_PassList.end(); it++, i++)
-        {
-            if(i==index)
-            {
-                it=m_PassList.erase(it);
-                break;
-            }
-        }
-    }
-
-
-    void Technique::RemoveRenderPassByName(std::string name)
-    {
-        std::list<RenderPass*>::iterator it;
-        for(it=m_PassList.begin(); it!=m_PassList.end(); it++)
-        {
-            if(name==(*it)->GetName())
-            {
-                it=m_PassList.erase(it);
-                break;
-            }
-        }
-    }
-
-
-    RenderPass * Technique::GetRenderPassByIndex(INT index)
-    {
-        std::list<RenderPass*>::iterator it;
-        INT i=0;
-        for(it=m_PassList.begin(); it!=m_PassList.end(); it++, i++)
-        {
-            if(i==index)
-            {
-                return (*it);
+                    if(drawSquare)
+                        m_pRenderTarget->DrawSquare(sx, sy,
+                                                    (sx+m_sampleStep-1)<ex?sx+m_sampleStep-1:ex,
+                                                    (sy+m_sampleStep-1)<ey?sy+m_sampleStep-1:ey,
+                                                    m_pPixelShader->Run(in));
+                    else
+                        m_pRenderTarget->Draw(sx, sy, m_pPixelShader->Run(in));
+                }
             }
         }
 
-        return nullptr;
+	}
 
-    }
+	void PixelProcessor::Scan_ZOff_IOff(FLOAT W00[3], FLOAT W01[3], FLOAT W10[3], FLOAT W11[3])
+	{
+	    USINT  sx, sy, ex = m_sx+m_distX, ey = m_sy+m_distY;
+	    FLOAT  interpolatedZ;
+        bool   drawSquare = m_sampleStep>0 ? true: false;
 
+        PSInput in00(m_pTri->v[0], W00[0], m_pTri->v[1], W00[1], m_pTri->v[2], W00[2]);
+        PSInput in01(m_pTri->v[0], W01[0], m_pTri->v[1], W01[1], m_pTri->v[2], W01[2]);
+        PSInput in10(m_pTri->v[0], W10[0], m_pTri->v[1], W10[1], m_pTri->v[2], W10[2]);
+        PSInput in11(m_pTri->v[0], W11[0], m_pTri->v[1], W11[1], m_pTri->v[2], W11[2]);
 
-    RenderPass * Technique::GetRenderPassByName(std::string name)
-    {
-        std::list<RenderPass*>::iterator it;
-        for(it=m_PassList.begin(); it!=m_PassList.end(); it++)
+        FLOAT factorX = m_sampleStep/(m_distX+1), factorY = m_sampleStep/(m_distY+1);
+        FLOAT fx, fy;
+        for(sy = m_sy, fy = 0; sy <= ey; sy+=m_sampleStep, fy+=factorY)
         {
-            if(name==(*it)->GetName())
+            for(sx = m_sx, fx = 0; sx <= ex; sx+=m_sampleStep, fx+=factorX)
             {
-                return (*it);
+                PSInput in(in00, in10, in01, in11, fx, fy, interpolatedZ);
+
+                if(drawSquare)
+                    m_pRenderTarget->DrawSquare(sx, sy,
+                                                (sx+m_sampleStep-1)<ex?sx+m_sampleStep-1:ex,
+                                                (sy+m_sampleStep-1)<ey?sy+m_sampleStep-1:ey,
+                                                m_pPixelShader->Run(in));
+                else
+                    m_pRenderTarget->Draw(sx, sy, m_pPixelShader->Run(in));
+
             }
         }
+	}
 
-        return nullptr;
-    }
+	void PixelProcessor::Scan_ZOn_IOn(FLOAT W00[3], FLOAT wTri)
+	{
+	    SINT  sy=m_sy, sx=m_sx;
+        SINT  step=m_sampleStep;
+        FLOAT w0=W00[0], w1=W00[1], w2=W00[2];
+        VEC2  Barycentric;
+        FLOAT interpolatedZ;
+        bool  drawSquare = m_sampleStep>0 ? true: false;
 
-
-    void Technique::Run()
-    {
-        std::list<RenderPass*>::iterator it;
-        for(it=m_PassList.begin(); it!=m_PassList.end(); it++)
+        for(SINT distY = m_distY; ;sy+=m_sampleStep, distY-=m_sampleStep)
         {
-            (*it)->Run();
+            for(SINT distX = m_distX; ;sx+=step, distX-=m_sampleStep)
+            {
+                if(w0>=0 && w1>=0 && w2>=0)
+                {
+                    Barycentric.x=w0/wTri;
+                    Barycentric.y=w1/wTri;
+
+                    interpolatedZ=Bicp(m_pTri->v[0].vertex.z, Barycentric.x,
+                                       m_pTri->v[1].vertex.z, Barycentric.y,
+                                       m_pTri->v[2].vertex.z);
+
+                    if(ZTest(sx, sy, interpolatedZ))
+                    {
+
+                       PSInput in(m_pTri->v[0], Barycentric.x,
+                                  m_pTri->v[1], Barycentric.y,
+                                  m_pTri->v[2], 1-Barycentric.x-Barycentric.y,
+                                  interpolatedZ);
+
+                       if(drawSquare)
+                           m_pRenderTarget->DrawSquare(sx, sy,
+                                                       distX>m_sampleStep?sx+m_sampleStep-1:m_sx+m_distX,
+                                                       distY>m_sampleStep?sy+m_sampleStep-1:m_sy+m_distY,
+                                                       m_pPixelShader->Run(in));
+                       else
+                           m_pRenderTarget->Draw(sx, sy, m_pPixelShader->Run(in));
+                    }
+                }
+                w0 = w0 + m_wStepX[0];
+                w1 = w1 + m_wStepX[1];
+                w2 = w2 + m_wStepX[2];
+
+                if( distX <= 0) break;
+            }
+            w0 = w0 + m_wStepY[0];
+            w1 = w1 + m_wStepY[1];
+            w2 = w2 + m_wStepY[2];
+
+            step = -step;
+            if(distY <= 0) break;
         }
 
-    }
+	}
+
+    void PixelProcessor::Scan_ZOff_IOn(FLOAT W00[3], FLOAT wTri)
+	{
+	    SINT  sy=m_sy, sx=m_sx;
+        SINT  step=m_sampleStep;
+        FLOAT w0=W00[0], w1=W00[1], w2=W00[2];
+        VEC2  Barycentric;
+        FLOAT interpolatedZ;
+        bool  drawSquare = m_sampleStep>0 ? true: false;
+
+        for(SINT distY = m_distY; ;sy+=m_sampleStep, distY-=m_sampleStep)
+        {
+            for(SINT distX = m_distX; ;sx+=step, distX-=m_sampleStep)
+            {
+                if(w0>=0 && w1>=0 && w2>=0)
+                {
+                    Barycentric.x=w0/wTri;
+                    Barycentric.y=w1/wTri;
+
+                    interpolatedZ=Bicp(m_pTri->v[0].vertex.z, Barycentric.x,
+                                       m_pTri->v[1].vertex.z, Barycentric.y,
+                                       m_pTri->v[2].vertex.z);
+
+                    PSInput in(m_pTri->v[0], Barycentric.x,
+                               m_pTri->v[1], Barycentric.y,
+                               m_pTri->v[2], 1-Barycentric.x-Barycentric.y,
+                               interpolatedZ);
+
+                    if(drawSquare)
+                        m_pRenderTarget->DrawSquare(sx, sy,
+                                                    distX>m_sampleStep?sx+m_sampleStep-1:m_sx+m_distX,
+                                                    distY>m_sampleStep?sy+m_sampleStep-1:m_sy+m_distY,
+                                                    m_pPixelShader->Run(in));
+                    else
+                        m_pRenderTarget->Draw(sx, sy, m_pPixelShader->Run(in));
+
+                }
+                w0 = w0 + m_wStepX[0];
+                w1 = w1 + m_wStepX[1];
+                w2 = w2 + m_wStepX[2];
+
+                if( distX <= 0) break;
+            }
+            w0 = w0 + m_wStepY[0];
+            w1 = w1 + m_wStepY[1];
+            w2 = w2 + m_wStepY[2];
+
+            step = -step;
+            if(distY <= 0) break;
+        }
+
+	}
 
 
-
-
-
-
-
-    //===========================================
-	//Class RenderPass functions
-	//
-	//
-	//===========================================
-    std::string RenderPass::GetName()
-    {
-        return this->m_name;
-    }
-    */
 
 
 

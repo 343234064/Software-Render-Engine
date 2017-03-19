@@ -75,13 +75,6 @@ namespace SRE {
 	class Matrix4x4;
     class Quaternion;
 
-    class BufferDescript;
-
-    template <typename T>
-	class Buffer;
-
-    class VertexBuffer;
-
     class BaseMesh;
     class TriangleMesh;
 	class BaseMeshManager;
@@ -89,6 +82,10 @@ namespace SRE {
 
     class Color3;
     class Color4;
+    template <typename T>
+	class Buffer;
+    class VertexBuffer;
+    class RenderTexture;
 
     template<typename T>
     class BasicIOBuffer;
@@ -105,7 +102,6 @@ namespace SRE {
     class VertexPostProcessor;
     class PrimitiveAssembler;
     class Rasterizer;
-    class SubRasterizer;
     class PixelProcessor;
     class OutputMerger;
 
@@ -113,12 +109,14 @@ namespace SRE {
     class ConstantBuffer;
 
     class VSOutput;
+    class PSInput;
     class VertexShader;
     class PixelShader;
     class Technique;
     class RenderPass;
 
     class Device;
+    class DeviceAdapter;
 
     //==============================
     //Type definitions
@@ -175,7 +173,7 @@ namespace SRE {
 
 
     typedef VSOutput* (CallBackVShader)(BYTE*, VariableBuffer*);
-    //typedef PSOutput* (CallBackPShader)(PSInput *, );
+    typedef Color4    (CallBackPShader)(PSInput&);
 
     typedef TriangleMeshManager TMManager;
 
@@ -269,6 +267,10 @@ namespace SRE {
     const SREVAR SRE_FORMAT_PIXEL_R8G8B8A8=0x10000040;
     const SREVAR SRE_FORMAT_PIXEL_R8G8B8=0x10000041;
 
+    const SREVAR SRE_SHADERINPUTFORMAT_ALL=0x10000050;
+    const SREVAR SRE_SHADERINPUTFORMAT_TEXCOORD=0x10000051;
+    const SREVAR SRE_SHADERINPUTFORMAT_VERTEX=0x10000052;
+
     const SREVAR SRE_MATRIXTYPE_WORLD=0x10000070;
     const SREVAR SRE_MATRIXTYPE_VIEW=0x10000071;
     const SREVAR SRE_MATRIXTYPE_PROJECT=0x10000072;
@@ -277,11 +279,6 @@ namespace SRE {
     const SREVAR SRE_MATRIXTYPE_WORLDVIEWPROJECT=0x10000075;
 
     const SREVAR SRE_MESSAGE_RUNERROR=0x10000090;
-    //const SREVAR SRE_TYPE_VERTEXBUFFER=0x10000090;
-    //const SREVAR SRE_TYPE_INDEXBUFFER=0x10000091;
-    //const SREVAR SRE_TYPE_RENDERBUFFER=0x10000092;
-    //const SREVAR SRE_TYPE_VSHADER=0x10000093;
-    //const SREVAR SRE_TYPE_PSHADER=0x10000094;
 
 
 
@@ -298,16 +295,16 @@ namespace SRE {
                      write a index -1 means the end of a strip.
       TRIANGLELIST: a list of triangles
     */
-    const SREVAR SRE_PRIMITIVETYPE_POINTLIST=0x00000300;
-    const SREVAR SRE_PRIMITIVETYPE_LINELIST=0x00000301;
-    const SREVAR SRE_PRIMITIVETYPE_LINESTRIP=0x00000302;
+    //onst SREVAR SRE_PRIMITIVETYPE_POINTLIST=0x00000300;
+    //const SREVAR SRE_PRIMITIVETYPE_LINELIST=0x00000301;
+    //const SREVAR SRE_PRIMITIVETYPE_LINESTRIP=0x00000302;
     const SREVAR SRE_PRIMITIVETYPE_TRIANGLEFAN=0x00000303;
     const SREVAR SRE_PRIMITIVETYPE_TRIANGLESTRIP=0x00000304;
     const SREVAR SRE_PRIMITIVETYPE_TRIANGLELIST=0x00000305;
 
-    const SREVAR SRE_PRIMITIVE_POINT=0x00000400;
-    const SREVAR SRE_PRIMITIVE_LINE=0x00000401;
-    const SREVAR SRE_PRIMITIVE_TRIANGLE=0x00000402;
+    //const SREVAR SRE_PRIMITIVE_POINT=0x00000400;
+    //const SREVAR SRE_PRIMITIVE_LINE=0x00000401;
+    //const SREVAR SRE_PRIMITIVE_TRIANGLE=0x00000402;
 
 
 
@@ -522,6 +519,9 @@ namespace SRE {
             m_curr = m_curr->next;
             return *this;
         }
+
+        CLList(const CLList & other) = delete;
+        CLList & operator=(const CLList & other) = delete;
 
     private:
         LNode* m_head;

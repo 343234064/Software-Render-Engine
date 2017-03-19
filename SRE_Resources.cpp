@@ -150,20 +150,6 @@ namespace SRE {
         return *(VERTEX4*)v;
     }
 
-    INT VertexBuffer::GetVertexNumber()
-    {
-        return m_vertexNum;
-    }
-
-    INT VertexBuffer::GetVertexDimension()
-    {
-        return m_vertexDimen;
-    }
-
-    SREVAR VertexBuffer::GetVertexFormat()
-    {
-        return m_vertexFormat;
-    }
 
 
 
@@ -187,5 +173,90 @@ namespace SRE {
 
         return RESULT::SUCC;
     }
+
+
+
+    //=============================
+	//RenderTexture functions
+	//
+	//
+	//=============================
+	RenderTexture::RenderTexture(const RenderTexture & other):
+        Format(other.Format),
+	    Width(other.Width),
+	    Height(other.Height),
+	    m_pdata(nullptr),
+	    m_byteCount(other.m_byteCount)
+	{
+	    m_pdata = new BYTE[Width*Height*m_byteCount];
+	    if(nullptr == m_pdata) return;
+
+	    memcpy(m_pdata, other.m_pdata, Width*Height*m_byteCount);
+	}
+
+	RenderTexture & RenderTexture::operator=(const RenderTexture & other)
+	{
+        if(this == &other) return *this;
+
+        if(Width != other.Width || Height != other.Height || m_byteCount != other.m_byteCount)
+        {
+            delete[] m_pdata;
+            m_pdata = new BYTE[Width*Height*m_byteCount];
+	        if(nullptr == m_pdata) return *this;
+        }
+
+        memcpy(m_pdata, other.m_pdata, other.Width*other.Height*other.m_byteCount);
+        Format = other.Format;
+        Width = other.Width;
+        Height = other.Height;
+        m_byteCount = other.m_byteCount;
+
+        return *this;
+	}
+
+    RESULT RenderTexture::Create()
+    {
+        if(Width <=0) return  RESULT::INVALIDARG;
+        if(Height <=0) return  RESULT::INVALIDARG;
+
+        /*
+        if(Format == SRE_FORMAT_PIXEL_R8G8B8)
+        {
+            m_byteCount = 3;
+        }
+        else(Format == SRE_FORMAT_PIXEL_R8G8B8A8)
+        {
+            m_byteCount = 4;
+        }
+        else
+        {
+            return RESULT::INVALIDARG;
+        }*/
+        m_byteCount = 4;
+
+        if(nullptr != m_pdata) delete[] m_pdata;
+
+        m_pdata = new BYTE[Width*Height*m_byteCount];
+        if(nullptr == m_pdata) return RESULT::OUTMEMORY;
+
+        return RESULT::SUCC;
+    }
+
+    /*
+    void  RenderTexture::Draw(USINT px, USINT py, BYTE* color)
+    {
+        memcpy(m_pdata+py*Width*m_byteCount + px*m_byteCount, color, m_byteCount);
+    }*/
+
+
+    void  RenderTexture::DrawSquare(USINT sx, USINT sy, USINT ex, USINT ey, Color4 color)
+    {
+        Color4* addr = (Color4*)m_pdata;
+        for(USINT py=sy; sy<=ey; sy++)
+            for(USINT px=sx; sx<=ex; sx++)
+                *(addr+py*Width+px) = color;
+    }
+
+
 }
 

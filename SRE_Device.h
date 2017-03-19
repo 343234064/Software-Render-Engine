@@ -66,23 +66,20 @@ namespace SRE {
         Device():
             m_frameWidth(0),
             m_frameHeight(0),
+            m_bufferFormat(0),
+            m_frameBuffers(),
             m_pDeviceAdapter(nullptr),
             m_front()
         {}
         virtual ~Device()
         {
-            m_front = m_frameBuffers.Begin();
-            do
-            {
-               delete[] m_front->data;
-               m_front = m_front->next;
-
-            }while(m_front != m_frameBuffers.Begin());
+            ReleaseBuffers();
         }
 
         RESULT Create(USINT frameBufferNum=2,
                       USINT frameWidth=800,
                       USINT frameHeight=600,
+                      SREVAR bufferFomat=SRE_FORMAT_PIXEL_R8G8B8,
                       DeviceAdapter* deviceAdapter=nullptr);
         void ClearFrame(Color3 color);
         void ClearFrame(INT grayLevel);
@@ -106,11 +103,29 @@ namespace SRE {
             return m_frameBuffers.Size();
         }
 
+        Device(const Device & other) = delete;
+        Device & operator=(const Device & other) = delete;
+
+    protected:
+        void ReleaseBuffers()
+        {
+            if(m_frameBuffers.Size()>0)
+            {
+               m_front = m_frameBuffers.Begin();
+               do
+               {
+                  delete[] m_front->data;
+                  m_front = m_front->next;
+
+                }while(m_front != m_frameBuffers.Begin());
+            }
+        }
 
 
     protected:
         USINT   m_frameWidth;
         USINT   m_frameHeight;
+        SREVAR  m_bufferFormat;
 
         CLList<Color3*>  m_frameBuffers;
         DeviceAdapter*   m_pDeviceAdapter;
@@ -144,6 +159,9 @@ namespace SRE {
 
         void SetHDC(HDC hdc){m_hdc=hdc;}
         void PresentToScreen(BYTE* colorBuffer, INT width, INT height);
+
+        WindowsAdapter(const WindowsAdapter & other) = delete;
+        WindowsAdapter & operator=(const WindowsAdapter & other) = delete;
 
     private:
         HDC        m_hdc;
@@ -207,6 +225,9 @@ namespace SRE {
        HDC   GetHDC(){return m_hdc;}
        const char * GetTitle(){return m_title;}
        void  SetTitle(const char * title){SetWindowText(m_hwnd, title);}
+
+       Window_view(const Window_view & other) = delete;
+       Window_view & operator=(const Window_view & other) = delete;
 
     private:
        HWND  m_hwnd;

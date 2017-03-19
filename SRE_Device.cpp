@@ -22,6 +22,7 @@ namespace SRE {
     RESULT Device::Create(USINT frameBufferNum,
                           USINT frameWidth,
                           USINT frameHeight,
+                          SREVAR bufferFormat,
                           DeviceAdapter* deviceAdapter)
     {
         if(frameBufferNum<=0) return RESULT::INVALIDARG;
@@ -29,13 +30,21 @@ namespace SRE {
         if(frameHeight<=0) return RESULT::INVALIDARG;
         if(deviceAdapter==nullptr) return RESULT::INVALIDARG;
 
+        if(m_frameBuffers.Size()>0)
+        {
+            ReleaseBuffers();
+            m_frameBuffers.Clear();
+        }
+
         Color3* buffer=nullptr;
         USINT bufferNum = frameBufferNum;
+        //bufferFormat;
         while(bufferNum>0)
         {
             buffer = new Color3[frameWidth*frameHeight];
             if(nullptr == buffer)
             {
+                ReleaseBuffers();
                 m_frameBuffers.Clear();
                 return RESULT::OUTMEMORY;
             }
@@ -47,6 +56,7 @@ namespace SRE {
         m_frameWidth = frameWidth;
         m_frameHeight = frameHeight;
         m_pDeviceAdapter = deviceAdapter;
+        m_bufferFormat = bufferFormat;
 
         return RESULT::SUCC;
     }

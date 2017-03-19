@@ -17,26 +17,10 @@
 
 namespace SRE {
     //=============================
-	//Class VertexShader functions
+	//
 	//
 	//
 	//=============================
-	void VertexShader::SetCallBackShader(CallBackVShader* shader)
-	{
-	    m_pCallBackVShader = shader;
-	}
-
-	void VertexShader::SetVariableBuffer(VariableBuffer* varbuffer)
-	{
-	    m_pVarBuffer = varbuffer;
-	}
-
-	VSOutput* VertexShader::Run(BYTE* vs_in)
-	{
-	   return m_pCallBackVShader(vs_in, m_pVarBuffer);
-	}
-
-
 
 
 
