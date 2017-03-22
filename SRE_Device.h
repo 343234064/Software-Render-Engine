@@ -64,76 +64,75 @@ namespace SRE {
 	{
     public:
         Device():
+        	m_cond(),
+        	m_mutex(),
+        	m_present(false),
             m_frameWidth(0),
             m_frameHeight(0),
             m_bufferFormat(0),
-            m_frameBuffers(),
-            m_pDeviceAdapter(nullptr),
-            m_front()
-        {}
+            m_front(0),
+            m_pDeviceAdapter(nullptr)
+        {
+        	m_frameBuffers[0]=nullptr;
+        	m_frameBuffers[1]=nullptr;
+        }
+
         virtual ~Device()
         {
-            ReleaseBuffers();
+            if(nullptr != m_frameBuffers[0])
+				delete[] m_frameBuffers[0];
+			if(nullptr != m_frameBuffers[1])
+				delete[] m_frameBuffers[1];
         }
 
-        RESULT Create(USINT frameBufferNum=2,
-                      USINT frameWidth=800,
-                      USINT frameHeight=600,
-                      SREVAR bufferFomat=SRE_FORMAT_PIXEL_R8G8B8,
-                      DeviceAdapter* deviceAdapter=nullptr);
-        void ClearFrame(Color3 color);
-        void ClearFrame(INT grayLevel);
-        void Resize(USINT width, USINT height);
-        void Present()
-        {
-            CLList<Color3*>::Iterator pbuffer = m_front;
-            m_front = m_front->next;
-            m_pDeviceAdapter->PresentToScreen((BYTE*)pbuffer->data,
-                                               m_frameWidth,
-                                               m_frameHeight);
-        }
+        RESULT Create(USINT frameWidth=800,
+                              USINT frameHeight=600,
+                              SREVAR bufferFomat=SRE_FORMAT_PIXEL_R8G8B8,
+                              DeviceAdapter* deviceAdapter=nullptr);
+        RESULT  Resize(USINT width, USINT height);
+		void     ClearFrame(Color4 color);
+        void     ClearFrame(INT grayLevel);
+        void     Present();
+        void     PresentReady();
 
-        void SetDeviceAdapter(DeviceAdapter* adapter)
-        {
-            m_pDeviceAdapter = adapter;
-        }
-
-        USINT GetFrameBufferNum() const
-        {
-            return m_frameBuffers.Size();
-        }
+        inline void   SetDeviceAdapter(DeviceAdapter* adapter);
+        inline BYTE*  GetFrameBuffer();
 
         Device(const Device & other) = delete;
         Device & operator=(const Device & other) = delete;
 
-    protected:
-        void ReleaseBuffers()
-        {
-            if(m_frameBuffers.Size()>0)
-            {
-               m_front = m_frameBuffers.Begin();
-               do
-               {
-                  delete[] m_front->data;
-                  m_front = m_front->next;
-
-                }while(m_front != m_frameBuffers.Begin());
-            }
-        }
-
+	private:
+		std::condition_variable  m_cond;
+		std::mutex                       m_mutex;
+		bool                                m_present;
 
     protected:
-        USINT   m_frameWidth;
-        USINT   m_frameHeight;
+        USINT    m_frameWidth;
+        USINT    m_frameHeight;
         SREVAR  m_bufferFormat;
 
-        CLList<Color3*>  m_frameBuffers;
+        USINT     m_front;
+	    Color4*  m_frameBuffers[2];
         DeviceAdapter*   m_pDeviceAdapter;
 
-        CLList<Color3*>::Iterator
-                         m_front;
+
+
 
 	};
+
+
+	void Device::SetDeviceAdapter(DeviceAdapter* adapter)
+	{
+		m_pDeviceAdapter = adapter;
+	}
+
+	BYTE* Device::GetFrameBuffer()
+	{
+		return (BYTE*)m_frameBuffers[m_front];
+	}
+
+
+
 
 
 #ifdef _SRE_PLATFORM_WIN_
@@ -150,7 +149,7 @@ namespace SRE {
             memset(&m_bitMapInfo, 0, sizeof(BITMAPINFO));
             m_bitMapInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
             m_bitMapInfo.bmiHeader.biPlanes = 1;
-            m_bitMapInfo.bmiHeader.biBitCount = 24;
+            m_bitMapInfo.bmiHeader.biBitCount = 32;
             m_bitMapInfo.bmiHeader.biCompression = BI_RGB;
             m_bitMapInfo.bmiHeader.biWidth = frameWidth;
             m_bitMapInfo.bmiHeader.biHeight = -frameHeight;
@@ -164,7 +163,7 @@ namespace SRE {
         WindowsAdapter & operator=(const WindowsAdapter & other) = delete;
 
     private:
-        HDC        m_hdc;
+        HDC            m_hdc;
         BITMAPINFO m_bitMapInfo;
 
 	};

@@ -183,7 +183,7 @@ namespace SRE {
 	class VertexShader
 	{
     public:
-        VertexShader(CallBackVShader* shader, VariableBuffer* varbuffer=nullptr):
+        VertexShader(CallBackVShader* shader=nullptr, VariableBuffer* varbuffer=nullptr):
             m_pCallBackVShader(shader),
             m_pVarBuffer(varbuffer)
         {}
@@ -231,8 +231,8 @@ namespace SRE {
 	class PixelShader
 	{
     public:
-        PixelShader(CallBackPShader* shader=nullptr):
-            InputFormat(SRE_SHADERINPUTFORMAT_TEXCOORD),
+        PixelShader(CallBackPShader* shader=nullptr, SREVAR inputformat=SRE_SHADERINPUTFORMAT_TEXCOORD):
+            InputFormat(inputformat),
             m_pCallBackPShader(shader)
         {}
         virtual ~PixelShader(){};

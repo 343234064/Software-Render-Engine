@@ -24,7 +24,7 @@ namespace SRE {
 	//
 	//=============================
     RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer** out);
-
+    RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer*  out);
 
 
     //=============================
@@ -75,7 +75,7 @@ namespace SRE {
 	class Buffer: public BaseContainer, public BasicIOElement
 	{
     public:
-        Buffer(INT bufferSize, T * initData):
+        Buffer(INT bufferSize, T * initData=nullptr):
                m_bufferSize(bufferSize),
                m_data(nullptr),
                m_pdata(nullptr)
@@ -100,8 +100,10 @@ namespace SRE {
 
         inline void  SetData(INT pos, const T & data);
         inline T  &  GetData(INT pos);
-        void  Reset(const T & resetData);
-        INT   GetBufferSize() const
+        void  ResetData(const T & resetData);
+        void  ResetData(T * resetData, INT size);
+        void  ResetSize(INT size);
+        INT    GetBufferSize() const
         {
             return m_bufferSize;
         }
@@ -127,7 +129,7 @@ namespace SRE {
 	//
 	//=============================
 	template <typename T>
-	void Buffer<T>::Reset(const T & resetData)
+	void Buffer<T>::ResetData(const T & resetData)
 	{
 #ifdef _SRE_DEBUG_
         if(nullptr == this->m_data)
@@ -142,6 +144,38 @@ namespace SRE {
           m_pdata[i++] = resetData;
 
         return;
+	}
+
+	template <typename T>
+	void  Buffer<T>::ResetData(T * resetData, INT size)
+	{
+#ifdef _SRE_DEBUG_
+        if(nullptr == this->m_data)
+        {
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
+            return;
+	    }
+#endif
+
+        if(nullptr == resetData || size<=0) return;
+        m_pdata = this->m_data.get();
+        INT offset = size>m_bufferSize? m_bufferSize: size;
+		std::copy(resetData, resetData + offset, m_pdata);
+
+	}
+
+	template <typename T>
+	void  Buffer<T>::ResetSize(INT size)
+	{
+        if(size<=0) return;
+        m_data.reset(new T[size]);
+
+        if(nullptr != m_data)
+		{
+			m_bufferSize = size;
+			m_pdata = m_data.get();
+		}
+
 	}
 
 	template<typename T>
@@ -196,7 +230,7 @@ namespace SRE {
 	class SynBuffer: public BaseContainer, public BasicIOElement
 	{
     public:
-        SynBuffer(INT bufferSize, T * initData):
+        SynBuffer(INT bufferSize, T * initData=nullptr):
                m_bufferSize(bufferSize),
                m_mutex(),
                m_data(nullptr),
@@ -222,7 +256,9 @@ namespace SRE {
 
         inline void  SetData(INT pos, const T & data);
         inline T  &  GetData(INT pos);
-        void  Reset(const T & resetData);
+        void  ResetData(const T & resetData);
+        void  ResetData(T * resetData, INT size);
+        void  ResetSize(INT size);
         INT   GetBufferSize() const
         {
             return m_bufferSize;
@@ -234,7 +270,7 @@ namespace SRE {
 
     protected:
         INT                                   m_bufferSize;
-        std::mutex                            m_mutex;
+        std::mutex                       m_mutex;
         std::unique_ptr<T, array_deleter<T>>  m_data;
         T*                                    m_pdata;
 
@@ -248,7 +284,7 @@ namespace SRE {
 	//
 	//=============================
 	template <typename T>
-	void SynBuffer<T>::Reset(const T & resetData)
+	void SynBuffer<T>::ResetData(const T & resetData)
 	{
         std::lock_guard<std::mutex> lock(m_mutex);
         int i=0 , n=m_bufferSize;
@@ -256,6 +292,32 @@ namespace SRE {
           m_pdata[i++] = resetData;
 
         return;
+	}
+
+
+	template <typename T>
+	void  SynBuffer<T>::ResetData(T * resetData, INT size)
+	{
+        if(nullptr == resetData || size<=0) return;
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_pdata = this->m_data.get();
+		std::copy(resetData, resetData + size>m_bufferSize? m_bufferSize: size, m_pdata);
+
+	}
+
+	template <typename T>
+	void  SynBuffer<T>::ResetSize(INT size)
+	{
+        if(size<=0) return;
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_data.reset(new T[size]);
+
+        if(nullptr != m_data)
+		{
+			m_bufferSize = size;
+			m_pdata = m_data.get();
+		}
+
 	}
 
 	template<typename T>
@@ -320,7 +382,7 @@ namespace SRE {
     protected:
         INT                                   m_width;
         INT                                   m_height;
-        std::mutex                            m_mutex;
+        std::mutex                       m_mutex;
         T**                                   m_pdata;
 
 	};
@@ -336,6 +398,13 @@ namespace SRE {
 	RESULT SynMatBuffer<T>::Create(INT width, INT height)
 	{
 	    if(width<=0 || height<=0) return RESULT::INVALIDARG;
+
+	    if(nullptr != m_pdata)
+		{
+            for(INT i=0; i<m_height; i++)
+                 delete[] m_pdata[i];
+            delete[] m_pdata;
+		}
 
         m_pdata = new T*[height];
         if(nullptr == m_pdata) return RESULT::OUTMEMORY;
@@ -387,6 +456,15 @@ namespace SRE {
 	class VertexBuffer:public BaseContainer, public BasicIOElement
 	{
     public:
+    	VertexBuffer():
+			 m_vertexes(nullptr),
+             m_marks(nullptr),
+             m_vertexNum(0),
+             m_attriSize(0),
+             m_vertexDimen(0),
+             m_vertexSize(0),
+             m_vertexFormat(0)
+		{}
         virtual ~VertexBuffer()
         {
             if(nullptr != m_vertexes)
@@ -395,8 +473,8 @@ namespace SRE {
                 delete[] m_marks;
         }
 
-        BYTE*   GetVertex(INT index);
-        BYTE*   GetAttributes(INT index);
+        BYTE*    GetVertex(INT index);
+        BYTE*    GetAttributes(INT index);
         FLOAT   GetVertexX(INT index);
         FLOAT   GetVertexY(INT index);
         FLOAT   GetVertexZ(INT index);
@@ -416,45 +494,17 @@ namespace SRE {
         VertexBuffer(const VertexBuffer & other) = delete;
 
     protected:
-        VertexBuffer(INT vertexNumber=0, INT vertexSize=0, SREVAR dataFormat=0, void* vertexes=nullptr):
-             m_vertexes(nullptr),
-             m_marks(nullptr),
-             m_vertexNum(vertexNumber),
-             m_attriSize(0),
-             m_vertexDimen(0),
-             m_vertexSize(vertexSize),
-             m_vertexFormat(dataFormat)
-        {
-            if(nullptr != vertexes)
-            {
-                int length = vertexNumber * vertexSize;
-                m_vertexes = new BYTE[length];
-                memcpy(m_vertexes, vertexes, length);
-            }
-
-            m_marks = new bool[vertexNumber];
-            memset(m_marks, 0, vertexNumber*sizeof(bool));
-
-            if((m_vertexFormat & SRE_FORMAT_VERTEX_XY)==SRE_FORMAT_VERTEX_XY)
-               m_vertexDimen = 2;
-            else if((m_vertexFormat & SRE_FORMAT_VERTEX_XYZ)==SRE_FORMAT_VERTEX_XYZ)
-               m_vertexDimen = 3;
-            else if((m_vertexFormat & SRE_FORMAT_VERTEX_XYZW)==SRE_FORMAT_VERTEX_XYZW)
-               m_vertexDimen = 4;
-
-            m_attriSize = vertexSize - m_vertexDimen*sizeof(FLOAT);
-
-        }
-
-        friend RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer** out);
-    protected:
         BYTE *         m_vertexes;
         bool *         m_marks;
-        INT            m_vertexNum;
-        INT            m_attriSize;
-        INT            m_vertexDimen;
-        INT            m_vertexSize;
-        SREVAR         m_vertexFormat;
+        INT              m_vertexNum;
+        INT              m_attriSize;
+        INT              m_vertexDimen;
+        INT              m_vertexSize;
+        SREVAR        m_vertexFormat;
+
+    protected:
+		friend RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer** out);
+        friend RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer*   out);
 	};
 
     //=============================
@@ -496,8 +546,9 @@ namespace SRE {
             delete[] m_pdata;
         }
 
-        RESULT       Create();
-        void  DrawSquare(USINT sx, USINT sy, USINT ex, USINT ey, Color4);
+        RESULT         Create();
+        BYTE*           CopyTo(BYTE* dest, INT destOffset=0);
+        void            DrawSquare(USINT sx, USINT sy, USINT ex, USINT ey, Color4);
         inline void  Draw(USINT px, USINT py, Color4);
         //inline void  Draw(USINT px, USINT py, BYTE*);
         inline void  Clear(INT grayLevel);

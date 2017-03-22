@@ -19,40 +19,32 @@ namespace SRE {
 	//
 	//
 	//=============================
-    RESULT Device::Create(USINT frameBufferNum,
-                          USINT frameWidth,
-                          USINT frameHeight,
-                          SREVAR bufferFormat,
-                          DeviceAdapter* deviceAdapter)
+    RESULT Device::Create(USINT frameWidth,
+                                      USINT frameHeight,
+                                      SREVAR bufferFormat,
+                                      DeviceAdapter* deviceAdapter)
     {
-        if(frameBufferNum<=0) return RESULT::INVALIDARG;
         if(frameWidth<=0) return RESULT::INVALIDARG;
         if(frameHeight<=0) return RESULT::INVALIDARG;
         if(deviceAdapter==nullptr) return RESULT::INVALIDARG;
 
-        if(m_frameBuffers.Size()>0)
-        {
-            ReleaseBuffers();
-            m_frameBuffers.Clear();
-        }
+        if(nullptr != m_frameBuffers[0])
+			delete[] m_frameBuffers[0];
+		if(nullptr != m_frameBuffers[1])
+			delete[] m_frameBuffers[1];
 
-        Color3* buffer=nullptr;
-        USINT bufferNum = frameBufferNum;
-        //bufferFormat;
-        while(bufferNum>0)
-        {
-            buffer = new Color3[frameWidth*frameHeight];
-            if(nullptr == buffer)
-            {
-                ReleaseBuffers();
-                m_frameBuffers.Clear();
-                return RESULT::OUTMEMORY;
-            }
-            m_frameBuffers.Add_back(buffer);
-            bufferNum--;
-        }
 
-        m_front = m_frameBuffers.Begin();
+         //bufferFormat;
+		for(USINT i=0; i<2; i++)
+		{
+			m_frameBuffers[i]  = new Color4[frameWidth*frameHeight];
+		    if(nullptr == m_frameBuffers[i] )
+		    {
+			    return RESULT::OUTMEMORY;
+		    }
+		}
+
+        m_front = 0;
         m_frameWidth = frameWidth;
         m_frameHeight = frameHeight;
         m_pDeviceAdapter = deviceAdapter;
@@ -62,10 +54,10 @@ namespace SRE {
     }
 
 
-    void Device::ClearFrame(Color3 color)
+    void Device::ClearFrame(Color4 color)
     {
         INT Size = m_frameWidth*m_frameHeight-1;
-        Color3* colorBuffer = m_front->data;
+        Color4* colorBuffer = m_frameBuffers[m_front];
         while(Size>=0)
         {
              colorBuffer[Size--] = color;
@@ -75,27 +67,54 @@ namespace SRE {
 
     void Device::ClearFrame(INT grayLevel)
     {
-        INT Size = m_frameWidth*m_frameHeight;
-        Color3* colorBuffer = m_front->data;
-        memset(colorBuffer, grayLevel, Size*sizeof(Color3));
+        memset(m_frameBuffers[m_front], grayLevel, m_frameWidth*m_frameHeight*sizeof(Color4));
     }
 
 
-    //同步问题
-    void Device::Resize(USINT width, USINT height)
+    ////////////////////////////not finish
+    RESULT Device::Resize(USINT width, USINT height)
     {
-        if(width<=0 || height<=0) return;
-        CLList<Color3*>::Iterator it=m_frameBuffers.Begin();
-        do
-        {
-            delete[] it->data;
-            it->data = new Color3[width*height];
-            it = it->next;
-        }while(it != m_frameBuffers.Begin());
+        if(width<=0 || height<=0) return RESULT::INVALIDARG;
+
+		for(USINT i=0; i<2; i++)
+		{
+			if(nullptr != m_frameBuffers[i])
+			   delete[] m_frameBuffers[i];
+
+			m_frameBuffers[i] = new Color4[width*height];
+		    if(nullptr == m_frameBuffers[i])
+		    {
+			    return RESULT::OUTMEMORY;
+		    }
+		}
 
         m_frameWidth = width;
         m_frameHeight = height;
+
+        return RESULT::SUCC;
     }
+
+
+	void  Device::Present()
+	{
+		std::unique_lock<std::mutex> lock(m_mutex);
+		m_cond.wait(lock, [this]{return m_present;});
+
+		m_present = false;
+		m_front = !m_front;
+
+		m_pDeviceAdapter->PresentToScreen((BYTE*)m_frameBuffers[!m_front],
+											                       m_frameWidth,
+											                       m_frameHeight);
+	}
+
+
+	void  Device::PresentReady()
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		m_present = true;
+	}
+
 
 #ifdef _SRE_PLATFORM_WIN_
 	//=============================

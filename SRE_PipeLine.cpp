@@ -16,7 +16,7 @@
 
 
 namespace SRE {
-    //=============================
+     //=============================
 	//Class BasicProcessor functions
 	//
 	//
@@ -52,8 +52,10 @@ namespace SRE {
     {
         while(true)
         {
+        	g_log.WriteKV("Processor loop:", m_id);
             if(m_Cancel)
             {
+            	g_log.WriteKV("Processor Cancel:", m_id);
                 if(nullptr != m_callBacks)
                    m_callBacks->OnCancel();
                 m_Cancel = false;
@@ -65,15 +67,19 @@ namespace SRE {
                 std::unique_lock<std::mutex> lock(m_mutex);
                 if(nullptr != m_callBacks)
                    m_callBacks->OnPause();
-                m_cond.wait(lock);
+                m_cond.wait(lock,  [this]{
+					return m_Cancel||!m_Pause;
+			    });
             }
 
 
             try
             {
-
                 if(nullptr != m_callBacks)
-                   m_callBacks->HandleElement();
+                {
+                    g_log.WriteKV("Processor Handle:", m_id);
+                	m_callBacks->HandleElement();
+                }
 
             }
             catch(...)
@@ -81,7 +87,7 @@ namespace SRE {
                 if(nullptr != m_callBacks)
                    m_callBacks->OnRunError();
                 if(nullptr != m_pObserver)
-                   m_pObserver->Notify(SRE_MESSAGE_RUNERROR);
+                   m_pObserver->Notify(SRE_MESSAGE_RUNERROR, m_id);
                 throw;
             }
 
@@ -105,11 +111,11 @@ namespace SRE {
 	//===========================================
     void InputAssembler::SetVertexAndIndexBuffers(VertexBuffer* vertexBuffer, Buffer<INT>* indexBuffer)
     {
+        if(nullptr == vertexBuffer) return;
         std::lock_guard<std::mutex> lock(m_resMutex);
         m_vertexBuffers.push(vertexBuffer);
         m_indexBuffers.push(indexBuffer);
 
-        m_cond.notify_one();
     }
 
     void InputAssembler::HandleElement()
@@ -169,14 +175,27 @@ namespace SRE {
         else
         {
             std::unique_lock<std::mutex> lock(m_resMutex);
-            m_cond.wait(lock, [this]{return !m_vertexBuffers.empty();});
-            m_pCurrentHandleVbuffer = m_vertexBuffers.front();
-            m_pCurrentHandleIbuffer = m_indexBuffers.front();
-            m_vertexBuffers.pop();
-            m_indexBuffers.pop();
 
-            m_currentIndex = 0;
-            m_pCurrentHandleVbuffer->ResetMark(false);
+            g_log.WriteKV("Processor GetInput:", m_id);
+            m_cond.wait(lock, [this]{
+					return m_Cancel||(!m_vertexBuffers.empty()&&m_valve);
+			});
+            if(m_Cancel) return;
+
+            m_pCurrentHandleVbuffer = m_vertexBuffers.front();
+            if(nullptr != m_pCurrentHandleVbuffer)
+            {
+                m_pCurrentHandleIbuffer = m_indexBuffers.front();
+                m_indexBuffers.pop();
+
+                m_currentIndex = 0;
+                m_pCurrentHandleVbuffer->ResetMark(false);
+            }
+            else
+            {
+                Output(nullptr);
+            }
+            m_vertexBuffers.pop();
         }
 
     }
@@ -211,6 +230,13 @@ namespace SRE {
         }
         v->index = actualIndex;
         Output((BasicIOElement*)v);
+    }
+
+    void InputAssembler::HandleMessage(SREVAR message, USINT id)
+    {
+#ifdef _SRE_DEBUG_
+        g_log.WriteKV("InputAssembler GetMessage:", message);
+#endif // _SRE_DEBUG_
     }
 
     void InputAssembler::OnCancel()
@@ -250,6 +276,9 @@ namespace SRE {
 
     void InputAssembler::OnStart()
     {
+		std::lock_guard<std::mutex> lock(m_resMutex);
+        m_vertexBuffers.push(nullptr);
+
 #ifdef _SRE_DEBUG_
         g_log.Write("InputAssembler Start!");
 #endif // _SRE_DEBUG_
@@ -266,6 +295,13 @@ namespace SRE {
     {
         std::shared_ptr<BasicIOElement> p = GetInput();
         _index_ver_* v = (_index_ver_*)p.get();
+
+        if(nullptr == v) {
+				SetArgus();
+        		Output(nullptr);
+        		return;
+		}
+
         bool  found = false;
         USINT coverIndex = 0;
         USINT threshold = 65528;
@@ -310,6 +346,33 @@ namespace SRE {
         }
     }
 
+    void VertexProcessor::SetArgus()
+    {
+        if(nullptr == m_pCVertexShader)
+		{
+#ifdef _SRE_DEBUG_
+           g_log.Write("VertexProcessor:vertex shader is null!");
+#endif
+			this->Cancel();
+			return;
+		}
+
+#ifdef _SRE_DEBUG_
+        if(nullptr == m_pVariableBuffer)
+           g_log.Write("VertexProcessor->variable buffer is null!");
+#endif // _SRE_DEBUG_
+
+    	m_pVertexShader = m_pCVertexShader;
+    	m_pCVariableBuffer = m_pCVariableBuffer;
+    }
+
+    void VertexProcessor::HandleMessage(SREVAR message, USINT id)
+    {
+#ifdef _SRE_DEBUG_
+        g_log.WriteKV("VertexProcessor GetMessage:", message);
+#endif // _SRE_DEBUG_
+    }
+
     void VertexProcessor::OnCancel()
     {
 #ifdef _SRE_DEBUG_
@@ -347,12 +410,7 @@ namespace SRE {
 
     void VertexProcessor::OnStart()
     {
-        if(nullptr == m_pVertexShader) this->Cancel();
-
 #ifdef _SRE_DEBUG_
-        if(nullptr == m_pVariableBuffer)
-           g_log.Write("VertexProcessor->variable buffer is null");
-
         g_log.Write("VertexProcessor Start!");
 #endif // _SRE_DEBUG_
     }
@@ -369,28 +427,35 @@ namespace SRE {
     void PrimitiveAssembler::HandleElement()
     {
         std::shared_ptr<BasicIOElement> pv1=GetInput();
+        VSOutput* v1=(VSOutput*)pv1.get();
+        if(nullptr == v1)
+			{Output(nullptr);g_log.Write("PA OUTPUT NULL");return;}
+
         std::shared_ptr<BasicIOElement> pv2=GetInput();
         std::shared_ptr<BasicIOElement> pv3=GetInput();
-	    VSOutput* v1=(VSOutput*)pv1.get();
+
 	    VSOutput* v2=(VSOutput*)pv2.get();
 	    VSOutput* v3=(VSOutput*)pv3.get();
 
-        if(nullptr != v1 && nullptr != v2 && nullptr != v3)
+        _Triangle_* out = new _Triangle_(*v1, *v2, *v3);
+
+        if(nullptr != out)
         {
-            _Triangle_* out = new _Triangle_(*v1, *v2, *v3);
-
-            if(nullptr != out)
-            {
-                 Output((BasicIOElement*)out);
-            }
-            else
-            {
-#ifdef _SRE_DEBUG_
-               _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
-#endif // _SRE_DEBUG_
-            }
+            Output((BasicIOElement*)out);
         }
+        else
+        {
+#ifdef _SRE_DEBUG_
+            _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
+#endif // _SRE_DEBUG_
+        }
+    }
 
+    void PrimitiveAssembler::HandleMessage(SREVAR message, USINT id)
+    {
+#ifdef _SRE_DEBUG_
+        g_log.WriteKV("PrimitiveAssembler GetMessage:", message);
+#endif // _SRE_DEBUG_
     }
 
     void PrimitiveAssembler::OnCancel()
@@ -604,7 +669,8 @@ namespace SRE {
     {
         std::shared_ptr<BasicIOElement> p = GetInput();
         m_pCurrentTriangle = (_Triangle_*)p.get();
-        if(nullptr != m_pCurrentTriangle)
+        if(nullptr == m_pCurrentTriangle) {Output(nullptr);return;}
+        else
         {
            TriangleClipping();
 
@@ -614,6 +680,13 @@ namespace SRE {
         }
 
         m_pCurrentTriangle = nullptr;
+    }
+
+    void VertexPostProcessor::HandleMessage(SREVAR message, USINT id)
+    {
+#ifdef _SRE_DEBUG_
+        g_log.WriteKV("VertexPostProcessor GetMessage:", message);
+#endif // _SRE_DEBUG_
     }
 
     void VertexPostProcessor::OnCancel()
@@ -670,7 +743,13 @@ namespace SRE {
 	{
 	    std::shared_ptr<BasicIOElement> pTriangle = GetInput();
 	    m_pCurrentTriangle = (_Triangle_*)pTriangle.get();
-        if(nullptr == m_pCurrentTriangle) return;
+        if(nullptr == m_pCurrentTriangle)
+        {
+            _pixelBlock_<BasicIOElement> block(0, 0, 0, 0, true);
+            for(USINT i=0; i<m_subProcessors.size(); i++)
+                 m_subProcessors[i].PushTask(block);
+            return;
+        }
 
         //if cull mode is enable, then test back face and cull
         if(m_pConstantBuffer->CullEnable == SRE_TRUE)
@@ -698,17 +777,18 @@ namespace SRE {
         //split the bounding box into m_perPixelBlockSize X m_perPixelBlockSize size pixel blocks
         //and put these pixel block to the sub-processors to wait for handle
         USINT processorNum=m_subProcessors.size(), startX=x_min, startY=y_min;
-        USINT distX=m_perPixelBlockSize-1, distY=m_perPixelBlockSize-1;
+        USINT distX, distY;
 
         std::lock_guard<std::mutex> lock(m_resMutex);
         for(startY=y_min; startY<y_max; startY+=m_perPixelBlockSize)
         {
+            distY = distX = m_perPixelBlockSize-1;
             for(startX=x_min; startX<x_max; startX+=m_perPixelBlockSize)
             {
-                if((startX+distX) > x_max) distX = x_max-startX;
-                if((startX+distX) > y_max) distY = y_max-startY;
+                if((startX+distX) > x_max) {distX = x_max-startX;}
+                if((startY+distY) > y_max) {distY = y_max-startY;}
 
-                _pixelBlock_<BasicIOElement> block(startX, startY, distX, distY, pTriangle);
+                _pixelBlock_<BasicIOElement> block(startX, startY, distX, distY, false, pTriangle);
                 m_subProcessors[m_subIndex++].PushTask(block);
 
                 if(m_subIndex == processorNum) m_subIndex=0;
@@ -722,21 +802,21 @@ namespace SRE {
 	    return true;
 	}
 
-	void Rasterizer::AddSubProcessor(USINT num, USINT sampleStep)
+	void Rasterizer::AddSubProcessors(USINT num)
 	{
-	    if(sampleStep <= 0) return;
-	    std::lock_guard<std::mutex> lock(m_resMutex);
+	    if(m_Started) return;
 	    while(num>0)
-        {
-            m_subProcessors.push_back(PixelProcessor(sampleStep));
+         {
+            m_subProcessors.push_back(PixelProcessor(	num-1, &m_subObserver, m_sampleStep, m_pConstantBuffer,
+																			    nullptr, nullptr, nullptr));
             num--;
-        }
+         }
 
 	}
 
-	void Rasterizer::RemoveSubProcessor(USINT num)
+	void Rasterizer::RemoveSubProcessors(USINT num)
 	{
-	    std::lock_guard<std::mutex> lock(m_resMutex);
+	    if(m_Started) return;
         while(num>0 && !m_subProcessors.empty())
         {
             m_subProcessors.pop_back();
@@ -744,29 +824,70 @@ namespace SRE {
         }
 	}
 
-	void Rasterizer::SetSampleStep(USINT sampleStep)
-	{
-        if(sampleStep <= 0) return;
-        std::lock_guard<std::mutex> lock(m_resMutex);
-        INT index=0;
-        while(index < m_subProcessors.size())
-            m_subProcessors[index++].SetSampleStep(sampleStep);
-	}
+	void Rasterizer::SetProcessorArgus(USINT id)
+     {
 
-	void Rasterizer::CancelSubProcessor()
+        if(nullptr == m_pZbuffer || nullptr == m_pRenderTarget || nullptr == m_pPixelShader)
+		{
+#ifdef _SRE_DEBUG_
+            g_log.Write("Rasterizer : Zbuffer or RenderTarget or Pixel Shader is null!");
+#endif // _SRE_DEBUG_
+            this->Cancel();
+            return;
+		}
+
+        std::lock_guard<std::mutex> lock(m_resMutex);
+
+		m_subProcessors[id].SetSampleStep(m_sampleStep);
+		m_subProcessors[id].SetZBuffer(m_pZbuffer);
+		m_subProcessors[id].SetRenderTarget(m_pRenderTarget);
+		m_subProcessors[id].SetPixelShader(m_pPixelShader);
+
+     }
+
+
+	void Rasterizer::CancelSubProcessors()
 	{
         INT i=0, num=m_subProcessors.size();
         while(i<num)
         {
             m_subProcessors[i++].Cancel();
         }
+		i=0;
+		while(i<num)
+        {
+            m_subProcessors[i++].Join();
+        }
 	}
+
+    void Rasterizer::HandleMessage(SREVAR message, USINT id)
+    {
+#ifdef _SRE_DEBUG_
+        g_log.WriteKV("Rasterizer GetMessage:", message);
+#endif // _SRE_DEBUG_
+
+        if(message == SRE_MESSAGE_ENDDRAW)
+		{
+			m_finishCount++;
+			if(m_finishCount == m_subProcessors.size())
+		    {
+			   m_finishCount = 0;
+			   g_log.WriteKV("Rasterizer Output target:", id);
+			   Output((BasicIOElement*)m_subProcessors[id].GetRenderTarget());
+		    }
+
+		g_log.WriteKV("Rasterizer GetMessage id:", id);
+			SetProcessorArgus(id);
+		}
+
+    }
 
     void Rasterizer::OnCancel()
     {
 #ifdef _SRE_DEBUG_
         g_log.Write("Rasterizer Cancel!");
 #endif // _SRE_DEBUG_
+
     }
 
     void Rasterizer::OnPause()
@@ -792,7 +913,8 @@ namespace SRE {
 
     void Rasterizer::OnRunFinish()
     {
-        CancelSubProcessor();
+    	g_log.Write("Rasterizer Run Start Cancel SubProc!");
+        CancelSubProcessors();
 
 #ifdef _SRE_DEBUG_
         g_log.Write("Rasterizer Run Finish!");
@@ -808,6 +930,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
         g_log.Write("Rasterizer Start!");
 #endif // _SRE_DEBUG_
+
     }
 
 
@@ -830,6 +953,8 @@ namespace SRE {
 	{
 	    if(m_started)
            m_cancel = true;
+
+		m_cond.notify_one();
 	}
 
 	void PixelProcessor::PushTask(_pixelBlock_<BasicIOElement> & task)
@@ -840,17 +965,22 @@ namespace SRE {
 	}
 
 	std::shared_ptr<BasicIOElement>
-	PixelProcessor::GetTask(USINT & sx, USINT & sy, USINT & distx, USINT & disty)
+	PixelProcessor::GetTask()
 	{
         std::unique_lock<std::mutex> lock(m_mutex);
-        m_cond.wait(lock, [this]{return !m_inputQueue.empty();});
+        m_cond.wait(lock, [this]{return !m_inputQueue.empty()||m_cancel;});
+        if(m_cancel) {
+				g_log.WriteKV("SubProc Cancel :", m_id);
+				m_end = true;return  std::shared_ptr<BasicIOElement>();}
+
         _pixelBlock_<BasicIOElement> task = m_inputQueue.front();
         m_inputQueue.pop();
 
-        sx = task.sx;
-        sy = task.sy;
-        distx = task.distX;
-        disty = task.distY;
+        m_sx = task.sx;
+        m_sy = task.sy;
+        m_distX = task.distX;
+        m_distY = task.distY;
+        m_end = task.isEnd;
         return task.tempData;
 	}
 
@@ -858,16 +988,13 @@ namespace SRE {
 
 	void PixelProcessor::ScanConversion()
 	{
-        while(true)
+        while(!m_cancel)
         {
-            if(m_cancel)
-            {
-               m_cancel = false;
-               break;
-            }
+            std::shared_ptr<BasicIOElement> ptr=GetTask();
+            if(m_end)
+                {m_observer->Notify(SRE_MESSAGE_ENDDRAW, m_id);m_end = false;continue;}
 
-            std::shared_ptr<BasicIOElement> ptr=GetTask(m_sx, m_sy, m_distX, m_distY);
-            _Triangle_* m_pTri = (_Triangle_*)ptr.get();
+            m_pTri = (_Triangle_*)ptr.get();
 
             FLOAT area = EdgeFunction2D(m_pTri->v[0].vertex, m_pTri->v[1].vertex, m_pTri->v[2].vertex);
 
@@ -931,6 +1058,7 @@ namespace SRE {
              //skip this pixel block
         }
 
+        m_cancel = false;
         m_started = false;
 	}
 
@@ -1058,11 +1186,11 @@ namespace SRE {
     void PixelProcessor::Scan_ZOff_IOn(FLOAT W00[3], FLOAT wTri)
 	{
 	    SINT  sy=m_sy, sx=m_sx;
-        SINT  step=m_sampleStep;
-        FLOAT w0=W00[0], w1=W00[1], w2=W00[2];
-        VEC2  Barycentric;
-        FLOAT interpolatedZ;
-        bool  drawSquare = m_sampleStep>0 ? true: false;
+         SINT  step=m_sampleStep;
+         FLOAT w0=W00[0], w1=W00[1], w2=W00[2];
+         VEC2  Barycentric;
+         FLOAT interpolatedZ;
+         bool  drawSquare = m_sampleStep>0 ? true: false;
 
         for(SINT distY = m_distY; ;sy+=m_sampleStep, distY-=m_sampleStep)
         {
@@ -1109,6 +1237,77 @@ namespace SRE {
 
 
 
+
+    //===========================================
+	//Class OutputMerger functions
+	//
+	//
+	//===========================================
+    void OutputMerger::HandleElement()
+    {
+        std::shared_ptr<BasicIOElement> texure=GetInput();
+        m_pCurTarget=(RenderTexture*)texure.get();
+		if(nullptr == m_pCurTarget)
+		{
+			g_log.Write("Output merger get null and return");
+			return;
+		}
+		g_log.Write("Output merger notify");
+
+        if(m_toFrame)
+           m_pCurTarget->CopyTo(m_pFrame);
+
+        m_pObserver->Notify(SRE_MESSAGE_ENDSCENE, m_id);
+    }
+
+    void OutputMerger::HandleMessage(SREVAR message, USINT id)
+    {
+#ifdef _SRE_DEBUG_
+        g_log.WriteKV("OutputMerger GetMessage:", message);
+#endif // _SRE_DEBUG_
+    }
+
+    void OutputMerger::OnCancel()
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("OutputMerger Cancel!");
+#endif // _SRE_DEBUG_
+    }
+
+    void OutputMerger::OnPause()
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("OutputMerger Pause!");
+#endif // _SRE_DEBUG_
+    }
+
+    void OutputMerger::OnResume()
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("OutputMerger Resume!");
+#endif // _SRE_DEBUG_
+    }
+
+    void OutputMerger::OnRunError()
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("OutputMerger Run Error!");
+#endif // _SRE_DEBUG_
+    }
+
+    void OutputMerger::OnRunFinish()
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("OutputMerger Run Finish!");
+#endif // _SRE_DEBUG_
+    }
+
+    void OutputMerger::OnStart()
+    {
+#ifdef _SRE_DEBUG_
+        g_log.Write("OutputMerger Start!");
+#endif // _SRE_DEBUG_
+    }
 
 
 

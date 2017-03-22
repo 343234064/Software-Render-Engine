@@ -168,11 +168,64 @@ namespace SRE {
            return RESULT::FAIL;
         if(nullptr == vertexes) return RESULT::FAIL;
 
-        *out = new VertexBuffer(vertexNumber, vertexSize, dataFormat, vertexes);
+        VertexBuffer* buffer=nullptr;
+        buffer = new VertexBuffer();
         if(nullptr == *out) return RESULT::OUTMEMORY;
+
+		INT length = vertexNumber * vertexSize;
+		buffer->m_vertexes = new BYTE[length];
+		if(nullptr == buffer->m_vertexes) return RESULT::OUTMEMORY;
+		memcpy(buffer->m_vertexes, vertexes, length);
+
+		buffer->m_marks = new bool[vertexNumber];
+		if(nullptr == buffer->m_marks) return RESULT::OUTMEMORY;
+		memset(buffer->m_marks, 0, vertexNumber*sizeof(bool));
+
+		if((buffer->m_vertexFormat & SRE_FORMAT_VERTEX_XY)==SRE_FORMAT_VERTEX_XY)
+			buffer->m_vertexDimen = 2;
+		else if((buffer->m_vertexFormat & SRE_FORMAT_VERTEX_XYZ)==SRE_FORMAT_VERTEX_XYZ)
+			buffer->m_vertexDimen = 3;
+		else if((buffer->m_vertexFormat & SRE_FORMAT_VERTEX_XYZW)==SRE_FORMAT_VERTEX_XYZW)
+			buffer->m_vertexDimen = 4;
+
+		buffer->m_attriSize = vertexSize - buffer->m_vertexDimen*sizeof(FLOAT);
+
+		*out = buffer;
 
         return RESULT::SUCC;
     }
+
+	RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer* out)
+    {
+        if(vertexNumber <= 0) return RESULT::FAIL;
+        if(vertexSize <= 0) return RESULT::FAIL;
+        if(((dataFormat & SRE_FORMAT_VERTEX_XY) != SRE_FORMAT_VERTEX_XY) &&
+           ((dataFormat & SRE_FORMAT_VERTEX_XYZ) != SRE_FORMAT_VERTEX_XYZ) &&
+           ((dataFormat & SRE_FORMAT_VERTEX_XYZW) != SRE_FORMAT_VERTEX_XYZW))
+           return RESULT::FAIL;
+        if(nullptr == vertexes) return RESULT::FAIL;
+        if(nullptr == out) return RESULT::FAIL;
+
+		INT length = vertexNumber * vertexSize;
+		out->m_vertexes = new BYTE[length];
+		if(nullptr == out->m_vertexes) return RESULT::OUTMEMORY;
+		memcpy(out->m_vertexes, vertexes, length);
+
+		out->m_marks = new bool[vertexNumber];
+		if(nullptr == out->m_marks) return RESULT::OUTMEMORY;
+		memset(out->m_marks, 0, vertexNumber*sizeof(bool));
+
+		if((out->m_vertexFormat & SRE_FORMAT_VERTEX_XY)==SRE_FORMAT_VERTEX_XY)
+			out->m_vertexDimen = 2;
+		else if((out->m_vertexFormat & SRE_FORMAT_VERTEX_XYZ)==SRE_FORMAT_VERTEX_XYZ)
+			out->m_vertexDimen = 3;
+		else if((out->m_vertexFormat & SRE_FORMAT_VERTEX_XYZW)==SRE_FORMAT_VERTEX_XYZW)
+			out->m_vertexDimen = 4;
+
+		out->m_attriSize = vertexSize - out->m_vertexDimen*sizeof(FLOAT);
+        return RESULT::SUCC;
+    }
+
 
 
 
@@ -240,6 +293,12 @@ namespace SRE {
         if(nullptr == m_pdata) return RESULT::OUTMEMORY;
 
         return RESULT::SUCC;
+    }
+
+    BYTE*   RenderTexture::CopyTo(BYTE* dest, INT destOffset)
+    {
+    	if(nullptr == dest) return nullptr;
+        return (BYTE*)memcpy(dest+destOffset, m_pdata, Width*Height*m_byteCount);
     }
 
     /*
