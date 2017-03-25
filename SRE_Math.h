@@ -62,14 +62,14 @@ namespace SRE {
 	//=============================
 	PMAT33   Transpose(PMAT33 out, CPMAT33 mat);
 	PMAT44   Transpose(PMAT44 out, CPMAT44 mat);
-	FLOAT    Determinant(CPMAT33 out);
-	FLOAT    Determinant(CPMAT44 out);
+	FLOAT     Determinant(CPMAT33 out);
+	FLOAT     Determinant(CPMAT44 out);
 	PMAT33   Identity(PMAT33 out);
 	PMAT44   Identity(PMAT44 out);
 	PMAT33   Multiply(PMAT33 out, CPMAT33 mat1, CPMAT33 mat2);
     PMAT44   Multiply(PMAT44 out, CPMAT44 mat1, CPMAT44 mat2);
-    bool     Inverse(PMAT33 out, CPMAT33 mat);
-	bool     Inverse(PMAT44 out, CPMAT44 mat);/*!!to be tested and optimized!!*/
+    bool       Inverse(PMAT33 out, CPMAT33 mat);
+	bool       Inverse(PMAT44 out, CPMAT44 mat);/*!!to be tested and optimized!!*/
 
 
 
@@ -80,7 +80,7 @@ namespace SRE {
     FLOAT    Length(CPQUAT quat);
     FLOAT    Dot(CPQUAT quat1, CPQUAT quat2);
     PVEC3    Cross(PVEC3 out, CPQUAT quat1, CPQUAT quat2);
-	bool     Inverse(PQUAT out, CPQUAT quat);
+	bool      Inverse(PQUAT out, CPQUAT quat);
 	PQUAT    Identity(PQUAT quat);
 	PQUAT    Exponent(PQUAT out, CPQUAT quat, const FLOAT exponent);
     PQUAT    Multiply(PQUAT out, CPQUAT quat1, CPQUAT quat2);
@@ -146,6 +146,59 @@ namespace SRE {
 
 
 
+    //=============================
+	//Class Color
+	//
+	//=============================
+    class Color3
+    {
+    public:
+        Color3(const BYTE & _r=0, const BYTE & _g=0, const BYTE & _b=0):
+             b(_b), g(_g), r(_r)
+        {}
+        ~Color3(){}
+
+        inline Color3 & operator=(const Color4& color);
+
+    public:
+        BYTE b;
+        BYTE g;
+        BYTE r;
+
+    };
+
+    class Color4:public Color3
+    {
+    public:
+        Color4(const BYTE & _r=0, const BYTE & _g=0, const BYTE & _b=0, const BYTE & _a=0):
+            Color3(_r, _g, _b),
+            a(_a)
+        {}
+        Color4(const Color3 & color):
+        	Color3(color),
+        	a(255)
+		{}
+        ~Color4(){}
+
+        inline Color4 & operator=(const Color3& color);
+
+    public:
+        BYTE a;
+
+    };
+
+
+	Color3 & Color3::operator=(const Color4& color)
+	{
+		b=color.b;g=color.g;r=color.r;
+		return *this;
+	}
+
+	Color4 & Color4::operator=(const Color3& color)
+	{
+		b=color.b;g=color.g;r=color.r;a=255;
+		return *this;
+	}
 
 
 	//==============================
@@ -156,9 +209,6 @@ namespace SRE {
 	class Vector {
 	public:
 		Vector(const FLOAT & _x = 0.0f):x(_x) {}
-		Vector(const VEC & vector):x(vector.x) {}
-
-
 		~Vector() {};
 
 		inline bool   operator == (const VEC &) const;
@@ -190,9 +240,6 @@ namespace SRE {
 		Vector2(const FLOAT & _x = 0.0f,
 			    const FLOAT & _y = 0.0f):Vector(_x), y(_y) {}
 		Vector2(const VEC  & vector):Vector(vector), y(0.0) {}
-		Vector2(const VEC2 & vector):Vector(vector.x), y(vector.y) {}
-
-
 		~Vector2() {};
 
 
@@ -233,10 +280,6 @@ namespace SRE {
 
 		Vector3(const VEC2 & vector):Vector2(vector), z(0.0) {}
 
-		Vector3(const VEC3 & vector)
-		    :Vector2(vector.x, vector.y),
-		     z(vector.z)
-		{}
 
 		~Vector3() {};
 
@@ -280,10 +323,6 @@ namespace SRE {
 		Vector4(const VEC3 & vector) :Vector3(vector), w(0.0) {}
         Vector4(const VEC2 & vector) :Vector3(vector), w(0.0) {}
 
-		Vector4(const VEC4 & vector)
-		    :Vector3(vector.x, vector.y, vector.z),
-		     w(vector.w)
-		{}
 
 		~Vector4() {};
 
@@ -1319,6 +1358,10 @@ namespace SRE {
 
 		return VEC4(factor - vec.x, factor - vec.y, factor - vec.z, factor - vec.w);
 	}
+
+
+
+
 
 }
 #endif

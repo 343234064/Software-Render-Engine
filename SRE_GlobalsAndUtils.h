@@ -38,7 +38,7 @@ using std::endl;
 #include <memory>
 #include <stdlib.h>
 #include <condition_variable>
-
+#include <fstream>
 
 
 namespace SRE {
@@ -82,6 +82,7 @@ namespace SRE {
 
     class Color3;
     class Color4;
+
     template <typename T>
 	class Buffer;
     class VertexBuffer;
@@ -103,7 +104,7 @@ namespace SRE {
     class PrimitiveAssembler;
     class Rasterizer;
     class PixelProcessor;
-    class OutputMerger;
+    //class OutputMerger;
 
     class VariableBuffer;
     class ConstantBuffer;
@@ -122,14 +123,14 @@ namespace SRE {
     //Type definitions
     //
     //==============================
-    typedef float              FLOAT;
-    typedef int                INT;
-    typedef short int          SINT;
+    typedef float                       FLOAT;
+    typedef int                           INT;
+    typedef short int                 SINT;
     typedef unsigned short int USINT;
-    typedef unsigned int       SREVAR;
-    typedef unsigned char      BYTE;
+    typedef unsigned int           SREVAR;
+    typedef unsigned char        BYTE;
 
-    typedef Vector    VEC;
+    typedef Vector     VEC;
 	typedef Vector2   VEC2;
 	typedef Vector3   VEC3;
 	typedef Vector4   VEC4;
@@ -163,19 +164,18 @@ namespace SRE {
     typedef Quaternion * PQUAT;
     typedef const Quaternion * CPQUAT;
 
-    typedef std::unique_ptr<VERTEX4, array_deleter<VERTEX4>>                   unique_vertex4_array;
-    typedef std::unique_ptr<INT, array_deleter<INT>>                           unique_int_array;
-    typedef std::unique_ptr<BYTE, array_deleter<BYTE>>                         unique_byte_array;
+    typedef std::unique_ptr<VERTEX4, array_deleter<VERTEX4>>                        unique_vertex4_array;
+    typedef std::unique_ptr<INT, array_deleter<INT>>                                        unique_int_array;
+    typedef std::unique_ptr<BYTE, array_deleter<BYTE>>                                   unique_byte_array;
     typedef std::unique_ptr<unique_int_array, array_deleter<unique_int_array>> unique_int_matrix;
-    //typedef std::shared_ptr<Color3>                                            shared_color_array;
-    //typedef std::shared_ptr<shared_color_array, array_deleter<shared_color_array>>
-    //                                                                           shared_color_matrix;
-
 
     typedef VSOutput* (CallBackVShader)(BYTE*, VariableBuffer*);
-    typedef Color4    (CallBackPShader)(PSInput&);
+    typedef Color4      (CallBackPShader)(PSInput&);
 
     typedef TriangleMeshManager TMManager;
+
+    typedef Color4 DECOLOR;
+    typedef Color4 RTCOLOR;
 
     //==============================
     //Global variables
@@ -282,10 +282,8 @@ namespace SRE {
     const SREVAR SRE_MESSAGE_ENDDRAW=0x10000091;
     const SREVAR SRE_MESSAGE_ENDSCENE=0x10000092;
 
-
-
-
-
+    const SREVAR SRE_TYPE_RENDERTARGET=0x100000a0;
+    const SREVAR SRE_TYPE_FRAMEBUFFER=0x100000a1;
 
 
     /*
@@ -311,6 +309,13 @@ namespace SRE {
 
 
 
+
+	//==============================
+    //function declarations
+    //
+    //==============================
+	void OutputAsImage(DECOLOR* colorbuffer, INT width, INT height);
+	DECOLOR* RenderTargetToDeviceBuffer(DECOLOR* dest, const RTCOLOR* renderTarget, INT size);
 
 
 
@@ -393,7 +398,6 @@ namespace SRE {
 	{
     public:
         BasicIOElement(){}
-        virtual ~BasicIOElement(){}
 
 	};
 

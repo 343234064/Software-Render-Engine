@@ -23,6 +23,7 @@ struct vertex
     }
 };
 
+
 VSOutput* myVS(BYTE* v, VariableBuffer* varbuffer)
 {
     VSOutput * out = new VSOutput();
@@ -36,13 +37,23 @@ VSOutput* myVS(BYTE* v, VariableBuffer* varbuffer)
 
     return out;
 }
-
+static int factor = 0, step = 1;
 Color4 myPS(PSInput & in)
 {
-	return Color4(0,0,255,1);
+	factor += step;
+	if(factor>255 || factor<0) step = -step;
+	return Color4(0,0,255,0);//
 }
 
-class PileLine: public ObserverCallBack
+class tepClass
+{
+public:
+	virtual ~tepClass()
+	{
+	}
+};
+
+class PileLine: public ObserverCallBack, public tepClass
 {
 public:
 	 PileLine():
@@ -50,7 +61,6 @@ public:
 	 	VPoutputBuffer(),
 	 	PAoutputBuffer(),
 	 	VPPoutputBuffer(),
-	 	RZoutputBuffer(),
 	 	observer(this),
 	 	conbuffer(),
 	 	varbuffer(),
@@ -62,9 +72,9 @@ public:
 	 	VP(2, &IAoutputBuffer, &VPoutputBuffer, &observer),
 	 	PA(3, &VPoutputBuffer, &PAoutputBuffer, &observer),
 	 	VPP(4, &PAoutputBuffer, &VPPoutputBuffer, &observer),
-	 	RZ(5, &VPPoutputBuffer, &RZoutputBuffer, &observer),
-	 	OM(6, &RZoutputBuffer, &observer)
-     {}
+	 	RZ(5, &VPPoutputBuffer, &observer)
+     {
+     }
      ~PileLine()
      {
 
@@ -82,7 +92,7 @@ BasicIOBuffer<BasicIOElement> IAoutputBuffer;
 BasicIOBuffer<BasicIOElement> VPoutputBuffer;
 BasicIOBuffer<BasicIOElement> PAoutputBuffer;
 BasicIOBuffer<BasicIOElement> VPPoutputBuffer;
-BasicIOBuffer<BasicIOElement> RZoutputBuffer;
+
 
 BasicObserver observer;
 ConstantBuffer conbuffer;
@@ -101,7 +111,11 @@ VertexProcessor VP;
 PrimitiveAssembler PA;
 VertexPostProcessor VPP;
 Rasterizer RZ;
-OutputMerger OM;
+
+
+std::mutex mutex;
+std::condition_variable cond;
+
 };
 /////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -111,6 +125,7 @@ Device                main_device;
 WindowsAdapter win_adapter;
 PileLine               main_pileline;
 
+
 void PileLine::Run()
 {
     IA.Start();
@@ -118,7 +133,6 @@ void PileLine::Run()
     PA.Start();
     VPP.Start();
     RZ.Start();
-    OM.Start();
 
 }
 
@@ -130,9 +144,7 @@ void PileLine::Cancel()
     PA.Cancel();
     VPP.Cancel();
     RZ.Cancel();
-    OM.Cancel();
 
-    OM.Join();
     RZ.Join();
     VPP.Join();
     PA.Join();
@@ -144,6 +156,8 @@ void PileLine::HandleMessage(SREVAR message, USINT id)
 {
 	if(message == SRE_MESSAGE_ENDSCENE)
 		main_device.PresentReady();
+		//g_log.Write("main_device.PresentReady()");
+
 }
 
 
@@ -164,9 +178,9 @@ bool PileLine::Init()
         vertexes[i].a1 = 0.11+i;
         vertexes[i].a2 = 0.21+i;
     }
-        vertexes[0].ver = VEC3(-1.5, 1.5, 0.5);
-        vertexes[1].ver = VEC3( 1.5, 1.5, 0.5);
-        vertexes[2].ver = VEC3( 0.5, 2.5, 1.0);
+        vertexes[0].ver = VEC3(-3, 1, 0.5);
+        vertexes[1].ver = VEC3( 3, 1, 0.5);
+        vertexes[2].ver = VEC3( 0, -3, 0.5);
 
         vertexes[3].ver = VEC3( 0.5, 1.0, 0.5);
         vertexes[4].ver = VEC3( 0.5, 0.0, 0.5);
@@ -186,15 +200,32 @@ bool PileLine::Init()
     INT index[3]={3,4,5};
     ibuffer.ResetData(index, 3);
 
+    //注意viewport：800 * 600,指坐标 0<=x<=800 ,0<=y<=600
+    //      buffer：   800 * 600,指坐标 0<=x<800 , 0<=y<600, 将存在越界问题！！
+    if(RESULT::SUCC !=zbuffer.Create(main_device.GetWidth(), main_device.GetHeight()))
+	{
+		cout<<"zbuffer create fail"<<endl;
+		return false;
+	}
+
+	if(RESULT::SUCC !=renderTarget.Create(main_device.GetWidth(), main_device.GetHeight()))
+	{
+		cout<<"renderTarget create fail"<<endl;
+		return false;
+	}
+
+    conbuffer.primitiveTopology = SRE_PRIMITIVETYPE_TRIANGLELIST;
+    IA.SetConstantBuffer(&conbuffer);
     VP.SetVariableBuffer(&varbuffer);
+
+    VPP.SetViewportHeight(main_device.GetHeight());
+    VPP.SetViewportWidth(main_device.GetWidth());
 
     RZ.AddSubProcessors(4);
     RZ.SetConstantBuffer(&conbuffer);
     RZ.SetZbuffer(&zbuffer);
-    RZ.SetRenderTarget(&renderTarget);
+    RZ.SetSamplePixelBlockSize(192);
 
-	OM.SetConstantBuffer(&conbuffer);
-    OM.SetFrameBuffer(main_device.GetFrameBuffer());
 
     return true;
 }
@@ -206,9 +237,10 @@ void PileLine::Render()
      pshader.InputFormat = SRE_SHADERINPUTFORMAT_ALL;
 
      zbuffer.Reset(1.0);
-     renderTarget.Clear(255);
+     //renderTarget.Clear(0);
 
-     conbuffer.ZEnable = SRE_TRUE;
+     //开启后会明显变慢
+     conbuffer.ZEnable = SRE_FALSE;
      conbuffer.CullEnable = SRE_FALSE;
 
      IA.BeginSceneSetting();
@@ -217,10 +249,11 @@ void PileLine::Render()
 
 	 VP.SetVertexShader(&vshader);
      RZ.SetPixelShader(&pshader);
-     RZ.SetRenderTarget(&renderTarget);
-     OM.SetOutputToFrameBuffer(true);
+     RZ.SetRenderTarget(main_device.GetFrameBuffer());
+     RZ.SetSampleStep(2);
 
      IA.EndSceneSetting();
+
 }
 
 
@@ -229,6 +262,7 @@ void OnResize(INT width, INT height)
 {
     //main_device.Resize(width, height);;
 }
+
 
 void OnFrame()
 {
@@ -251,11 +285,23 @@ void OnFrame()
     else
         FPS++;
 
-    main_device.ClearFrame(0);
 
-    main_pileline.Render();
 
-    main_device.Present();
+    /*
+    static bool flag=true;
+    if(flag)
+	{
+     	main_device.ClearFrame(255);
+     	main_pileline.Render();
+     	main_device.Present();
+        flag=false;
+     }*/
+
+	main_device.ClearFrame(255);
+	main_pileline.Render();
+	main_device.Present();
+	//BasicIOBuffer 改为传指针
+
 }
 
 
@@ -263,32 +309,34 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR sCmdLine,
 {
     USINT width = 800, height = 600;
 
-    g_log.Write("===================================\n");
 
-    if(!main_pileline.Init())
-	{
-		MessageBox(nullptr, "ERROR", "Create PileLine Failed", MB_OK | MB_ICONERROR);
-		return 0;
-	}
+    //g_log.Write("===================================\n");
 
-	main_pileline.Run();
-    main_pileline.Cancel();
-	/*
     if(main_view.Create(hInstance, "SoftwareEngine -ver0.01 -FPS:0", width, height))
     {
-        win_adapter.SetHDC(main_view.GetHDC());
 
-        RESULT re = main_device.Create(width, height, SRE_FORMAT_PIXEL_R8G8B8, &win_adapter);
-        if(re == RESULT::SUCC)
-        {
-           SetWndCallBackOnResize(&OnResize);
-           SetWndCallBackOnFrame(&OnFrame);
+	     win_adapter.SetHDC(main_view.GetHDC());
+	     RESULT re = main_device.Create(width, height, SRE_FORMAT_PIXEL_R8G8B8, &win_adapter);
+	     if(re != RESULT::SUCC)
+	     {
+		     MessageBox(nullptr, "ERROR", "Create Device Failed", MB_OK | MB_ICONERROR);
+		     return 0;
+     	}
 
 
+        if(!main_pileline.Init())
+	    {
+		    MessageBox(nullptr, "ERROR", "Create PileLine Failed", MB_OK | MB_ICONERROR);
+		    return 0;
+	    }
+	    main_pileline.Run();
 
-           main_view.ShowWindow();
-           main_view.MsgLoop();
-        }
+		SetWndCallBackOnResize(&OnResize);
+		SetWndCallBackOnFrame(&OnFrame);
+
+		main_view.ShowWindow();
+		main_view.MsgLoop();
+
     }
     else
     {
@@ -297,7 +345,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR sCmdLine,
 
     main_pileline.Cancel();
     main_view.Destroy();
-    */
+
     return 0;
 }
 

@@ -217,12 +217,12 @@ namespace SRE {
                               BasicObserver     * observer=nullptr,
                               CallBackFunctions * callbacks=nullptr):
             BaseTask(),
+			m_id(id),
             m_pInputQueue(input),
             m_pOutputQueue(output),
             m_thread(),
             m_callBacks(callbacks),
             m_mutex(),
-            m_id(id),
 			m_pObserver(observer),
             m_cond(),
             m_resMutex(),
@@ -251,8 +251,12 @@ namespace SRE {
         inline void SetCallBacks(CallBackFunctions * callbacks);
         inline void Join();
 
+
         BasicProcessor(const BasicProcessor & other) = delete;
         BasicProcessor & operator=(const BasicProcessor & other) = delete;
+
+	public:
+		USINT                                             m_id;
 
     private:
         BasicIOBuffer<BasicIOElement> *     m_pInputQueue;
@@ -262,7 +266,6 @@ namespace SRE {
         std::mutex                                     m_mutex;
 
     protected:
-    	USINT                                             m_id;
     	BasicObserver  *                              m_pObserver;
         std::condition_variable                m_cond;
         std::mutex                                     m_resMutex;
@@ -270,6 +273,8 @@ namespace SRE {
         bool m_Cancel;
         bool m_Pause;
         bool m_Started;
+
+
 
 
 
@@ -349,6 +354,7 @@ namespace SRE {
            m_thread.join();
 
     }
+
 
 
     //=============================
@@ -431,7 +437,7 @@ namespace SRE {
     //=============================
 	//Temp structures for IO
 	//=============================
-	class _index_ver_
+	class _index_ver_:public BasicIOElement
 	{//A temp data structure used for skipping vertex process
      public:
 	   INT index;
@@ -448,15 +454,16 @@ namespace SRE {
        {}
        ~_index_ver_()
        {
-           delete vertex;
+           delete[] vertex;
        }
 
        _index_ver_(const _index_ver_ & other) = delete;
        _index_ver_ & operator=(const _index_ver_ & other) = delete;
 	};
 
-    struct _vertex_
+    class _vertex_:public BasicIOElement
 	{//A temp data structure used for clipping
+	public:
 	    VERTEX4 v;
 	    FLOAT   t;
 	    INT     s;
@@ -478,37 +485,53 @@ namespace SRE {
         {
             v[0]=v1;v[1]=v2;v[2]=v3;
         }
-        virtual ~_Triangle_()
-        {
-        }
+        ~_Triangle_()
+        {}
 
     public:
         VSOutput  v[3];
+	};
+
+
+	class _target_:public BasicIOElement
+	{//A temp data structure for Rasterizer output
+    public:
+        _target_(RenderTexture* tex=nullptr):
+        	texture(tex)
+        {}
+        ~_target_()
+        {}
+
+    public:
+        RenderTexture*  texture;
 	};
 
 	template<typename T>
 	class _pixelBlock_:public BasicIOElement
 	{
     public:
-        _pixelBlock_(USINT _sx=0, USINT _sy=0, USINT _distX=0, USINT _distY=0, bool _isEnd=false,
+        _pixelBlock_(USINT _sx=0, USINT _sy=0, USINT _distX=0, USINT _distY=0, bool _isEnd=false, bool _setArg=false,
                      std::shared_ptr<T> _data=nullptr):
             sx(_sx), sy(_sy), distX(_distX), distY(_distY),
             isEnd(_isEnd),
+            setArg(_setArg),
             tempData(_data)
         {}
         _pixelBlock_(const _pixelBlock_<T> & other):
             sx(other.sx), sy(other.sy),
             distX(other.distX), distY(other.distY),
             isEnd(other.isEnd),
+            setArg(other.setArg),
             tempData(other.tempData)
         {}
-        virtual ~_pixelBlock_()
+        ~_pixelBlock_()
         {}
 
     public:
 	    USINT sx, sy;
 	    USINT distX, distY;
 	    bool  isEnd;
+	    bool  setArg;
 	    std::shared_ptr<T> tempData;
 	};
 
@@ -524,7 +547,7 @@ namespace SRE {
     public:
         InputAssembler(USINT id=0,
 					            BasicIOBuffer<BasicIOElement> * output=nullptr,
-                                BasicObserver *                 observer=nullptr):
+                                BasicObserver *                           observer=nullptr):
             BasicProcessor(id, nullptr, output, observer, this),
             m_vertexBuffers(),
             m_indexBuffers(),
@@ -582,6 +605,8 @@ namespace SRE {
 
     void InputAssembler::BeginSceneSetting()
     {
+		std::lock_guard<std::mutex> lock(m_resMutex);
+        m_vertexBuffers.push(nullptr);
         m_valve = false;
     }
 
@@ -621,8 +646,7 @@ namespace SRE {
             m_cachedPriority[2]=1;
         }
         virtual ~VertexProcessor()
-        {
-        }
+        {}
 
         void HandleElement();
         void HandleMessage(SREVAR message, USINT id=0);
@@ -768,8 +792,8 @@ namespace SRE {
         FLOAT         m_clipPlaneDistance[6];//-x, x, -y, y, -z, z
         VEC3           m_clipPlaneNormal[6];
         FLOAT         m_clipEpsilon;
-        USINT          m_viewportHeightHalf;
-        USINT          m_viewportWidthHalf;//data type should be considered
+        FLOAT         m_viewportHeightHalf;
+        FLOAT         m_viewportWidthHalf;//data type should be considered
 
     private:
         CLList<_vertex_>    m_vlist[2];
@@ -783,12 +807,12 @@ namespace SRE {
 
     void VertexPostProcessor::SetViewportHeight(USINT height)
     {
-        if(height>0) m_viewportHeightHalf = height/2;
+        if(height>0) m_viewportHeightHalf = ((FLOAT)height-1)/2;
     }
 
     void VertexPostProcessor::SetViewportWidth(USINT width)
     {
-        if(width>0) m_viewportWidthHalf = width/2;
+        if(width>0) m_viewportWidthHalf = ((FLOAT)width-1)/2;
     }
 
     void VertexPostProcessor::SetClipPlaneX(FLOAT Distance_PlaneToOrigin, VEC3& normal)
@@ -830,26 +854,25 @@ namespace SRE {
     public:
         Rasterizer(USINT id=0,
 						BasicIOBuffer<BasicIOElement> * input=nullptr,
-                        BasicIOBuffer<BasicIOElement> * output=nullptr,
                         BasicObserver * observer=nullptr,
-                        USINT samplePixelBlockSize=16):
-            BasicProcessor(id, input, output, observer, this),
+                        USINT samplePixelBlockSize=256):
+            BasicProcessor(id, input, nullptr, observer, this),
             m_subObserver(this),
             m_pConstantBuffer(nullptr),
             m_pCurrentTriangle(nullptr),
             m_subProcessors(),
+            m_subProcessorNum(0),
             m_subIndex(0),
             m_perPixelBlockSize(samplePixelBlockSize),
             m_finishCount(0),
             m_sampleStep(1),
             m_pZbuffer(nullptr),
             m_pRenderTarget(nullptr),
-            m_pPixelShader(nullptr)
+            m_pPixelShader(nullptr),
+			m_sigCount(0)
         {}
         virtual ~Rasterizer()
         {
-            if(nullptr != m_pCurrentTriangle)
-                delete m_pCurrentTriangle;
         }
 
         void HandleElement();
@@ -888,16 +911,20 @@ namespace SRE {
         _Triangle_ *                  m_pCurrentTriangle;
 
         std::vector<PixelProcessor> m_subProcessors;
+        INT                                        m_subProcessorNum;
 
-        USINT                       m_subIndex;
-        USINT                       m_perPixelBlockSize;
-        USINT                       m_finishCount;
+        USINT                           m_subIndex;
+        USINT                           m_perPixelBlockSize;
+        USINT                           m_finishCount;
 
         USINT                                  m_sampleStep;
         SynMatBuffer<FLOAT>*        m_pZbuffer;
         RenderTexture*                   m_pRenderTarget;
         PixelShader *                       m_pPixelShader;
 
+		USINT                                  m_sigCount;
+
+		friend class PixelProcessor;
 
     };
 
@@ -953,10 +980,7 @@ namespace SRE {
         PixelProcessor(USINT id,
 					          BasicObserver* observer=nullptr,
                               USINT sampleStep=0,
-                              const ConstantBuffer* cbuffer=nullptr,
-							  SynMatBuffer<FLOAT>* zbuffer=nullptr,
-                              RenderTexture* renderTarget=nullptr,
-                              PixelShader* pshader=nullptr):
+                              Rasterizer* parent=nullptr):
             m_id(id),
             m_observer(observer),
             m_inputQueue(),
@@ -970,10 +994,11 @@ namespace SRE {
             m_sx(0), m_sy(0),
             m_distX(0), m_distY(0),
             m_end(false),
-            m_pConstantBuffer(cbuffer),
-            m_pZbuffer(zbuffer),
-            m_pRenderTarget(renderTarget),
-            m_pPixelShader(pshader)
+            m_pParent(parent),
+            m_pConstantBuffer(nullptr),
+            m_pZbuffer(nullptr),
+            m_pRenderTarget(nullptr),
+            m_pPixelShader(nullptr)
         {}
         PixelProcessor(const PixelProcessor & other):
         	m_id(other.m_id),
@@ -989,6 +1014,7 @@ namespace SRE {
             m_sx(0), m_sy(0),
             m_distX(0), m_distY(0),
             m_end(false),
+            m_pParent(other.m_pParent),
             m_pConstantBuffer(other.m_pConstantBuffer),
             m_pZbuffer(other.m_pZbuffer),
             m_pRenderTarget(other.m_pRenderTarget),
@@ -1048,10 +1074,13 @@ namespace SRE {
         FLOAT                        m_wStepY[3];
         bool                          m_end;
 
+        Rasterizer*                           m_pParent;
         const ConstantBuffer*         m_pConstantBuffer;
         SynMatBuffer<FLOAT>*        m_pZbuffer;
         RenderTexture*                   m_pRenderTarget;
         PixelShader *                       m_pPixelShader;
+
+
 
 
 
@@ -1097,7 +1126,9 @@ namespace SRE {
 			m_thread.join();
     }
 
-    //magnitude of the cross product:(v2-v1) and (V3-v1).
+    //magnitude of the cross product:(v1-v0) and (V2-v0).
+    //E01(P)=(V2.x-V0.x)*(V1.y-V0.y)-(V2.y-V0.y)*(V1.x-V0.x).
+    //v0->v1->v2, CW
     FLOAT PixelProcessor::EdgeFunction2D(const VEC4& v1, const VEC4& v2, const VEC4& v3)
     {
         return (v3.x - v1.x) * (v2.y - v1.y) - (v3.y - v1.y) * (v2.x - v1.x);
@@ -1120,76 +1151,6 @@ namespace SRE {
             return false;
         }
 	}
-
-
-
-    //=============================
-	//Class OutputMerger
-	//
-	//
-	//
-	//=============================
-    class OutputMerger:public BasicProcessor, public CallBackFunctions, public ObserverCallBack
-    {
-    public:
-        OutputMerger(USINT id=0,
-					          BasicIOBuffer<BasicIOElement> * input=nullptr,
-                              BasicObserver * observer=nullptr):
-             BasicProcessor(id, input, nullptr, observer, this),
-			 m_pConstantBuffer(nullptr),
-			 m_pFrame(nullptr),
-			 m_pCurTarget(nullptr),
-			 m_toFrame(false)
-        {}
-        virtual ~OutputMerger()
-        {}
-
-
-        void HandleElement();
-        void HandleMessage(SREVAR message, USINT id);
-        void OnCancel();
-        void OnPause();
-        void OnResume();
-        void OnRunError();
-        void OnRunFinish();
-        void OnStart();
-
-        inline void SetFrameBuffer(BYTE* frameBuffer);
-        inline void SetConstantBuffer(const ConstantBuffer*  cbuffer);
-        inline void SetOutputToFrameBuffer(bool toFrame);
-
-        OutputMerger(const OutputMerger & other) = delete;
-        OutputMerger & operator=(const OutputMerger & other) = delete;
-
-    protected:
-    	const ConstantBuffer*  m_pConstantBuffer;
-        BYTE*                           m_pFrame;
-        RenderTexture*            m_pCurTarget;
-
-        bool                            m_toFrame;
-
-
-    };
-
-
-    void OutputMerger::SetFrameBuffer(BYTE* frameBuffer)
-    {
-    	if(nullptr != frameBuffer)
-			m_pFrame = frameBuffer;
-    }
-
-
-    void OutputMerger::SetConstantBuffer(const ConstantBuffer*  cbuffer)
-    {
-    	if(nullptr != cbuffer)
-			m_pConstantBuffer = cbuffer;
-    }
-
-
-    void OutputMerger::SetOutputToFrameBuffer(bool toFrame)
-    {
-    	m_toFrame = toFrame;
-    }
 
 
     //=============================
@@ -1237,7 +1198,10 @@ namespace SRE {
             FillMode(SRE_FILLMODE_SOLID),
             CullEnable(SRE_TRUE),
             CullMode(SRE_CULLMODE_CCW),
-            ZEnable(SRE_TRUE)
+            ZEnable(SRE_TRUE),
+            AlphaTest(SRE_FALSE),
+            AlphaBlend(SRE_FALSE),
+            OutputChannel(SRE_TYPE_FRAMEBUFFER)
         {}
         virtual ~ConstantBuffer(){}
 
@@ -1247,12 +1211,82 @@ namespace SRE {
         SREVAR CullEnable;
         SREVAR CullMode;
         SREVAR ZEnable;
+        SREVAR AlphaTest;
+        SREVAR AlphaBlend;
+        SREVAR OutputChannel;
 	};
 
 
 
+    //=============================
+	//Class OutputMerger
+	//*Unused*
+	//
+	//
+	//=============================
+	/**********************************************
+    class OutputMerger:public BasicProcessor, public CallBackFunctions, public ObserverCallBack
+    {
+    public:
+        OutputMerger(USINT id=0,
+					          BasicIOBuffer<BasicIOElement> * input=nullptr,
+                              BasicObserver * observer=nullptr):
+             BasicProcessor(id, input, nullptr, observer, this),
+			 m_pConstantBuffer(nullptr),
+			 m_pFrame(nullptr),
+			 m_pCurTarget(nullptr),
+			 m_toFrame(false)
+        {}
+        virtual ~OutputMerger()
+        {}
 
 
+        void HandleElement();
+        void HandleMessage(SREVAR message, USINT id);
+        void OnCancel();
+        void OnPause();
+        void OnResume();
+        void OnRunError();
+        void OnRunFinish();
+        void OnStart();
+
+        inline void SetFrameBuffer(DECOLOR* frameBuffer);
+        inline void SetConstantBuffer(const ConstantBuffer*  cbuffer);
+        inline void SetOutputToFrameBuffer(bool toFrame);
+
+        OutputMerger(const OutputMerger & other) = delete;
+        OutputMerger & operator=(const OutputMerger & other) = delete;
+
+    protected:
+    	const ConstantBuffer*  m_pConstantBuffer;
+        DECOLOR*                    m_pFrame;
+        RenderTexture*            m_pCurTarget;
+
+        bool                            m_toFrame;
+
+
+    };
+
+
+    void OutputMerger::SetFrameBuffer(DECOLOR* frameBuffer)
+    {
+    	if(nullptr != frameBuffer)
+			m_pFrame = frameBuffer;
+    }
+
+
+    void OutputMerger::SetConstantBuffer(const ConstantBuffer*  cbuffer)
+    {
+    	if(nullptr != cbuffer)
+			m_pConstantBuffer = cbuffer;
+    }
+
+
+    void OutputMerger::SetOutputToFrameBuffer(bool toFrame)
+    {
+    	m_toFrame = toFrame;
+    }
+	 *****************************************************************/
 }
 
 #endif // SRE_PipeLine_H_INCLUDED

@@ -24,13 +24,9 @@ namespace SRE {
 					        float f1_11, float f1_12, float f1_21, float f1_22,
 					        float f2_11, float f2_12, float f2_21, float f2_22);
 
-
 	//=============================
 	//Matrix functions
-	//
-	//
 	//=============================
-
 	//=============================
 	//Matrix3x3 operations
 	//

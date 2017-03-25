@@ -28,25 +28,18 @@ namespace SRE {
         if(frameHeight<=0) return RESULT::INVALIDARG;
         if(deviceAdapter==nullptr) return RESULT::INVALIDARG;
 
-        if(nullptr != m_frameBuffers[0])
-			delete[] m_frameBuffers[0];
-		if(nullptr != m_frameBuffers[1])
-			delete[] m_frameBuffers[1];
+        //bufferFormat
 
+        RESULT re;
+        re = m_frameBuffers[0].Create(frameWidth, frameHeight);
+		if(RESULT::SUCC != re)
+			return re;
 
-         //bufferFormat;
-		for(USINT i=0; i<2; i++)
-		{
-			m_frameBuffers[i]  = new Color4[frameWidth*frameHeight];
-		    if(nullptr == m_frameBuffers[i] )
-		    {
-			    return RESULT::OUTMEMORY;
-		    }
-		}
+		re = m_frameBuffers[1].Create(frameWidth, frameHeight);
+		if(RESULT::SUCC != re)
+			return re;
 
         m_front = 0;
-        m_frameWidth = frameWidth;
-        m_frameHeight = frameHeight;
         m_pDeviceAdapter = deviceAdapter;
         m_bufferFormat = bufferFormat;
 
@@ -54,44 +47,30 @@ namespace SRE {
     }
 
 
-    void Device::ClearFrame(Color4 color)
+    void Device::ClearFrame(DECOLOR color)
     {
-        INT Size = m_frameWidth*m_frameHeight-1;
-        Color4* colorBuffer = m_frameBuffers[m_front];
-        while(Size>=0)
-        {
-             colorBuffer[Size--] = color;
-        }
+        m_frameBuffers[m_front].Clear(color);
     }
 
 
     void Device::ClearFrame(INT grayLevel)
     {
-        memset(m_frameBuffers[m_front], grayLevel, m_frameWidth*m_frameHeight*sizeof(Color4));
+        m_frameBuffers[m_front].Clear(grayLevel);
     }
 
 
     ////////////////////////////not finish
     RESULT Device::Resize(USINT width, USINT height)
     {
-        if(width<=0 || height<=0) return RESULT::INVALIDARG;
+        RESULT re = m_frameBuffers[0].Resize(width, height);
 
-		for(USINT i=0; i<2; i++)
-		{
-			if(nullptr != m_frameBuffers[i])
-			   delete[] m_frameBuffers[i];
+        if(re != RESULT::SUCC)
+        {
+        	return re;
+        }
+        else
+			return m_frameBuffers[1].Resize(width, height);
 
-			m_frameBuffers[i] = new Color4[width*height];
-		    if(nullptr == m_frameBuffers[i])
-		    {
-			    return RESULT::OUTMEMORY;
-		    }
-		}
-
-        m_frameWidth = width;
-        m_frameHeight = height;
-
-        return RESULT::SUCC;
     }
 
 
@@ -103,9 +82,10 @@ namespace SRE {
 		m_present = false;
 		m_front = !m_front;
 
-		m_pDeviceAdapter->PresentToScreen((BYTE*)m_frameBuffers[!m_front],
-											                       m_frameWidth,
-											                       m_frameHeight);
+		m_pDeviceAdapter->PresentToScreen((BYTE*)m_frameBuffers[!m_front].Get(),
+											                       m_frameBuffers[!m_front].GetWidth(),
+											                       m_frameBuffers[!m_front].GetHeight());
+
 	}
 
 
@@ -113,6 +93,8 @@ namespace SRE {
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
 		m_present = true;
+
+		m_cond.notify_one();
 	}
 
 

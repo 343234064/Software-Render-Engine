@@ -160,13 +160,22 @@ namespace SRE {
 	//=============================
     RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer** out)
     {
-        if(vertexNumber <= 0) return RESULT::FAIL;
-        if(vertexSize <= 0) return RESULT::FAIL;
-        if(((dataFormat & SRE_FORMAT_VERTEX_XY) != SRE_FORMAT_VERTEX_XY) &&
-           ((dataFormat & SRE_FORMAT_VERTEX_XYZ) != SRE_FORMAT_VERTEX_XYZ) &&
-           ((dataFormat & SRE_FORMAT_VERTEX_XYZW) != SRE_FORMAT_VERTEX_XYZW))
-           return RESULT::FAIL;
-        if(nullptr == vertexes) return RESULT::FAIL;
+        if(vertexNumber <= 0) return RESULT::INVALIDARG;
+        if(vertexSize <= 0) return RESULT::INVALIDARG;
+        if(nullptr == vertexes) return RESULT::INVALIDARG;
+
+        INT vertexDimen=0, attriSize=0;
+		if((dataFormat & SRE_FORMAT_VERTEX_XY)==SRE_FORMAT_VERTEX_XY)
+			vertexDimen = 2;
+		else if((dataFormat & SRE_FORMAT_VERTEX_XYZ)==SRE_FORMAT_VERTEX_XYZ)
+			vertexDimen = 3;
+		else if((dataFormat & SRE_FORMAT_VERTEX_XYZW)==SRE_FORMAT_VERTEX_XYZW)
+			vertexDimen = 4;
+        else
+			return RESULT::INVALIDARG;
+
+		attriSize = vertexSize - vertexDimen*sizeof(FLOAT);
+		if(attriSize<0) return RESULT::FAIL;
 
         VertexBuffer* buffer=nullptr;
         buffer = new VertexBuffer();
@@ -181,30 +190,35 @@ namespace SRE {
 		if(nullptr == buffer->m_marks) return RESULT::OUTMEMORY;
 		memset(buffer->m_marks, 0, vertexNumber*sizeof(bool));
 
-		if((buffer->m_vertexFormat & SRE_FORMAT_VERTEX_XY)==SRE_FORMAT_VERTEX_XY)
-			buffer->m_vertexDimen = 2;
-		else if((buffer->m_vertexFormat & SRE_FORMAT_VERTEX_XYZ)==SRE_FORMAT_VERTEX_XYZ)
-			buffer->m_vertexDimen = 3;
-		else if((buffer->m_vertexFormat & SRE_FORMAT_VERTEX_XYZW)==SRE_FORMAT_VERTEX_XYZW)
-			buffer->m_vertexDimen = 4;
+		buffer->m_vertexDimen = vertexDimen;
+		buffer->m_attriSize = attriSize;
+        buffer->m_vertexFormat = dataFormat;
+        buffer->m_vertexSize = vertexSize;
+        buffer->m_vertexNum = vertexNumber;
 
-		buffer->m_attriSize = vertexSize - buffer->m_vertexDimen*sizeof(FLOAT);
-
-		*out = buffer;
+        *out = buffer;
 
         return RESULT::SUCC;
     }
 
 	RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer* out)
     {
-        if(vertexNumber <= 0) return RESULT::FAIL;
-        if(vertexSize <= 0) return RESULT::FAIL;
-        if(((dataFormat & SRE_FORMAT_VERTEX_XY) != SRE_FORMAT_VERTEX_XY) &&
-           ((dataFormat & SRE_FORMAT_VERTEX_XYZ) != SRE_FORMAT_VERTEX_XYZ) &&
-           ((dataFormat & SRE_FORMAT_VERTEX_XYZW) != SRE_FORMAT_VERTEX_XYZW))
-           return RESULT::FAIL;
-        if(nullptr == vertexes) return RESULT::FAIL;
-        if(nullptr == out) return RESULT::FAIL;
+        if(vertexNumber <= 0) return RESULT::INVALIDARG;
+        if(vertexSize <= 0) return RESULT::INVALIDARG;
+        if(nullptr == vertexes) return RESULT::INVALIDARG;
+        if(nullptr == out) return RESULT::INVALIDARG;
+
+		if((dataFormat & SRE_FORMAT_VERTEX_XY)==SRE_FORMAT_VERTEX_XY)
+			out->m_vertexDimen = 2;
+		else if((dataFormat & SRE_FORMAT_VERTEX_XYZ)==SRE_FORMAT_VERTEX_XYZ)
+			out->m_vertexDimen = 3;
+		else if((dataFormat & SRE_FORMAT_VERTEX_XYZW)==SRE_FORMAT_VERTEX_XYZW)
+			out->m_vertexDimen = 4;
+        else
+			return RESULT::INVALIDARG;
+
+		out->m_attriSize = vertexSize - out->m_vertexDimen*sizeof(FLOAT);
+		if(out->m_attriSize<0) return RESULT::FAIL;
 
 		INT length = vertexNumber * vertexSize;
 		out->m_vertexes = new BYTE[length];
@@ -215,14 +229,10 @@ namespace SRE {
 		if(nullptr == out->m_marks) return RESULT::OUTMEMORY;
 		memset(out->m_marks, 0, vertexNumber*sizeof(bool));
 
-		if((out->m_vertexFormat & SRE_FORMAT_VERTEX_XY)==SRE_FORMAT_VERTEX_XY)
-			out->m_vertexDimen = 2;
-		else if((out->m_vertexFormat & SRE_FORMAT_VERTEX_XYZ)==SRE_FORMAT_VERTEX_XYZ)
-			out->m_vertexDimen = 3;
-		else if((out->m_vertexFormat & SRE_FORMAT_VERTEX_XYZW)==SRE_FORMAT_VERTEX_XYZW)
-			out->m_vertexDimen = 4;
+        out->m_vertexFormat = dataFormat;
+        out->m_vertexSize = vertexSize;
+        out->m_vertexNum = vertexNumber;
 
-		out->m_attriSize = vertexSize - out->m_vertexDimen*sizeof(FLOAT);
         return RESULT::SUCC;
     }
 
@@ -235,42 +245,41 @@ namespace SRE {
 	//
 	//=============================
 	RenderTexture::RenderTexture(const RenderTexture & other):
-        Format(other.Format),
-	    Width(other.Width),
-	    Height(other.Height),
+	    m_width(other.m_width),
+	    m_height(other.m_height),
 	    m_pdata(nullptr),
 	    m_byteCount(other.m_byteCount)
 	{
-	    m_pdata = new BYTE[Width*Height*m_byteCount];
+	    m_pdata = new RTCOLOR[m_width*m_height];
 	    if(nullptr == m_pdata) return;
 
-	    memcpy(m_pdata, other.m_pdata, Width*Height*m_byteCount);
+	    if(nullptr != other.m_pdata)
+	       memcpy(m_pdata, other.m_pdata, m_width*m_height*sizeof(RTCOLOR));
 	}
 
 	RenderTexture & RenderTexture::operator=(const RenderTexture & other)
 	{
         if(this == &other) return *this;
 
-        if(Width != other.Width || Height != other.Height || m_byteCount != other.m_byteCount)
+        if(m_width != other.m_width || m_height != other.m_height || m_byteCount != other.m_byteCount)
         {
             delete[] m_pdata;
-            m_pdata = new BYTE[Width*Height*m_byteCount];
+            m_pdata = new RTCOLOR[other.m_width*other.m_height];
 	        if(nullptr == m_pdata) return *this;
         }
 
-        memcpy(m_pdata, other.m_pdata, other.Width*other.Height*other.m_byteCount);
-        Format = other.Format;
-        Width = other.Width;
-        Height = other.Height;
+        memcpy(m_pdata, other.m_pdata, other.m_width*other.m_height*sizeof(RTCOLOR));
+        m_width = other.m_width;
+        m_height = other.m_height;
         m_byteCount = other.m_byteCount;
 
         return *this;
 	}
 
-    RESULT RenderTexture::Create()
+    RESULT RenderTexture::Create(USINT width, USINT height)
     {
-        if(Width <=0) return  RESULT::INVALIDARG;
-        if(Height <=0) return  RESULT::INVALIDARG;
+        if(width <=0) return  RESULT::INVALIDARG;
+        if(height <=0) return  RESULT::INVALIDARG;
 
         /*
         if(Format == SRE_FORMAT_PIXEL_R8G8B8)
@@ -285,37 +294,55 @@ namespace SRE {
         {
             return RESULT::INVALIDARG;
         }*/
-        m_byteCount = 4;
+        m_byteCount = sizeof(RTCOLOR);
 
         if(nullptr != m_pdata) delete[] m_pdata;
 
-        m_pdata = new BYTE[Width*Height*m_byteCount];
+        m_pdata = new RTCOLOR[width*height];
         if(nullptr == m_pdata) return RESULT::OUTMEMORY;
+
+        m_width = width;
+        m_height = height;
 
         return RESULT::SUCC;
     }
 
-    BYTE*   RenderTexture::CopyTo(BYTE* dest, INT destOffset)
+    RESULT RenderTexture::Resize(USINT width, USINT height)
     {
-    	if(nullptr == dest) return nullptr;
-        return (BYTE*)memcpy(dest+destOffset, m_pdata, Width*Height*m_byteCount);
+        if(width <=0) return  RESULT::INVALIDARG;
+        if(height <=0) return  RESULT::INVALIDARG;
+
+        if(nullptr != m_pdata)
+			delete[] m_pdata;
+
+        if(nullptr != m_pdata) delete[] m_pdata;
+
+        m_pdata = new RTCOLOR[width*height];
+        if(nullptr == m_pdata) return RESULT::OUTMEMORY;
+
+        m_width = width;
+        m_height = height;
+
+        return RESULT::SUCC;
     }
 
-    /*
-    void  RenderTexture::Draw(USINT px, USINT py, BYTE* color)
-    {
-        memcpy(m_pdata+py*Width*m_byteCount + px*m_byteCount, color, m_byteCount);
-    }*/
 
-
-    void  RenderTexture::DrawSquare(USINT sx, USINT sy, USINT ex, USINT ey, Color4 color)
+    void  RenderTexture::DrawSquare(USINT sx, USINT sy, USINT ex, USINT ey, RTCOLOR color)
     {
-        Color4* addr = (Color4*)m_pdata;
-        for(USINT py=sy; sy<=ey; sy++)
-            for(USINT px=sx; sx<=ex; sx++)
-                *(addr+py*Width+px) = color;
+		for(USINT py=sy; py<=ey; py++)
+            for(USINT px=sx; px<=ex; px++)
+			{
+				*(m_pdata+py*m_width+px) = color;
+			}
     }
 
+
+	void  RenderTexture::Clear(RTCOLOR color)
+    {
+    	INT size=m_width*m_height;
+		for(INT i=0; i<size; i++)
+				*(m_pdata+i) = color;
+    }
 
 }
 

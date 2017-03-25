@@ -168,8 +168,8 @@ namespace SRE {
 
     public:
         VERTEX3  vertex;
-        VEC2     texcoord;
-        VEC3     normal;
+        VEC2       texcoord;
+        VEC3       normal;
 
 	};
 

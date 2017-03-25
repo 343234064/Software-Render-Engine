@@ -28,43 +28,6 @@ namespace SRE {
 
 
     //=============================
-	//Class Color
-	//
-	//=============================
-    class Color3
-    {
-    public:
-        Color3(const BYTE & _b=0, const BYTE & _g=0, const BYTE & _r=0)
-        {
-            bgr[0]=_b;
-            bgr[1]=_g;
-            bgr[2]=_r;
-        }
-
-        ~Color3(){}
-
-    public:
-        BYTE bgr[3];
-
-    };
-
-    class Color4:public Color3
-    {
-    public:
-        Color4(const BYTE & _b=0, const BYTE & _g=0, const BYTE & _r=0, const BYTE & _a=0):
-            Color3(_b, _g, _r),
-            a(_a)
-        {}
-
-        ~Color4(){}
-
-    public:
-        BYTE a;
-
-    };
-
-
-    //=============================
 	//Class Buffer
 	//
 	//
@@ -473,12 +436,12 @@ namespace SRE {
                 delete[] m_marks;
         }
 
-        BYTE*    GetVertex(INT index);
-        BYTE*    GetAttributes(INT index);
-        FLOAT   GetVertexX(INT index);
-        FLOAT   GetVertexY(INT index);
-        FLOAT   GetVertexZ(INT index);
-        FLOAT   GetVertexW(INT index);
+        BYTE*     GetVertex(INT index);
+        BYTE*     GetAttributes(INT index);
+        FLOAT    GetVertexX(INT index);
+        FLOAT    GetVertexY(INT index);
+        FLOAT    GetVertexZ(INT index);
+        FLOAT    GetVertexW(INT index);
         VERTEX2 GetVertex2(INT index);
         VERTEX3 GetVertex3(INT index);
         VERTEX4 GetVertex4(INT index);
@@ -486,14 +449,14 @@ namespace SRE {
         inline INT     GetVertexDimension();
         inline SREVAR  GetVertexFormat();
 
-        inline void  SetMark(INT index, bool m){m_marks[index]=m;}
+        inline void   SetMark(INT index, bool m){m_marks[index]=m;}
         inline bool  GetMark(INT index){return m_marks[index];}
-        void    ResetMark(bool val){memset(m_marks, val, m_vertexNum*sizeof(bool));}
+        inline void   ResetMark(bool val){memset(m_marks, val, m_vertexNum*sizeof(bool));}
 
         VertexBuffer & operator=(const VertexBuffer & other) = delete;
         VertexBuffer(const VertexBuffer & other) = delete;
 
-    protected:
+    public:
         BYTE *         m_vertexes;
         bool *         m_marks;
         INT              m_vertexNum;
@@ -505,6 +468,7 @@ namespace SRE {
     protected:
 		friend RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer** out);
         friend RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer*   out);
+
 	};
 
     //=============================
@@ -534,54 +498,62 @@ namespace SRE {
 	{
     public:
         RenderTexture():
-            Format(0),
-            Width(0),
-            Height(0),
+            m_width(0),
+            m_height(0),
             m_pdata(nullptr),
             m_byteCount(0)
         {}
         RenderTexture(const RenderTexture & other);
         virtual ~RenderTexture()
         {
-            delete[] m_pdata;
+        	if(nullptr != m_pdata)
+               delete[] m_pdata;
         }
 
-        RESULT         Create();
-        BYTE*           CopyTo(BYTE* dest, INT destOffset=0);
-        void            DrawSquare(USINT sx, USINT sy, USINT ex, USINT ey, Color4);
-        inline void  Draw(USINT px, USINT py, Color4);
-        //inline void  Draw(USINT px, USINT py, BYTE*);
+        RESULT         Create(USINT width, USINT height);
+        RESULT         Resize(USINT width, USINT height);
+        void            DrawSquare(USINT sx, USINT sy, USINT ex, USINT ey, RTCOLOR color);
+        void            Clear(RTCOLOR color);
+        inline void  Draw(USINT px, USINT py, RTCOLOR color);
         inline void  Clear(INT grayLevel);
-
+        inline USINT GetWidth()  const;
+        inline USINT GetHeight() const;
         //bool CreateFromFile()
 
         RenderTexture & operator=(const RenderTexture & other);
 
     public:
-        SREVAR Format;
-        USINT  Width;
-        USINT  Height;
+        inline RTCOLOR*  Get(){return m_pdata;}
 
     protected:
-        inline BYTE*  Get(){return m_pdata;}
-
-    protected:
-        BYTE*  m_pdata;
-        USINT  m_byteCount;
+        USINT          m_width;
+        USINT          m_height;
+        RTCOLOR*   m_pdata;
+        USINT          m_byteCount;
 
 	};
 
     //=============================
 	//Class RenderTexture functions
 	//=============================
-    void  RenderTexture::Draw(USINT px, USINT py, Color4 color)
+    void  RenderTexture::Draw(USINT px, USINT py, RTCOLOR color)
     {
-        *((Color4*)m_pdata + py*Width + px) = color;
+        *(m_pdata + py*m_width + px) = color;
     }
 
     void  RenderTexture::Clear(INT grayLevel)
     {
-        memset(m_pdata, grayLevel, Width*Height*m_byteCount);
+        memset(m_pdata, grayLevel, m_width*m_height*m_byteCount);
+    }
+
+    USINT RenderTexture::GetWidth() const
+    {
+    	return m_width;
+    }
+
+    USINT RenderTexture::GetHeight() const
+    {
+    	return m_height;
     }
 }
 #endif

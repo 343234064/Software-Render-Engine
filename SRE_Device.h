@@ -67,36 +67,28 @@ namespace SRE {
         	m_cond(),
         	m_mutex(),
         	m_present(false),
-            m_frameWidth(0),
-            m_frameHeight(0),
             m_bufferFormat(0),
             m_front(0),
             m_pDeviceAdapter(nullptr)
-        {
-        	m_frameBuffers[0]=nullptr;
-        	m_frameBuffers[1]=nullptr;
-        }
+        {}
 
         virtual ~Device()
-        {
-            if(nullptr != m_frameBuffers[0])
-				delete[] m_frameBuffers[0];
-			if(nullptr != m_frameBuffers[1])
-				delete[] m_frameBuffers[1];
-        }
+        {}
 
         RESULT Create(USINT frameWidth=800,
                               USINT frameHeight=600,
                               SREVAR bufferFomat=SRE_FORMAT_PIXEL_R8G8B8,
                               DeviceAdapter* deviceAdapter=nullptr);
         RESULT  Resize(USINT width, USINT height);
-		void     ClearFrame(Color4 color);
+		void     ClearFrame(DECOLOR color);
         void     ClearFrame(INT grayLevel);
         void     Present();
         void     PresentReady();
 
         inline void   SetDeviceAdapter(DeviceAdapter* adapter);
-        inline BYTE*  GetFrameBuffer();
+        inline USINT  GetWidth() const;
+        inline USINT  GetHeight() const;
+        inline RenderTexture*  GetFrameBuffer();
 
         Device(const Device & other) = delete;
         Device & operator=(const Device & other) = delete;
@@ -107,16 +99,11 @@ namespace SRE {
 		bool                                m_present;
 
     protected:
-        USINT    m_frameWidth;
-        USINT    m_frameHeight;
-        SREVAR  m_bufferFormat;
+        SREVAR                 m_bufferFormat;
 
-        USINT     m_front;
-	    Color4*  m_frameBuffers[2];
-        DeviceAdapter*   m_pDeviceAdapter;
-
-
-
+        USINT                   m_front;
+	    RenderTexture     m_frameBuffers[2];
+        DeviceAdapter*     m_pDeviceAdapter;
 
 	};
 
@@ -126,12 +113,20 @@ namespace SRE {
 		m_pDeviceAdapter = adapter;
 	}
 
-	BYTE* Device::GetFrameBuffer()
+	RenderTexture* Device::GetFrameBuffer()
 	{
-		return (BYTE*)m_frameBuffers[m_front];
+		return &m_frameBuffers[m_front];
 	}
 
+    USINT Device::GetWidth() const
+    {
+    	return m_frameBuffers[m_front].GetWidth();
+    }
 
+    USINT Device::GetHeight() const
+    {
+    	return m_frameBuffers[m_front].GetHeight();
+    }
 
 
 
@@ -230,10 +225,10 @@ namespace SRE {
 
     private:
        HWND  m_hwnd;
-       HDC   m_hdc;
+       HDC    m_hdc;
 
        const char *
-             m_title;
+               m_title;
        INT   m_winWidth;
        INT   m_winHeight;
 
