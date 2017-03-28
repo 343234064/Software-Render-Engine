@@ -64,46 +64,49 @@ namespace SRE {
 	{
     public:
         Device():
-        	m_cond(),
-        	m_mutex(),
-        	m_present(false),
-            m_bufferFormat(0),
-            m_front(0),
+           	m_cond(),
+        	   m_mutex(),
+        	   m_present(false),
+            m_framebuffers(),
+            m_front(nullptr),
             m_pDeviceAdapter(nullptr)
         {}
 
         virtual ~Device()
-        {}
+        {
+             RemoveFrameBuffers();
+        }
 
         RESULT Create(USINT frameWidth=800,
                               USINT frameHeight=600,
-                              SREVAR bufferFomat=SRE_FORMAT_PIXEL_R8G8B8,
+                              USINT framebufferNum=3,
                               DeviceAdapter* deviceAdapter=nullptr);
         RESULT  Resize(USINT width, USINT height);
-		void     ClearFrame(DECOLOR color);
+		  void     ClearFrame(DECOLOR color);
         void     ClearFrame(INT grayLevel);
         void     Present();
         void     PresentReady();
+        RenderTexture*  GetFrontFrameBuffer();
+        RenderTexture*  GetNextFrameBuffer();
+        void     RemoveFrameBuffers();
 
         inline void   SetDeviceAdapter(DeviceAdapter* adapter);
         inline USINT  GetWidth() const;
         inline USINT  GetHeight() const;
-        inline RenderTexture*  GetFrameBuffer();
+        inline USINT  GetFrameBufferNum() const;
 
         Device(const Device & other) = delete;
         Device & operator=(const Device & other) = delete;
 
 	private:
-		std::condition_variable  m_cond;
-		std::mutex                       m_mutex;
-		bool                                m_present;
+		  std::condition_variable  m_cond;
+		  std::mutex                       m_mutex;
+		  bool                                m_present;
 
     protected:
-        SREVAR                 m_bufferFormat;
-
-        USINT                   m_front;
-	    RenderTexture     m_frameBuffers[2];
-        DeviceAdapter*     m_pDeviceAdapter;
+        CLList<RenderTexture*>              m_framebuffers;
+        CLList<RenderTexture*>::Iterator m_front;
+        DeviceAdapter*                            m_pDeviceAdapter;
 
 	};
 
@@ -113,21 +116,20 @@ namespace SRE {
 		m_pDeviceAdapter = adapter;
 	}
 
-	RenderTexture* Device::GetFrameBuffer()
-	{
-		return &m_frameBuffers[m_front];
-	}
-
     USINT Device::GetWidth() const
     {
-    	return m_frameBuffers[m_front].GetWidth();
+    	return m_front->data->GetWidth();
     }
 
     USINT Device::GetHeight() const
     {
-    	return m_frameBuffers[m_front].GetHeight();
+    	return m_front->data->GetHeight();
     }
 
+    USINT Device::GetFrameBufferNum() const
+    {
+       return m_framebuffers.Size();
+    }
 
 
 #ifdef _SRE_PLATFORM_WIN_

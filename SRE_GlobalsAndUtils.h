@@ -66,25 +66,25 @@ namespace SRE {
     class BaseContainer;
     class BaseTask;
 
-	class Vector;
-	class Vector2;
-	class Vector3;
-	class Vector4;
-	class Matrix;
-	class Matrix3x3;
-	class Matrix4x4;
+	 class Vector;
+	 class Vector2;
+	 class Vector3;
+	 class Vector4;
+	 class Matrix;
+	 class Matrix3x3;
+	 class Matrix4x4;
     class Quaternion;
 
     class BaseMesh;
     class TriangleMesh;
-	class BaseMeshManager;
-	class TriangleMeshManager;
+	 class BaseMeshManager;
+	 class TriangleMeshManager;
 
     class Color3;
     class Color4;
 
     template <typename T>
-	class Buffer;
+	 class Buffer;
     class VertexBuffer;
     class RenderTexture;
 
@@ -97,13 +97,13 @@ namespace SRE {
     class BasicProcessor;
     class BasePipeLine;
 
-    class SREPipeLine;
     class InputAssembler;
     class VertexProcessor;
     class VertexPostProcessor;
     class PrimitiveAssembler;
     class Rasterizer;
     class PixelProcessor;
+    class SREPipeLine;
     //class OutputMerger;
 
     class VariableBuffer;
@@ -131,36 +131,36 @@ namespace SRE {
     typedef unsigned char        BYTE;
 
     typedef Vector     VEC;
-	typedef Vector2   VEC2;
-	typedef Vector3   VEC3;
-	typedef Vector4   VEC4;
-	typedef Vector  * PVEC;
-	typedef Vector2 * PVEC2;
-	typedef Vector3 * PVEC3;
-	typedef Vector4 * PVEC4;
-	typedef const Vector  * CPVEC;
-	typedef const Vector2 * CPVEC2;
-	typedef const Vector3 * CPVEC3;
-	typedef const Vector4 * CPVEC4;
+	 typedef Vector2   VEC2;
+	 typedef Vector3   VEC3;
+	 typedef Vector4   VEC4;
+	 typedef Vector  * PVEC;
+	 typedef Vector2 * PVEC2;
+	 typedef Vector3 * PVEC3;
+	 typedef Vector4 * PVEC4;
+	 typedef const Vector  * CPVEC;
+	 typedef const Vector2 * CPVEC2;
+	 typedef const Vector3 * CPVEC3;
+	 typedef const Vector4 * CPVEC4;
 
-	typedef Vector2 VERTEX2;
+	 typedef Vector2 VERTEX2;
     typedef Vector3 VERTEX3;
-	typedef Vector4 VERTEX4;
+	 typedef Vector4 VERTEX4;
     typedef Vector2 * PVERTEX2;
     typedef Vector3 * PVERTEX3;
-	typedef Vector4 * PVERTEX4;
-	typedef const Vector2 * CPVERTEX2;
-	typedef const Vector3 * CPVERTEX3;
-	typedef const Vector4 * CPVERTEX4;
+	 typedef Vector4 * PVERTEX4;
+	 typedef const Vector2 * CPVERTEX2;
+	 typedef const Vector3 * CPVERTEX3;
+	 typedef const Vector4 * CPVERTEX4;
 
-	typedef Matrix3x3 MAT33;
-	typedef Matrix4x4 MAT44;
-	typedef Matrix3x3 * PMAT33;
-	typedef Matrix4x4 * PMAT44;
-	typedef const Matrix3x3 * CPMAT33;
-	typedef const Matrix4x4 * CPMAT44;
+	 typedef Matrix3x3 MAT33;
+	 typedef Matrix4x4 MAT44;
+	 typedef Matrix3x3 * PMAT33;
+	 typedef Matrix4x4 * PMAT44;
+	 typedef const Matrix3x3 * CPMAT33;
+	 typedef const Matrix4x4 * CPMAT44;
 
-	typedef Quaternion    QUAT;
+	 typedef Quaternion    QUAT;
     typedef Quaternion * PQUAT;
     typedef const Quaternion * CPQUAT;
 
@@ -176,13 +176,15 @@ namespace SRE {
 
     typedef Color4 DECOLOR;
     typedef Color4 RTCOLOR;
+    typedef Buffer<FLOAT> ZBUFFER;
+    typedef Color4  VCOLOR;
 
     //==============================
     //Global variables
     //
     //==============================
     const FLOAT EPSILON = 0.000001;
-    const FLOAT PI      = 3.1415926;
+    const FLOAT PI          = 3.1415926;
 
     const int INDEX_END_FLAG = -1;
 
@@ -218,27 +220,28 @@ namespace SRE {
       Vertex normal, 3 floating point data
     */
     const SREVAR SRE_FORMAT_ATTRIBUTE_NORMAL=0x00000008;
+   /*
+      Vertex texture coordinate set , in UV order
+    */
+    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORDUV=0x00000010;
+    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORDUVW=0x0000020;
     /*
       Vertex diffuse color, in ARGB order,3 floating point data
     */
-    const SREVAR SRE_FORMAT_ATTRIBUTE_DIFFUSE=0x00000010;
+    const SREVAR SRE_FORMAT_ATTRIBUTE_DIFFUSE=0x00000040;
     /*
       Vertex specular color, in ARGB order,3 floating point data
     */
-    const SREVAR SRE_FORMAT_ATTRIBUTE_SPECULAR=0x00000020;
+    const SREVAR SRE_FORMAT_ATTRIBUTE_SPECULAR=0x00000080;
     /*
       Vertex bi-normal, 3 floating point data
     */
-    const SREVAR SRE_FORMAT_ATTRIBUTE_BINORMAL=0x00000040;
+    const SREVAR SRE_FORMAT_ATTRIBUTE_BINORMAL=0x00000100;
     /*
       Vertex tangent, 3 floating point data
     */
-    const SREVAR SRE_FORMAT_ATTRIBUTE_TANGENT=0x00000080;
-    /*
-      Vertex texture coordinate set , in UV order
-    */
-    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORDUV=0x00000100;
-    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORDUVW=0x00000200;
+    const SREVAR SRE_FORMAT_ATTRIBUTE_TANGENT=0x00000200;
+
     /* 1111 1111 1111 1111 1111 1111 1111 1111
       Some other vertex data
     */

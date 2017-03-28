@@ -245,6 +245,9 @@ namespace SRE {
 	//
 	//=============================
 	RenderTexture::RenderTexture(const RenderTexture & other):
+       m_mutex(),
+       m_cond(),
+       m_lock(false),
 	    m_width(other.m_width),
 	    m_height(other.m_height),
 	    m_pdata(nullptr),
@@ -312,8 +315,11 @@ namespace SRE {
         if(width <=0) return  RESULT::INVALIDARG;
         if(height <=0) return  RESULT::INVALIDARG;
 
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_cond.wait(lock, [this]{return !m_lock;});
+
         if(nullptr != m_pdata)
-			delete[] m_pdata;
+		   	delete[] m_pdata;
 
         if(nullptr != m_pdata) delete[] m_pdata;
 
@@ -327,7 +333,7 @@ namespace SRE {
     }
 
 
-    void  RenderTexture::DrawSquare(USINT sx, USINT sy, USINT ex, USINT ey, RTCOLOR color)
+    void  RenderTexture::DrawSquare(INT sx, INT sy, INT ex, INT ey, RTCOLOR color)
     {
 		for(USINT py=sy; py<=ey; py++)
             for(USINT px=sx; px<=ex; px++)
@@ -337,11 +343,32 @@ namespace SRE {
     }
 
 
-	void  RenderTexture::Clear(RTCOLOR color)
+	 void  RenderTexture::Clear(RTCOLOR color)
     {
     	INT size=m_width*m_height;
 		for(INT i=0; i<size; i++)
 				*(m_pdata+i) = color;
+    }
+
+    void RenderTexture::Lock()
+    {
+       std::unique_lock<std::mutex> lock(std::mutex);
+       m_lock = true;
+    }
+
+    void RenderTexture::Unlock()
+    {
+       std::unique_lock<std::mutex> lock(std::mutex);
+       m_lock = false;
+       m_cond.notify_one();
+    }
+
+    RTCOLOR* RenderTexture::Wait_Get()
+    {
+       std::unique_lock<std::mutex> lock(m_mutex);
+       m_cond.wait(lock, [this]{return !m_lock;});
+
+       return m_pdata;
     }
 
 }

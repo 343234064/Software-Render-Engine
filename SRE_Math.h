@@ -21,83 +21,114 @@ namespace SRE {
 	//Public functions
 	//
 	//=============================
-    inline FLOAT Clamp(const FLOAT value, const FLOAT fmin, const FLOAT fmax);
-    inline FLOAT Lerp(const FLOAT starting, const FLOAT ending, const FLOAT factor);
-    inline FLOAT Lerp(const FLOAT x1y1, const FLOAT x1y2, const FLOAT x2y1, const FLOAT x2y2,
-                      const FLOAT fx, const FLOAT fy);
-    inline FLOAT Bicp(const FLOAT v0, const FLOAT w0,
-                      const FLOAT v1, const FLOAT w1,
-                      const FLOAT v2);
+    //=============================
+	//Clamp
+	//=============================
+    template<typename T>
+    inline T Clamp(const T value, const T fmin, const T fmax)
+    {
+        return value >= fmax ? fmax: (value > fmin ? value : fmin);
+    }
+
+    //=============================
+	//1D Linear interpolation
+	//=============================
+    template<typename T>
+    inline T Lerp(const T starting, const T ending, const FLOAT factor)
+    {
+        return starting+(ending-starting)*factor;
+    }
+
+    //=============================
+	//2D Linear interpolation
+	//x1y1: the value in (x1,y1),
+	//x2y2: the value in (x2,y2), etc..
+	//
+	//return the value in (fx,fy)
+	//=============================
+    template<typename T>
+    inline T Lerp(const T x1y1, const T x1y2, const T x2y1, const T x2y2,
+                         const FLOAT fx, const FLOAT fy)
+    {
+        return fx*fy*(x1y1 - x1y2 - x2y1 + x2y2) - fy*(x1y1 - x1y2)  - fx*(x1y1 - x2y1) + x1y1;
+    }
+
+   //=============================
+	//Barycentric interpolation
+	//=============================
+    template<typename T>
+    inline T  Bicp(const T v0, const FLOAT w0,
+                         const T v1, const FLOAT w1,
+                         const T v2)
+    {
+        return (v0 - v2)*w0 + (v1 - v2)*w1 + v2;
+    }
+
 
 
 	//=============================
 	//Vector functions
 	//
 	//=============================
-	inline PVEC3   Cross    (PVEC3   out, CPVEC3 vec1, CPVEC3 vec2);
-	inline VEC3    Cross    (VEC3 vec1, VEC3 vec2);
-	inline FLOAT   Dot      (CPVEC  vec1, CPVEC  vec2);
-	inline FLOAT   Dot      (CPVEC2 vec1, CPVEC2 vec2);
-	inline FLOAT   Dot      (CPVEC3 vec1, CPVEC3 vec2);
-	inline FLOAT   Dot      (CPVEC4 vec1, CPVEC4 vec2);
-	inline FLOAT   Lenth(CPVEC  vec);
-	inline FLOAT   Lenth(CPVEC2 vec);
-	inline FLOAT   Lenth(CPVEC3 vec);
-	inline FLOAT   Lenth(CPVEC4 vec);
-	inline PVEC    Normalize(PVEC  vec);
-	inline PVEC2   Normalize(PVEC2 vec);
-	inline PVEC3   Normalize(PVEC3 vec);
-	inline PVEC4   Normalize(PVEC4 vec);
-    inline VEC2    Lerp(VEC2 & starting, VEC2 & ending, FLOAT factor);
-    inline VEC3    Lerp(VEC3 & starting, VEC3 & ending, FLOAT factor);
-    inline VEC4    Lerp(VEC4 & starting, VEC4 & ending, FLOAT factor);
-    inline VEC2    BaryInterpolate(VEC2 & v0, FLOAT w0, VEC2 & v1, FLOAT w1, VEC2 & v2);
-    inline VEC3    BaryInterpolate(VEC3 & v0, FLOAT w0, VEC3 & v1, FLOAT w1, VEC3 & v2);
-    inline VEC4    BaryInterpolate(VEC4 & v0, FLOAT w0, VEC4 & v1, FLOAT w1, VEC4 & v2);
+	inline VEC3     Cross   (VEC3& vec1, VEC3& vec2);
+	inline FLOAT   Dot      (VEC2& vec1, VEC2& vec2);
+	inline FLOAT   Dot      (VEC3& vec1, VEC3& vec2);
+	inline FLOAT   Dot      (VEC4& vec1, VEC4& vec2);
+   inline FLOAT   Lenth(VEC2& vec);
+	inline FLOAT   Lenth(VEC3& vec);
+	inline FLOAT   Lenth(VEC4& vec);
+   inline VEC2&   Normalize(VEC2& vec);
+	inline VEC3&   Normalize(VEC3& vec);
+	inline VEC4&   Normalize(VEC4& vec);
+   inline VEC2     Lerp(VEC2 & starting, VEC2 & ending, FLOAT factor);
+   inline VEC3     Lerp(VEC3 & starting, VEC3 & ending, FLOAT factor);
+   inline VEC4     Lerp(VEC4 & starting, VEC4 & ending, FLOAT factor);
+   inline VEC2     BaryInterpolate(VEC2 & v0, FLOAT w0, VEC2 & v1, FLOAT w1, VEC2 & v2);
+   inline VEC3     BaryInterpolate(VEC3 & v0, FLOAT w0, VEC3 & v1, FLOAT w1, VEC3 & v2);
+   inline VEC4     BaryInterpolate(VEC4 & v0, FLOAT w0, VEC4 & v1, FLOAT w1, VEC4 & v2);
 
 
 	//=============================
 	//Matrix functions
 	//
 	//=============================
-	PMAT33   Transpose(PMAT33 out, CPMAT33 mat);
-	PMAT44   Transpose(PMAT44 out, CPMAT44 mat);
-	FLOAT     Determinant(CPMAT33 out);
-	FLOAT     Determinant(CPMAT44 out);
-	PMAT33   Identity(PMAT33 out);
-	PMAT44   Identity(PMAT44 out);
-	PMAT33   Multiply(PMAT33 out, CPMAT33 mat1, CPMAT33 mat2);
-    PMAT44   Multiply(PMAT44 out, CPMAT44 mat1, CPMAT44 mat2);
-    bool       Inverse(PMAT33 out, CPMAT33 mat);
-	bool       Inverse(PMAT44 out, CPMAT44 mat);/*!!to be tested and optimized!!*/
-
-
-
-    //=============================
-	//Quaternion functions
-	//
-	//=============================
-    FLOAT    Length(CPQUAT quat);
-    FLOAT    Dot(CPQUAT quat1, CPQUAT quat2);
-    PVEC3    Cross(PVEC3 out, CPQUAT quat1, CPQUAT quat2);
-	bool      Inverse(PQUAT out, CPQUAT quat);
-	PQUAT    Identity(PQUAT quat);
-	PQUAT    Exponent(PQUAT out, CPQUAT quat, const FLOAT exponent);
-    PQUAT    Multiply(PQUAT out, CPQUAT quat1, CPQUAT quat2);
-    PQUAT    Slerp(PQUAT out, CPQUAT starting, CPQUAT ending, FLOAT factor);
-    PQUAT    Normalize(PQUAT quat);
-    PQUAT    QuaternionFromRotateAxis(PQUAT out, CPVEC3 axis, const FLOAT angle);
-    PQUAT    QuaternionFromRotateYawPitchRoll(PQUAT out, const FLOAT yaw, const FLOAT pitch, const FLOAT roll);
-
-
+	PMAT33   Multiply(PMAT33 out, PMAT33 mat1, PMAT33 mat2);
+   PMAT44   Multiply(PMAT44 out, PMAT44 mat1, PMAT44 mat2);
+	PMAT33   Transpose(PMAT33 out, PMAT33 mat);
+	PMAT44   Transpose(PMAT44 out, PMAT44 mat);
+	MAT44&   Transpose(MAT44& out);
+	FLOAT      Determinant(MAT33& out);
+	FLOAT      Determinant(MAT44& out);
+	MAT33&   Identity(MAT33& out);
+	MAT44&   Identity(MAT44& out);
+   bool        Inverse(PMAT33 out, PMAT33 mat);
+   bool        Inverse(PMAT44 out, PMAT44 mat);/*!!to be tested and optimized!!*/
 
 
 	//=============================
 	//Other functions
 	//
 	//=============================
-	PVEC3    Multiply(PVEC3 out, CPVEC3 vec, CPMAT33 mat);
-	PVEC4    Multiply(PVEC4 out, CPVEC4 vec, CPMAT44 mat);
+	VEC3      Multiply(VEC3& vec, MAT33& mat);
+	VEC4      Multiply(VEC4& vec, MAT44& mat);
+
+
+   //=============================
+	//Quaternion functions
+	//
+	//=============================
+    FLOAT     Length(QUAT& quat);
+    FLOAT     Dot(QUAT& quat1, QUAT& quat2);
+    VEC3       Cross(QUAT& quat1, QUAT& quat2);
+	 QUAT&    Inverse(QUAT& out);
+	 QUAT&    Identity(QUAT& quat);
+	 QUAT      Exponent(QUAT& quat, const FLOAT exponent);
+    QUAT      Multiply(QUAT& quat1, QUAT& quat2);
+    QUAT      Slerp(QUAT& starting, QUAT& ending, FLOAT factor);
+    QUAT&    Normalize(QUAT& quat);
+    QUAT      QuaternionFromRotateAxis(VEC3& axis, const FLOAT angle);
+    QUAT      QuaternionFromRotateYawPitchRoll(const FLOAT yaw, const FLOAT pitch, const FLOAT roll);
+
 
 
 
@@ -107,46 +138,34 @@ namespace SRE {
 	//Transform
 	//
 	//=============================
-	PMAT33 MatrixTranslation(PMAT33 out, const FLOAT tx, const FLOAT ty);
-	PMAT44 MatrixTranslation(PMAT44 out, const FLOAT tx, const FLOAT ty, const FLOAT tz);
-	PMAT33 MatrixScaling(PMAT33 out, const FLOAT sx, const FLOAT sy, const FLOAT sz);
-	PMAT44 MatrixScaling(PMAT44 out, const FLOAT sx, const FLOAT sy, const FLOAT sz, FLOAT sw);
-	PMAT33 MatrixScalingAxis(PMAT33 out, CPVEC3 axis, const FLOAT scale);
-	PMAT44 MatrixScalingAxis(PMAT44 out, CPVEC3 axis, const FLOAT scale);
-	PMAT33 MatrixScalingUVW(PMAT33 out, CPVEC3 u, const FLOAT u_scale,
-                                        CPVEC3 v, const FLOAT v_scale,
-                                        CPVEC3 w, const FLOAT w_scale);
-	PMAT44 MatrixScalingUVW(PMAT44 out, CPVEC3 u, const FLOAT u_scale,
-                                        CPVEC3 v, const FLOAT v_scale,
-                                        CPVEC3 w, const FLOAT w_scale);
-    PMAT33 MatrixRotationX(PMAT33 out, const FLOAT angle);
-    PMAT44 MatrixRotationX(PMAT44 out, const FLOAT angle);
-    PMAT33 MatrixRotationY(PMAT33 out, const FLOAT angle);
-    PMAT44 MatrixRotationY(PMAT44 out, const FLOAT angle);
-    PMAT33 MatrixRotationZ(PMAT33 out, const FLOAT angle);
-    PMAT44 MatrixRotationZ(PMAT44 out, const FLOAT angle);
-    PMAT33 MatrixRotationAxis(PMAT33 out, CPVEC3 axis, const FLOAT angle);
-    PMAT44 MatrixRotationAxis(PMAT44 out, CPVEC3 axis, const FLOAT angle);
-    PMAT33 MatrixRotationYawPitchRoll(PMAT33 out, const FLOAT yaw, const FLOAT pitch, const FLOAT roll);
-    PMAT44 MatrixRotationYawPitchRoll(PMAT44 out, const FLOAT yaw, const FLOAT pitch, const FLOAT roll);
-    PMAT33 MatrixRotationQuaternion(PMAT33 out, CPQUAT quat);
-    PMAT44 MatrixRotationQuaternion(PMAT44 out, CPQUAT quat);
-    PMAT44 MatrixViewLookAt(PMAT44 out, CPVEC3 pos, CPVEC3 lookAt, CPVEC3 up);
-    PMAT44 MatrixViewYawPitchRoll(PMAT44 out, CPVEC3 pos, const FLOAT yaw, const FLOAT pitch, const FLOAT roll);
-    PMAT44 MatrixViewQuaternion(PMAT44 out, CPVEC3 pos, CPQUAT quat);/*to be test!!*/
-    PMAT44 MatrixProjectOrthogonal(PMAT44 out, const FLOAT view_width, const FLOAT view_height,
-                          const FLOAT znear, const FLOAT zfar);
-    PMAT44 MatrixProjectOrthonalOffCenter(PMAT44 out, const FLOAT left, const FLOAT right, const FLOAT top, const FLOAT bottom,
-                          const FLOAT znear, const FLOAT zfar);
-    PMAT44 MatrixProjectPerspective(PMAT44 out, const FLOAT view_width, const FLOAT view_height,
-                          const FLOAT znear, const FLOAT zfar);
-    PMAT44 MatrixProjectPerspectiveOffCenter(PMAT44 out, const FLOAT left, const FLOAT right, const FLOAT top, const FLOAT bottom,
-                          const FLOAT znear, const FLOAT zfar);
-    PMAT44 MatrixProjectPerspectiveFOV(PMAT44 out, const FLOAT fov, const FLOAT aspectRatio, const FLOAT znear, const FLOAT zfar);
+	MAT44 MatrixTranslation(const FLOAT tx, const FLOAT ty, const FLOAT tz);
+	MAT44 MatrixScaling(const FLOAT sx, const FLOAT sy, const FLOAT sz, FLOAT sw);
+	MAT44 MatrixScalingAxis(VEC3& axis, const FLOAT scale);
+	MAT44 MatrixScalingUVW(VEC3& u, const FLOAT u_scale,
+                                         VEC3& v, const FLOAT v_scale,
+                                         VEC3& w, const FLOAT w_scale);
+   MAT44 MatrixRotationX(const FLOAT angle);
+   MAT44 MatrixRotationY(const FLOAT angle);
+   MAT44 MatrixRotationZ(const FLOAT angle);
+   MAT44 MatrixRotationAxis(VEC3& axis, const FLOAT angle);
+   MAT44 MatrixRotationYawPitchRoll(const FLOAT yaw, const FLOAT pitch, const FLOAT roll);
+   MAT44 MatrixRotationQuaternion(QUAT& quat);
+   MAT44 MatrixViewLookAt(VEC3& pos, VEC3& lookAt, VEC3& up);
+   MAT44 MatrixViewYawPitchRoll(VEC3& pos, const FLOAT yaw, const FLOAT pitch, const FLOAT roll);
+   MAT44 MatrixViewQuaternion(VEC3& pos, QUAT& quat);/*to be test!!*/
+   MAT44 MatrixProjectOrthogonal(const FLOAT view_width, const FLOAT view_height,
+                                                   const FLOAT znear, const FLOAT zfar);
+   MAT44 MatrixProjectOrthonalOffCenter(const FLOAT left, const FLOAT right, const FLOAT top, const FLOAT bottom,
+                                                                const FLOAT znear, const FLOAT zfar);
+   MAT44 MatrixProjectPerspective(const FLOAT view_width, const FLOAT view_height,
+                                                      const FLOAT znear, const FLOAT zfar);
+   MAT44 MatrixProjectPerspectiveOffCenter(const FLOAT left, const FLOAT right, const FLOAT top, const FLOAT bottom,
+                                                                  const FLOAT znear, const FLOAT zfar);
+   MAT44 MatrixProjectPerspectiveFOV(const FLOAT fov, const FLOAT aspectRatio, const FLOAT znear, const FLOAT zfar);
 
 
 
-    //=============================
+   //=============================
 	//Class Color
 	//
 	//=============================
@@ -158,7 +177,18 @@ namespace SRE {
         {}
         ~Color3(){}
 
-        inline Color3 & operator=(const Color4& color);
+      inline Color3 & operator=(const Color4& color);
+      inline bool    operator == (const Color3 &) const;
+		inline bool    operator != (const Color3 &) const;
+		inline Color3  operator +  (const Color3 &) const;
+		inline Color3  operator -  (const Color3 &) const;
+		inline Color3  operator -  () const;
+      inline friend Color3 operator *  (FLOAT, const Color3 &);
+		inline friend Color3 operator *  (const Color3 &, FLOAT);
+		inline friend Color3 operator +  (FLOAT, const Color3 &);
+		inline friend Color3 operator +  (const Color3 &, FLOAT);
+		inline friend Color3 operator -  (FLOAT, const Color3 &);
+		inline friend Color3 operator -  (const Color3 &, FLOAT);
 
     public:
         BYTE b;
@@ -180,7 +210,18 @@ namespace SRE {
 		{}
         ~Color4(){}
 
-        inline Color4 & operator=(const Color3& color);
+      inline Color4 & operator=(const Color3& color);
+		inline bool    operator == (const Color4 &) const;
+		inline bool    operator != (const Color4 &) const;
+		inline Color4  operator +  (const Color4 &) const;
+		inline Color4  operator -  (const Color4 &) const;
+		inline Color4  operator -  () const;
+      inline friend Color4 operator *  (FLOAT, const Color4 &);
+		inline friend Color4 operator *  (const Color4 &, FLOAT);
+		inline friend Color4 operator +  (FLOAT, const Color4 &);
+		inline friend Color4 operator +  (const Color4 &, FLOAT);
+		inline friend Color4 operator -  (FLOAT, const Color4 &);
+		inline friend Color4 operator -  (const Color4 &, FLOAT);
 
     public:
         BYTE a;
@@ -194,11 +235,125 @@ namespace SRE {
 		return *this;
 	}
 
+   bool    Color3::operator == (const Color3 & col) const
+   {
+      return r==col.r && g==col.g && b==col.b ;
+   }
+
+	bool    Color3::operator != (const Color3 & col) const
+	{
+	   return r!=col.r || g!=col.g || b!=col.b ;
+	}
+
+	Color3  Color3::operator +  (const Color3 & col) const
+	{
+	   return Color3(r+col.r, g+col.g, b+col.b);
+	}
+
+	Color3  Color3::operator -  (const Color3 & col) const
+	{
+	   return Color3(r-col.r, g-col.g, b-col.b);
+	}
+
+	Color3  Color3::operator -  () const
+	{
+	   return Color3(-r, -g, -b);
+	}
+
+   Color3 operator *  (FLOAT fac, const Color3 & col)
+   {
+      return Color3(fac*col.r, fac*col.g, fac*col.b);
+
+   }
+
+	Color3 operator *  (const Color3 & col, FLOAT fac)
+	{
+	   return Color3(fac*col.r, fac*col.g, fac*col.b);
+	}
+
+	Color3 operator +  (FLOAT fac, const Color3 & col)
+	{
+	   return Color3(fac+col.r, fac+col.g, fac+col.b);
+	}
+
+	Color3 operator +  (const Color3 & col, FLOAT fac)
+	{
+      return Color3(fac+col.r, fac+col.g, fac+col.b);
+	}
+
+	Color3 operator -  (FLOAT fac, const Color3 & col)
+	{
+	   return Color3(fac-col.r, fac-col.g, fac-col.b);
+	}
+
+   Color3 operator -  (const Color3 & col, FLOAT fac)
+   {
+      return Color3(col.r-fac, col.g-fac, col.b-fac);
+   }
+
+
+
 	Color4 & Color4::operator=(const Color3& color)
 	{
 		b=color.b;g=color.g;r=color.r;a=255;
 		return *this;
 	}
+
+   bool    Color4::operator == (const Color4 & col) const
+   {
+      return r==col.r && g==col.g && b==col.b && a==col.a;
+   }
+
+	bool    Color4::operator != (const Color4 & col) const
+	{
+	   return r!=col.r || g!=col.g || b!=col.b || a!=col.a;
+	}
+
+	Color4  Color4::operator +  (const Color4 & col) const
+	{
+	   return Color4(r+col.r, g+col.g, b+col.b, a+col.a);
+	}
+
+	Color4  Color4::operator -  (const Color4 & col) const
+	{
+	   return Color4(r-col.r, g-col.g, b-col.b, a-col.a);
+	}
+
+	Color4  Color4::operator -  () const
+	{
+	   return Color4(-r, -g, -b, -a);
+	}
+
+   Color4 operator *  (FLOAT fac, const Color4 & col)
+   {
+      return Color4(fac*col.r, fac*col.g, fac*col.b, fac*col.a);
+
+   }
+
+	Color4 operator *  (const Color4 & col, FLOAT fac)
+	{
+	   return Color4(fac*col.r, fac*col.g, fac*col.b, fac*col.a);
+	}
+
+	Color4 operator +  (FLOAT fac, const Color4 & col)
+	{
+	   return Color4(fac+col.r, fac+col.g, fac+col.b, fac+col.a);
+	}
+
+	Color4 operator +  (const Color4 & col, FLOAT fac)
+	{
+      return Color4(fac+col.r, fac+col.g, fac+col.b, fac+col.a);
+	}
+
+	Color4 operator -  (FLOAT fac, const Color4 & col)
+	{
+	   return Color4(fac-col.r, fac-col.g, fac-col.b, fac-col.a);
+	}
+
+   Color4 operator -  (const Color4 & col, FLOAT fac)
+   {
+      return Color4(col.r-fac, col.g-fac, col.b-fac, col.a-fac);
+   }
 
 
 	//==============================
@@ -291,15 +446,15 @@ namespace SRE {
 		inline VEC3    operator -  () const;
 		inline VEC3 &  operator =  (const VEC4 &);
 		inline VEC3 &  operator =  (const VEC3 &);
-        inline VEC3 &  operator =  (const VEC2 &);
-        inline VEC3 &  operator =  (const VEC  &);
+      inline VEC3 &  operator =  (const VEC2 &);
+      inline VEC3 &  operator =  (const VEC  &);
 
 		inline friend VEC3 operator *  (FLOAT, const VEC3 &);
-        inline friend VEC3 operator *  (const VEC3 &, FLOAT);
+      inline friend VEC3 operator *  (const VEC3 &, FLOAT);
 		inline friend VEC3 operator +  (FLOAT, const VEC3 &);
-        inline friend VEC3 operator +  (const VEC3 &, FLOAT);
+      inline friend VEC3 operator +  (const VEC3 &, FLOAT);
 		inline friend VEC3 operator -  (FLOAT, const VEC3 &);
-        inline friend VEC3 operator -  (const VEC3 &, FLOAT);
+      inline friend VEC3 operator -  (const VEC3 &, FLOAT);
 
 	public:
 		FLOAT z;
@@ -332,10 +487,10 @@ namespace SRE {
 		inline VEC4    operator +  (const VEC4 &) const;
 		inline VEC4    operator -  (const VEC4 &) const;
 		inline VEC4    operator -  () const;
-        inline VEC4 &  operator =  (const VEC4 &);
-        inline VEC4 &  operator =  (const VEC3 &);
-        inline VEC4 &  operator =  (const VEC2 &);
-        inline VEC4 &  operator =  (const VEC  &);
+      inline VEC4 &  operator =  (const VEC4 &);
+      inline VEC4 &  operator =  (const VEC3 &);
+      inline VEC4 &  operator =  (const VEC2 &);
+      inline VEC4 &  operator =  (const VEC  &);
 		inline friend VEC4 operator *  (FLOAT, const VEC4 &);
 		inline friend VEC4 operator *  (const VEC4 &, FLOAT);
 		inline friend VEC4 operator +  (FLOAT, const VEC4 &);
@@ -499,68 +654,12 @@ namespace SRE {
 	//
 	//
 	//=============================
-    //=============================
-	//Clamp
-	//
-	//
-	//=============================
-    FLOAT Clamp(const FLOAT value, const FLOAT fmin, const FLOAT fmax)
-    {
-        return value >= fmax ? fmax: (value > fmin ? value : fmin);
-    }
-
-    //=============================
-	//Linear interpolation
-	//=============================
-    FLOAT Lerp(const FLOAT starting, const FLOAT ending, const FLOAT factor)
-    {
-        return starting+(ending-starting)*factor;
-    }
-
-    //=============================
-	//2D Linear interpolation
-	//=============================
-    FLOAT Lerp(const FLOAT x1y1, const FLOAT x1y2, const FLOAT x2y1, const FLOAT x2y2,
-               const FLOAT fx, const FLOAT fy)
-    {
-        return fx*fy*(x1y1 - x1y2 - x2y1 + x2y2) - fy*(x1y1 - x1y2)  - fx*(x1y1 - x2y1) + x1y1;
-    }
-
-    //=============================
-	//Barycentric interpolation
-	//=============================
-    FLOAT Bicp(const FLOAT v0, const FLOAT w0,
-               const FLOAT v1, const FLOAT w1,
-               const FLOAT v2)
-    {
-        return (v0 - v2)*w0 + (v1 - v2)*w1 + v2;
-    }
-
-
 	//=============================
 	//Cross product
 	//
 	//vector3 x vector3
 	//=============================
-	PVEC3 Cross(PVEC3 out, CPVEC3 vec1, CPVEC3 vec2) {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == vec1 || nullptr == vec2)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-		out->x = vec1->y*vec2->z - vec1->z*vec2->y;
-		out->y = vec1->z*vec2->x - vec1->x*vec2->z;
-		out->z = vec1->x*vec2->y - vec1->y*vec2->x;
-
-		return out;
-	}
-
-
-    VEC3 Cross(VEC3 vec1, VEC3 vec2) {
+    VEC3 Cross(VEC3& vec1, VEC3& vec2) {
 
 
       return VEC3(vec1.y*vec2.z - vec1.z*vec2.y,
@@ -568,64 +667,30 @@ namespace SRE {
 		          vec1.x*vec2.y - vec1.y*vec2.x);
 
 	}
-	//=============================
-	//Dot product
-	//
-	//vector * vector
-	//=============================
-	FLOAT Dot(CPVEC vec1, CPVEC vec2) {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == vec1 || nullptr == vec2)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return  0.0;
-        }
-#endif
-
-		return vec1->x * vec2->x;
-	}
-
-
-	//=============================
+   //=============================
 	//Dot product
 	//
 	//vector2 * vector2
 	//=============================
-	FLOAT Dot(CPVEC2 vec1, CPVEC2 vec2) {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == vec1 || nullptr == vec2)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return 0.0;
-        }
-#endif
-
-		return vec1->x*vec2->x + vec1->y*vec2->y;
+	FLOAT Dot(VEC2& vec1, VEC2& vec2) {
+		return
+			vec1.x*vec2.x +
+			vec1.y*vec2.y;
 	}
-
 
 	//=============================
 	//Dot product
 	//
 	//vector3 * vector3
 	//=============================
-	FLOAT Dot(CPVEC3 vec1, CPVEC3 vec2) {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == vec1 || nullptr == vec2)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return 0.0;
-        }
-#endif
-
+	FLOAT Dot(VEC3& vec1, VEC3& vec2) {
 		return
-			vec1->x*vec2->x +
-			vec1->y*vec2->y +
-			vec1->z*vec2->z;
+			vec1.x*vec2.x +
+			vec1.y*vec2.y +
+			vec1.z*vec2.z;
 	}
+
 
 
 	//=============================
@@ -633,142 +698,59 @@ namespace SRE {
 	//
 	//vector4 * vector4
 	//=============================
-	FLOAT Dot(CPVEC4 vec1, CPVEC4 vec2) {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == vec1 || nullptr == vec2)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return 0.0;
-        }
-#endif
-
+	FLOAT Dot(VEC4& vec1, VEC4& vec2) {
 		return
-			vec1->x*vec2->x +
-			vec1->y*vec2->y +
-			vec1->z*vec2->z +
-			vec1->w*vec2->w;
+			vec1.x*vec2.x +
+			vec1.y*vec2.y +
+			vec1.z*vec2.z +
+			vec1.w*vec2.w;
 	}
 
 
-	//=============================
-	//Lenth of vector
-	//
-	//vector
-	//=============================
-	FLOAT Lenth (CPVEC vector) {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == vector)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return 0.0;
-        }
-#endif
-
-		if (vector->x > EPSILON)
-			return vector->x;
-		else if (vector->x < -EPSILON)
-			return -vector->x;
-	}
-
-
-	//=============================
+ //=============================
 	//Lenth of vector
 	//
 	//vector2
 	//=============================
-	FLOAT Lenth(CPVEC2 vector) {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == vector)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return 0.0;
-        }
-#endif
+	FLOAT Lenth(VEC2& vector) {
 
 		return (FLOAT)sqrt(
-			   vector->x*vector->x +
-			   vector->y*vector->y);
-	}
-
-
-	//=============================
-	//Lenth of vector
-	//
-	//vector3
-	//=============================
-	FLOAT Lenth(CPVEC3 vector) {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == vector)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return 0.0;
-        }
-#endif
-
-		return (FLOAT)sqrt(
-			    vector->x*vector->x +
-			    vector->y*vector->y +
-			    vector->z*vector->z);
-	}
-
-
-	//=============================
-	//Lenth of vector
-	//
-	//vector4
-	//=============================
-	FLOAT Lenth(CPVEC4 vector) {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == vector)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return 0.0;
-        }
-#endif
-
-
-		return (FLOAT)sqrt(
-			vector->x*vector->x +
-			vector->y*vector->y +
-			vector->z*vector->z +
-			vector->w*vector->w);
+			vector.x*vector.x +
+			vector.y*vector.y);
     }
 
 
+
 	//=============================
-	//Normalize
+	//Lenth of vector
 	//
-	//vector
+	//vector3
 	//=============================
-	PVEC Normalize (PVEC vector) {
+	FLOAT Lenth(VEC3& vector) {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == vector)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
+		return (FLOAT)sqrt(
+			vector.x*vector.x +
+			vector.y*vector.y +
+			vector.z*vector.z);
+    }
 
-		FLOAT len = Lenth(vector);
 
-		if ((len >= EPSILON) || (len <= -EPSILON))
-			vector->x = vector->x / len;
-        else
-        {
-#ifdef _SRE_DEBUG_
-            _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-#endif
 
-        }
+	//=============================
+	//Lenth of vector
+	//
+	//vector4
+	//=============================
+	FLOAT Lenth(VEC4& vector) {
 
-		return vector;
-	}
+		return (FLOAT)sqrt(
+			vector.x*vector.x +
+			vector.y*vector.y +
+			vector.z*vector.z +
+			vector.w*vector.w);
+    }
+
 
 
 	//=============================
@@ -776,66 +758,32 @@ namespace SRE {
 	//
 	//vector2
 	//=============================
-	PVEC2 Normalize(PVEC2 vector) {
+	VEC2& Normalize(VEC2& vector) {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == vector)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
+		FLOAT de = 1.0f/Lenth(vector);
 
-		FLOAT len = Lenth(vector);
-
-		if ((len >= EPSILON) || (len <= -EPSILON)){
-			vector->x = vector->x / len;
-			vector->y = vector->y / len;
-		}
-		else
-        {
-#ifdef _SRE_DEBUG_
-            _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-#endif
-
-        }
+      vector.x = vector.x*de;
+      vector.y = vector.y*de;
 
 		return vector;
-	}
 
+	}
 
 	//=============================
 	//Normalize
 	//
 	//vector3
 	//=============================
-	PVEC3 Normalize(PVEC3 vector) {
+	VEC3& Normalize(VEC3& vector) {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == vector)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
+		FLOAT de = 1.0f/Lenth(vector);
 
-		FLOAT len = Lenth(vector);
-
-		if ((len >= EPSILON) || (len <= -EPSILON)) {
-			vector->x = vector->x / len;
-			vector->y = vector->y / len;
-			vector->z = vector->z / len;
-		}
-		else
-        {
-
-#ifdef _SRE_DEBUG_
-            _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-#endif
-
-        }
+      vector.x = vector.x*de;
+      vector.y = vector.y*de;
+      vector.z = vector.z*de;
 
 		return vector;
+
 	}
 
 
@@ -844,36 +792,18 @@ namespace SRE {
 	//
 	//vector4
 	//=============================
-	PVEC4 Normalize(PVEC4 vector) {
+	VEC4& Normalize(VEC4& vector) {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == vector)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
+		FLOAT de = 1.0f/Lenth(vector);
 
-		FLOAT len = Lenth(vector);
-
-		if ((len >= EPSILON) || (len <= -EPSILON)) {
-			vector->x = vector->x / len;
-			vector->y = vector->y / len;
-			vector->z = vector->z / len;
-			vector->w = vector->w / len;
-		}
-		else
-        {
-#ifdef _SRE_DEBUG_
-            _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-#endif
-
-        }
+      vector.x = vector.x*de;
+      vector.y = vector.y*de;
+      vector.z = vector.z*de;
+      vector.w = vector.w*de;
 
 		return vector;
 
 	}
-
 
 	//=============================
 	//Linear Interpolation

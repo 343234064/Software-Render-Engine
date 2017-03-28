@@ -24,15 +24,6 @@ namespace SRE {
 	//Function definitions
 	//
 	//=============================
-	/*
-	RESULT CreatePointLineMesh(const INT vertexNumber,
-                              const SREVAR vertexFormat,
-                              const void * pVertexes,
-                              const SREVAR primitiveType,
-                              const Buffer* pVertexAttributes,
-                              PointLineMesh** ppOutPointLineMesh
-                              )
-    */
 	RESULT CreateTriangleMesh(const INT vertexNumber,
                               const SREVAR vertexFormat,
                               const INT vertexStructSize,
@@ -42,25 +33,13 @@ namespace SRE {
                               const SREVAR primitiveType,
                               TriangleMesh** ppOutTriangleMesh
                               );//maybe return shared_ptr?
-    /*
-    RESULT CreateTriangleMesh(const INT vertexNumber,
-                              const SREVAR vertexFormat,
-                              const void * pVertexes,
-                              const SREVAR primitiveType,
-                              const Buffer* pVertexAttributes,
-                              TriangleMesh** ppOutTriangleMesh
-                              );
-    RESULT CreateTriangleMesh(const INT vertexNumber,
-                              const void * pVertexes,
-                              const INT * pIndex,
-                              const SREVAR primitiveType,
-                              const SREVAR dataFlags,
-                              TriangleMesh** ppOutTriangleMesh
-                              );*/
+
     RESULT CreateTriangleMeshFromObj();
     RESULT CreateTriangleMeshFromPmx();
 
-
+    RESULT LoadObjMesh(char* filePath,
+                                     VertexBuffer** pp_OutVbuffer,
+                                     Buffer<INT>** pp_OutIbuffer);
 
 
 

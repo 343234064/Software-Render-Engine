@@ -19,29 +19,49 @@ namespace SRE {
 	//
 	//
 	//=============================
-    RESULT Device::Create(USINT frameWidth,
+   void Device::RemoveFrameBuffers()
+   {
+        if(m_framebuffers.Size()==0) return;
+        m_front = m_framebuffers.Begin();
+        do
+        {
+           delete m_front->data;
+           m_front = m_front->next;
+
+        }while(m_front != m_framebuffers.Begin());
+
+        m_framebuffers.Clear();
+   }
+
+   RESULT Device::Create(USINT frameWidth,
                                       USINT frameHeight,
-                                      SREVAR bufferFormat,
+                                      USINT framebufferNum,
                                       DeviceAdapter* deviceAdapter)
     {
         if(frameWidth<=0) return RESULT::INVALIDARG;
         if(frameHeight<=0) return RESULT::INVALIDARG;
+        if(framebufferNum<=0) return RESULT::INVALIDARG;
         if(deviceAdapter==nullptr) return RESULT::INVALIDARG;
 
-        //bufferFormat
-
         RESULT re;
-        re = m_frameBuffers[0].Create(frameWidth, frameHeight);
-		if(RESULT::SUCC != re)
-			return re;
+        for(INT i=0; i<framebufferNum; i++)
+        {
+            RenderTexture* rt = new RenderTexture();
+            if(nullptr == rt) return RESULT::OUTMEMORY;
 
-		re = m_frameBuffers[1].Create(frameWidth, frameHeight);
-		if(RESULT::SUCC != re)
-			return re;
+            re = rt->Create(frameWidth, frameHeight);
+            if(RESULT::SUCC != re)
+            {
+                  RemoveFrameBuffers();
+                  return re;
+            }
 
-        m_front = 0;
+            m_framebuffers.Add_back(rt);
+        }
+
+        m_front = m_framebuffers.Begin();
         m_pDeviceAdapter = deviceAdapter;
-        m_bufferFormat = bufferFormat;
+        m_present = false;
 
         return RESULT::SUCC;
     }
@@ -49,28 +69,35 @@ namespace SRE {
 
     void Device::ClearFrame(DECOLOR color)
     {
-        m_frameBuffers[m_front].Clear(color);
+        m_front->data->Clear(color);
     }
 
 
     void Device::ClearFrame(INT grayLevel)
     {
-        m_frameBuffers[m_front].Clear(grayLevel);
+        m_front->data->Clear(grayLevel);
     }
 
 
     ////////////////////////////not finish
     RESULT Device::Resize(USINT width, USINT height)
     {
-        RESULT re = m_frameBuffers[0].Resize(width, height);
+        if(m_framebuffers.Size()==0) return RESULT::SUCC;
+        CLList<RenderTexture*>::Iterator it=m_framebuffers.Begin();
 
-        if(re != RESULT::SUCC)
+        RESULT re;
+        do
         {
-        	return re;
-        }
-        else
-			return m_frameBuffers[1].Resize(width, height);
+            re = it->data->Resize(width, height);
+            if(RESULT::SUCC != re)
+            {
+               return re;
+            }
+            it = it->next;
 
+        }while(it != m_framebuffers.Begin());
+
+        return RESULT::SUCC;
     }
 
 
@@ -80,12 +107,11 @@ namespace SRE {
 		m_cond.wait(lock, [this]{return m_present;});
 
 		m_present = false;
-		m_front = !m_front;
-
-		m_pDeviceAdapter->PresentToScreen((BYTE*)m_frameBuffers[!m_front].Get(),
-											                       m_frameBuffers[!m_front].GetWidth(),
-											                       m_frameBuffers[!m_front].GetHeight());
-
+		m_pDeviceAdapter->PresentToScreen((BYTE*)m_front->data->Get(),
+											                       m_front->data->GetWidth(),
+											                       m_front->data->GetHeight());
+      m_front->data->Unlock();
+      m_front = m_front->next;
 	}
 
 
@@ -96,6 +122,16 @@ namespace SRE {
 
 		m_cond.notify_one();
 	}
+
+   RenderTexture*  Device::GetFrontFrameBuffer()
+   {
+      return m_front->data;
+   }
+
+   RenderTexture*  Device::GetNextFrameBuffer()
+   {
+      return m_front->next->data;
+   }
 
 
 #ifdef _SRE_PLATFORM_WIN_

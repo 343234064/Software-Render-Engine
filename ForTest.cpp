@@ -6,23 +6,18 @@
 using namespace SRE;
 using  std::cout;
 using  std::endl;
-using  std::unique_ptr;
+
+static FLOAT frameTime=0;
+
 
 struct vertex
 {
-    VEC3  ver;
-    VEC3  nor;
+    VEC3     ver;
+    VEC3     nor;
+    VEC2     tex;
+    Color3   color;
 
-    FLOAT a1;
-    FLOAT a2;
-
-    friend std::ostream& operator<<(std::ostream& out, const vertex& s)
-    {
-        out<<s.a1;
-        return out;
-    }
 };
-
 
 VSOutput* myVS(BYTE* v, VariableBuffer* varbuffer)
 {
@@ -31,137 +26,59 @@ VSOutput* myVS(BYTE* v, VariableBuffer* varbuffer)
     vertex* ver = (vertex*)v;
     out->vertex = ver->ver;
     out->vertex.w = 1.0f;
+
     out->normal = ver->nor;
-    out->texcoord.x = ver->a1;
-    out->texcoord.y = ver->a2;
+    out->texcoord = ver->tex;
+    out->color = ver->color;
+
+    //MAT44 project=MatrixProjectPerspective(800, 600, 0.0f, 1.0f);
+    //out->vertex = Multiply(out->vertex,  project);
+
 
     return out;
 }
-static int factor = 0, step = 1;
+
 Color4 myPS(PSInput & in)
 {
-	factor += step;
-	if(factor>255 || factor<0) step = -step;
-	return Color4(0,0,255,0);//
+	return in.color;
 }
 
-class tepClass
-{
-public:
-	virtual ~tepClass()
-	{
-	}
-};
 
-class PileLine: public ObserverCallBack, public tepClass
-{
-public:
-	 PileLine():
-	 	IAoutputBuffer(),
-	 	VPoutputBuffer(),
-	 	PAoutputBuffer(),
-	 	VPPoutputBuffer(),
-	 	observer(this),
-	 	conbuffer(),
-	 	varbuffer(),
-	 	vbuffer(),
-	 	ibuffer(3),
-	 	vshader(),
-	 	pshader(),
-	 	IA(1, &IAoutputBuffer, &observer),
-	 	VP(2, &IAoutputBuffer, &VPoutputBuffer, &observer),
-	 	PA(3, &VPoutputBuffer, &PAoutputBuffer, &observer),
-	 	VPP(4, &PAoutputBuffer, &VPPoutputBuffer, &observer),
-	 	RZ(5, &VPPoutputBuffer, &observer)
-     {
-     }
-     ~PileLine()
-     {
-
-     }
-
- 	bool Init();
- 	void Run();
- 	void Cancel();
- 	void Render();
- 	void HandleMessage(SREVAR message, USINT id);
-
-public:
-
-BasicIOBuffer<BasicIOElement> IAoutputBuffer;
-BasicIOBuffer<BasicIOElement> VPoutputBuffer;
-BasicIOBuffer<BasicIOElement> PAoutputBuffer;
-BasicIOBuffer<BasicIOElement> VPPoutputBuffer;
-
-
-BasicObserver observer;
-ConstantBuffer conbuffer;
-VariableBuffer varbuffer;
-SynMatBuffer<FLOAT> zbuffer;
-RenderTexture renderTarget;
-
-VertexBuffer vbuffer;
-Buffer<INT> ibuffer;
-
-VertexShader vshader;
-PixelShader pshader;
-
-InputAssembler IA;
-VertexProcessor VP;
-PrimitiveAssembler PA;
-VertexPostProcessor VPP;
-Rasterizer RZ;
-
-
-std::mutex mutex;
-std::condition_variable cond;
-
-};
 /////////////////////////////////////////////////////////////////////////////////////////
 //
 /////////////////////////////////////////////////////////////////////////////////////////
-Window_view      main_view;
-Device                main_device;
-WindowsAdapter win_adapter;
-PileLine               main_pileline;
-
-
-void PileLine::Run()
+class Global:public ObserverCallBack
 {
-    IA.Start();
-    VP.Start();
-    PA.Start();
-    VPP.Start();
-    RZ.Start();
+public:
+   Global():
+      pileLineObserver(this)
+   {}
+   ~Global(){}
 
-}
+   Window_view      main_view;
+   Device                main_device;
+   WindowsAdapter win_adapter;
+   SREPipeLine         main_pipeline;
+   VertexShader      vshader;
+   PixelShader         pshader;
 
-void PileLine::Cancel()
-{
+   VertexBuffer        vertexbuffer;
+   Buffer<INT>        indexbuffer;
 
-	IA.Cancel();
-    VP.Cancel();
-    PA.Cancel();
-    VPP.Cancel();
-    RZ.Cancel();
+   BasicObserver      pileLineObserver;
 
-    RZ.Join();
-    VPP.Join();
-    PA.Join();
-    VP.Join();
-    IA.Join();
-}
-
-void PileLine::HandleMessage(SREVAR message, USINT id)
-{
-	if(message == SRE_MESSAGE_ENDSCENE)
-		main_device.PresentReady();
-		//g_log.Write("main_device.PresentReady()");
-
-}
+public:
+   void HandleMessage(SREVAR message, USINT id)
+   {
+      if(message == SRE_MESSAGE_ENDSCENE)
+         main_device.PresentReady();
+   }
+};
+Global global;
 
 
-bool PileLine::Init()
+
+bool SceneInit()
 {
 	 vertex vertexes[10];
 
@@ -174,9 +91,6 @@ bool PileLine::Init()
         vertexes[i].nor.x = 0.9+i;
         vertexes[i].nor.y = 0.8+i;
         vertexes[i].nor.z = 0.7+i;
-
-        vertexes[i].a1 = 0.11+i;
-        vertexes[i].a2 = 0.21+i;
     }
         vertexes[0].ver = VEC3(-3, 1, 0.5);
         vertexes[1].ver = VEC3( 3, 1, 0.5);
@@ -186,73 +100,46 @@ bool PileLine::Init()
         vertexes[4].ver = VEC3( 0.5, 0.0, 0.5);
         vertexes[5].ver = VEC3(-0.5, 0.5, 0.5);
 
-        vertexes[6].ver = VEC3(-2.0, 0.0, 0.5);
-        vertexes[7].ver = VEC3( 1.0,-1.0, 0.5);
-        vertexes[8].ver = VEC3( 2.5, 0.5, 0.5);
+        vertexes[3].color = Color4(255, 0, 0);
+        vertexes[4].color = Color4(0, 255, 0);
+        vertexes[5].color = Color4(0, 0, 255);
 
-    RESULT re=CreateVertexBuffer(10, sizeof(vertex), SRE_FORMAT_VERTEX_XYZ | SRE_FORMAT_ATTRIBUTE_NORMAL | SRE_FORMAT_ATTRIBUTE_OTHER2,
-                                 (BYTE*)vertexes, &vbuffer);
+
+    RESULT re=CreateVertexBuffer(10, sizeof(vertex), SRE_FORMAT_VERTEX_XYZ | SRE_FORMAT_ATTRIBUTE_NORMAL | SRE_FORMAT_ATTRIBUTE_TEXCOORDUV | SRE_FORMAT_ATTRIBUTE_DIFFUSE,
+                                 (BYTE*)vertexes, &global.vertexbuffer);
 
     if(re != RESULT::SUCC)
        return false;
 
     //INT index[13]={0,1,2,3,6,-1,9,7,5,4,0,2,3};
     INT index[3]={3,4,5};
-    ibuffer.ResetData(index, 3);
+    global.indexbuffer.ResetBuffer(index, 3);
 
-    //注意viewport：800 * 600,指坐标 0<=x<=800 ,0<=y<=600
-    //      buffer：   800 * 600,指坐标 0<=x<800 , 0<=y<600, 将存在越界问题！！
-    if(RESULT::SUCC !=zbuffer.Create(main_device.GetWidth(), main_device.GetHeight()))
-	{
-		cout<<"zbuffer create fail"<<endl;
-		return false;
-	}
+    global.vshader.SetCallBackShader(&myVS);
+    global.pshader.SetCallBackShader(&myPS);
 
-	if(RESULT::SUCC !=renderTarget.Create(main_device.GetWidth(), main_device.GetHeight()))
-	{
-		cout<<"renderTarget create fail"<<endl;
-		return false;
-	}
-
-    conbuffer.primitiveTopology = SRE_PRIMITIVETYPE_TRIANGLELIST;
-    IA.SetConstantBuffer(&conbuffer);
-    VP.SetVariableBuffer(&varbuffer);
-
-    VPP.SetViewportHeight(main_device.GetHeight());
-    VPP.SetViewportWidth(main_device.GetWidth());
-
-    RZ.AddSubProcessors(4);
-    RZ.SetConstantBuffer(&conbuffer);
-    RZ.SetZbuffer(&zbuffer);
-    RZ.SetSamplePixelBlockSize(192);
-
+    global.main_pipeline.SetObserver(&global.pileLineObserver);
 
     return true;
 }
 
-void PileLine::Render()
+void OnRender()
 {
-     vshader.SetCallBackShader(&myVS);
-     pshader.SetCallBackShader(&myPS);
-     pshader.InputFormat = SRE_SHADERINPUTFORMAT_ALL;
+     global.main_pipeline.SceneBegin();
 
-     zbuffer.Reset(1.0);
-     //renderTarget.Clear(0);
+     global.main_pipeline.SetVertexBufferAndIndexBuffer(&global.vertexbuffer, &global.indexbuffer);
 
-     //开启后会明显变慢
-     conbuffer.ZEnable = SRE_FALSE;
-     conbuffer.CullEnable = SRE_FALSE;
+     global.main_pipeline.constbuffer.ZEnable = SRE_TRUE;
+     global.main_pipeline.constbuffer.primitiveTopology = SRE_PRIMITIVETYPE_TRIANGLELIST;
 
-     IA.BeginSceneSetting();
+     global.main_pipeline.ResetZbuffer(1.0);
+     global.main_pipeline.SetVertexShader(&global.vshader);
+     global.main_pipeline.SetPixelShader(&global.pshader);
+     global.main_pipeline.SetSamplePixelBlockSize(192);
+     global.main_pipeline.SetSampleStep(1);
+     global.main_pipeline.SetRenderTarget(global.main_device.GetFrontFrameBuffer());
 
-	 IA.SetVertexAndIndexBuffers(&vbuffer, &ibuffer);
-
-	 VP.SetVertexShader(&vshader);
-     RZ.SetPixelShader(&pshader);
-     RZ.SetRenderTarget(main_device.GetFrameBuffer());
-     RZ.SetSampleStep(2);
-
-     IA.EndSceneSetting();
+     global.main_pipeline.SceneEnd();
 
 }
 
@@ -263,12 +150,15 @@ void OnResize(INT width, INT height)
     //main_device.Resize(width, height);;
 }
 
+RTCOLOR* colorbuffer;
 
 void OnFrame()
 {
-    static DWORD lastTime = GetTickCount();
+    static DWORD lastTime = GetTickCount(), lastFrameTime = lastTime;
     static INT FPS = 0;
     DWORD nowTime = GetTickCount();
+
+    frameTime = (nowTime - lastFrameTime)*0.001f;
 
     if(nowTime - lastTime > 1000)
     {
@@ -277,7 +167,7 @@ void OnFrame()
         std::stringstream sstream;
         sstream <<FPS;
         sstream >>sFPS;
-        main_view.SetTitle((text+sFPS).data());
+        global.main_view.SetTitle((text+sFPS).data());
 
         lastTime = nowTime;
         FPS = 0;
@@ -287,21 +177,42 @@ void OnFrame()
 
 
 
-    /*
-    static bool flag=true;
-    if(flag)
-	{
-     	main_device.ClearFrame(255);
-     	main_pileline.Render();
-     	main_device.Present();
-        flag=false;
-     }*/
+   static bool once = true;
 
-	main_device.ClearFrame(255);
-	main_pileline.Render();
-	main_device.Present();
+  // if(once){
+	global.main_device.ClearFrame(255);
+
+ 	OnRender();
+
+	global.main_device.Present();
+	 g_log.Write("device presented");
 	//BasicIOBuffer 改为传指针
+   //once = false;
+   //}
+   /*
+   static int factor=0, step=1;
+   factor++;
+   if(factor>255||factor<0) step = -step;
 
+   for(int i=0;i<800*600;i++)
+      colorbuffer[i] = Color4(0,factor,255,0);
+
+      BITMAPINFO m_bitMapInfo;
+            memset(&m_bitMapInfo, 0, sizeof(BITMAPINFO));
+            m_bitMapInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+            m_bitMapInfo.bmiHeader.biPlanes = 1;
+            m_bitMapInfo.bmiHeader.biBitCount = 32;
+            m_bitMapInfo.bmiHeader.biCompression = BI_RGB;
+            m_bitMapInfo.bmiHeader.biWidth = 800;
+            m_bitMapInfo.bmiHeader.biHeight = -600;
+     ::StretchDIBits(global.main_view.GetHDC(),
+                       0, 0,800, 600,
+                       0, 0,800, 600,
+                       colorbuffer,
+                       &m_bitMapInfo,
+                       DIB_RGB_COLORS,
+                       SRCCOPY);
+     */
 }
 
 
@@ -309,33 +220,38 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR sCmdLine,
 {
     USINT width = 800, height = 600;
 
-
     //g_log.Write("===================================\n");
+    colorbuffer = new RTCOLOR[width*height];
 
-    if(main_view.Create(hInstance, "SoftwareEngine -ver0.01 -FPS:0", width, height))
+    if(global.main_view.Create(hInstance, "SoftwareEngine -ver0.01 -FPS:0", width, height))
     {
+	      global.win_adapter.SetHDC(global.main_view.GetHDC());
+	      RESULT re = global.main_device.Create(width, height, SRE_FORMAT_PIXEL_R8G8B8, &global.win_adapter);
+	      if(re != RESULT::SUCC)
+	      {
+		      MessageBox(nullptr, "ERROR", "Create Device Failed", MB_OK | MB_ICONERROR);
+		      return 0;
+         }
 
-	     win_adapter.SetHDC(main_view.GetHDC());
-	     RESULT re = main_device.Create(width, height, SRE_FORMAT_PIXEL_R8G8B8, &win_adapter);
-	     if(re != RESULT::SUCC)
-	     {
-		     MessageBox(nullptr, "ERROR", "Create Device Failed", MB_OK | MB_ICONERROR);
-		     return 0;
-     	}
+         if(global.main_pipeline.Init(width, height, true) != RESULT::SUCC)
+         {
+		      MessageBox(nullptr, "ERROR", "Create PipeLine Failed", MB_OK | MB_ICONERROR);
+		      return 0;
+         }
 
+         if(!SceneInit())
+         {
+		      MessageBox(nullptr, "ERROR", "Scene Init Failed", MB_OK | MB_ICONERROR);
+		      return 0;
+         }
 
-        if(!main_pileline.Init())
-	    {
-		    MessageBox(nullptr, "ERROR", "Create PileLine Failed", MB_OK | MB_ICONERROR);
-		    return 0;
-	    }
-	    main_pileline.Run();
+        global.main_pipeline.Run();
 
-		SetWndCallBackOnResize(&OnResize);
-		SetWndCallBackOnFrame(&OnFrame);
+		  SetWndCallBackOnResize(&OnResize);
+        SetWndCallBackOnFrame(&OnFrame);
 
-		main_view.ShowWindow();
-		main_view.MsgLoop();
+        global.main_view.ShowWindow();
+		  global.main_view.MsgLoop();
 
     }
     else
@@ -343,8 +259,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR sCmdLine,
         MessageBox(nullptr, "ERROR", "Create Window Failed", MB_OK | MB_ICONERROR);
     }
 
-    main_pileline.Cancel();
-    main_view.Destroy();
+    global.main_pipeline.Cancel();
+    global.main_view.Destroy();
 
     return 0;
 }

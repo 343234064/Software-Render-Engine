@@ -16,7 +16,7 @@
 
 
 namespace SRE {
-     //=============================
+   //=============================
 	//Class BasicProcessor functions
 	//
 	//
@@ -99,19 +99,17 @@ namespace SRE {
 
 
 
-
-
     //===========================================
 	//Class InputAssembler functions
 	//
 	//
 	//===========================================
-    void InputAssembler::SetVertexAndIndexBuffers(VertexBuffer* vertexBuffer, Buffer<INT>* indexBuffer)
+    void InputAssembler::SetVertexAndIndexBuffers(VertexBuffer* vertexbuffer, Buffer<INT>* indexbuffer)
     {
-        if(nullptr == vertexBuffer) return;
+        if(nullptr == vertexbuffer) return;
         std::lock_guard<std::mutex> lock(m_resMutex);
-        m_vertexBuffers.push(vertexBuffer);
-        m_indexBuffers.push(indexBuffer);
+        m_vertexBuffers.push(vertexbuffer);
+        m_indexBuffers.push(indexbuffer);
 
     }
 
@@ -177,7 +175,7 @@ namespace SRE {
             std::unique_lock<std::mutex> lock(m_resMutex);
             m_cond.wait(lock, [this]{
 					return m_Cancel||(!m_vertexBuffers.empty()&&m_valve);
-			});
+			   });
             if(m_Cancel) return;
 
             m_pCurrentHandleVbuffer = m_vertexBuffers.front();
@@ -230,6 +228,25 @@ namespace SRE {
         Output((BasicIOElement*)v);
     }
 
+    void InputAssembler::ClearVertexbufferAndIndexbuffer()
+    {
+        std::unique_lock<std::mutex> lock(m_resMutex);
+        INT num = m_vertexBuffers.size();
+        while(num>0)
+        {
+           m_vertexBuffers.pop();
+           num--;
+        }
+
+        num = m_indexBuffers.size();
+        while(num>0)
+        {
+           m_indexBuffers.pop();
+           num--;
+        }
+
+    }
+
     void InputAssembler::HandleMessage(SREVAR message, USINT id)
     {
 #ifdef _SRE_DEBUG_
@@ -242,6 +259,7 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
         g_log.Write("InputAssembler Cancel!");
 #endif // _SRE_DEBUG_
+        ClearVertexbufferAndIndexbuffer();
     }
 
     void InputAssembler::OnPause()
@@ -330,7 +348,7 @@ namespace SRE {
 
         if(!found)
         {
-            VSOutput * out = m_pVertexShader->Run(v->vertex);
+            VSOutput * out = m_pVertexShader->Run(v->vertex, m_pVariableBuffer);
             if(nullptr != out)
             {
                 Output((BasicIOElement*)out);
@@ -339,6 +357,7 @@ namespace SRE {
                 m_cachedPriority[coverIndex] = 1;
             }
         }
+
     }
 
     void VertexProcessor::SetArgus()
@@ -353,12 +372,12 @@ namespace SRE {
 		}
 
 #ifdef _SRE_DEBUG_
-        if(nullptr == m_pVariableBuffer)
+        if(nullptr == m_pCVariableBuffer)
            g_log.Write("Warning,VertexProcessor->variable buffer is null");
 #endif // _SRE_DEBUG_
 
     	m_pVertexShader = m_pCVertexShader;
-    	m_pCVariableBuffer = m_pCVariableBuffer;
+    	m_pVariableBuffer = m_pCVariableBuffer;
     }
 
     void VertexProcessor::HandleMessage(SREVAR message, USINT id)
@@ -419,12 +438,13 @@ namespace SRE {
 	//
 	//
 	//===========================================
+	/*******************************************************************
     void PrimitiveAssembler::HandleElement()
     {
         std::shared_ptr<BasicIOElement> pv1=GetInput();
         VSOutput* v1=(VSOutput*)pv1.get();
         if(nullptr == v1)
-			{Output(nullptr);return;}
+			{g_log.Write("PA Send null");Output(nullptr);return;}
 
         std::shared_ptr<BasicIOElement> pv2=GetInput();
         std::shared_ptr<BasicIOElement> pv3=GetInput();
@@ -433,10 +453,10 @@ namespace SRE {
 	    VSOutput* v3=(VSOutput*)pv3.get();
 
         _Triangle_* out = new _Triangle_(*v1, *v2, *v3);
-
         if(nullptr != out)
         {
             Output((BasicIOElement*)out);
+            g_log.Write("PA Send triangle");
         }
         else
         {
@@ -444,6 +464,7 @@ namespace SRE {
             _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
 #endif // _SRE_DEBUG_
         }
+
     }
 
     void PrimitiveAssembler::HandleMessage(SREVAR message, USINT id)
@@ -494,7 +515,7 @@ namespace SRE {
         g_log.Write("PrimitiveAssembler Start!");
 #endif // _SRE_DEBUG_
     }
-
+    ***************************************************************/
 
 
     //===========================================
@@ -587,7 +608,6 @@ namespace SRE {
             OtherTranforms(m_pCurrentTriangle->v[1]);
             OtherTranforms(m_pCurrentTriangle->v[2]);
             SendTriangle(m_pCurrentTriangle->v[0], m_pCurrentTriangle->v[1], m_pCurrentTriangle->v[2]);
-
             return;
         }
         else
@@ -663,18 +683,36 @@ namespace SRE {
 
     void VertexPostProcessor::HandleElement()
     {
-        std::shared_ptr<BasicIOElement> p = GetInput();
-        m_pCurrentTriangle = (_Triangle_*)p.get();
-        if(nullptr == m_pCurrentTriangle) {Output(nullptr);return;}
-        else
-        {
-           TriangleClipping();
+         g_log.Write("VPP wait triangle");
+         std::shared_ptr<BasicIOElement> pv1=GetInput();
+         VSOutput* v1=(VSOutput*)pv1.get();
+         if(nullptr == v1)
+			{g_log.Write("VPP Send null");Output(nullptr);return;}
 
+			g_log.Write("VPP wait triangle fin");
+        std::shared_ptr<BasicIOElement> pv2=GetInput();
+        std::shared_ptr<BasicIOElement> pv3=GetInput();
+
+        VSOutput* v2=(VSOutput*)pv2.get();
+        VSOutput* v3=(VSOutput*)pv3.get();
+
+        m_pCurrentTriangle = new _Triangle_(*v1, *v2, *v3);
+	     if(nullptr != m_pCurrentTriangle)
+        {
+           g_log.Write("VPP get triangle");
+           TriangleClipping();
+           g_log.Write("VPP Finish clipping");
            m_vlist[0].Clear();
            m_vlist[1].Clear();
+           g_log.Write("VPP Clear");
 
         }
-
+        else
+        {
+ #ifdef _SRE_DEBUG_
+            _ERRORLOG(SRE_ERROR_OUTOFMEMORY);
+#endif // _SRE_DEBUG_
+        }
         m_pCurrentTriangle = nullptr;
     }
 
@@ -737,18 +775,18 @@ namespace SRE {
 	//===========================================
 	void Rasterizer::HandleElement()
 	{
-	    std::shared_ptr<BasicIOElement> pTriangle = GetInput();
-	    m_pCurrentTriangle = (_Triangle_*)pTriangle.get();
+	     std::shared_ptr<BasicIOElement> pTriangle = GetInput();
+	     m_pCurrentTriangle = (_Triangle_*)pTriangle.get();
         if(nullptr == m_pCurrentTriangle)
         {
-			m_sigCount++;
-			_pixelBlock_<BasicIOElement> block(0, 0, 0, 0, false, false);
-			if(m_sigCount == 1) block.setArg = true;
-			else if(m_sigCount == 2) {block.isEnd = true;m_sigCount = 0;}
+			   m_sigCount++;
+			   _pixelBlock_<BasicIOElement> block(0, 0, 0, 0, false, false);
+			   if(m_sigCount == 1) {block.setArg = true;g_log.Write("PZ Send SetArg Msg");}
+			   else if(m_sigCount == 2) {block.isEnd = true;m_sigCount = 0;}
 
-			for(USINT i=0; i<m_subProcessorNum; i++)
-				  m_subProcessors[i].PushTask(block);
-        	return;
+			   for(USINT i=0; i<m_subProcessorNum; i++)
+				     m_subProcessors[i].PushTask(block);
+        	   return;
         }
 
         //if cull mode is enable, then test back face and cull
@@ -786,7 +824,7 @@ namespace SRE {
                 if(m_subIndex == m_subProcessorNum) m_subIndex=0;
             }
         }
-
+          g_log.Write("RZ Send Pixelblock");
 	}
 
 	bool Rasterizer::BackFaceCulling()
@@ -822,10 +860,13 @@ namespace SRE {
 	void Rasterizer::SetProcessorArgus(USINT id)
      {
 
-        if(nullptr == m_pZbuffer || nullptr == m_pRenderTarget || nullptr == m_pPixelShader || nullptr == m_pConstantBuffer)
+        if(nullptr == m_pRenderTarget || nullptr == m_pPixelShader || nullptr == m_pConstantBuffer)
 		{
 #ifdef _SRE_DEBUG_
-            g_log.Write("Rasterizer : ZBuffer or RenderTarget or Pixel Shader or ConstantBuffer is null!");
+            if(nullptr == m_pZbuffer)
+               g_log.Write("Rasterizer :  Zbuffer is null");
+
+            g_log.Write("Rasterizer :  RenderTarget or Pixel Shader or ConstantBuffer is null!");
 #endif // _SRE_DEBUG_
             this->Cancel();
             return;
@@ -860,7 +901,7 @@ namespace SRE {
     void Rasterizer::HandleMessage(SREVAR message, USINT id)
     {
 #ifdef _SRE_DEBUG_
-        g_log.WriteKV("Rasterizer GetMessage From:", id);
+        //g_log.WriteKV("Rasterizer GetMessage From:", id);
 #endif // _SRE_DEBUG_
 
         if(message == SRE_MESSAGE_ENDDRAW)
@@ -870,6 +911,7 @@ namespace SRE {
 			{
 				m_finishCount = 0;
 				 m_pObserver->Notify(SRE_MESSAGE_ENDSCENE, m_id);
+				g_log.Write("PZ Get ENDDraw Msg");
 			}
 		}
     }
@@ -945,7 +987,7 @@ namespace SRE {
 	    if(m_started)
            m_cancel = true;
 
-		m_cond.notify_one();
+      m_cond.notify_one();
 	}
 
 	void PixelProcessor::PushTask(_pixelBlock_<BasicIOElement> & task)
@@ -970,21 +1012,25 @@ namespace SRE {
         m_distX = task.distX;
         m_distY = task.distY;
 
-        if(task.setArg)
+      if(task.setArg)
 		{
 			m_sampleStep = m_pParent->m_sampleStep;
 			m_pConstantBuffer = m_pParent->m_pConstantBuffer;
 			m_pRenderTarget = m_pParent->m_pRenderTarget;
 			m_pZbuffer = m_pParent->m_pZbuffer;
 			m_pPixelShader = m_pParent->m_pPixelShader;
+			m_pRenderTarget->Lock();
 		}
 
 		if(task.isEnd)
-			m_observer->Notify(SRE_MESSAGE_ENDDRAW, m_id);
+		{
+		   g_log.WriteKV("PP Send ENDDraw Msg", m_id);
+		   m_observer->Notify(SRE_MESSAGE_ENDDRAW, m_id);
+		}
 
-		m_end = task.isEnd || task.setArg;
+      m_end = task.isEnd || task.setArg;
 
-        return task.tempData;
+      return task.tempData;
 	}
 
 
@@ -1060,12 +1106,9 @@ namespace SRE {
             }//no corner is in the triangle
              //skip this pixel block
 
-             //DECOLOR* dev = new DECOLOR[4*4];
-             //dev = RenderTargetToDeviceBuffer(dev, m_pRenderTarget->Get(), 4*4);
-			 //OutputAsImage(dev, 4, 4);
-
         }
 
+        ClearTask();
         m_cancel = false;
         m_started = false;
 
@@ -1073,9 +1116,12 @@ namespace SRE {
 
 	void PixelProcessor::Scan_ZOn_IOff(FLOAT W00[3], FLOAT W10[3], FLOAT W01[3], FLOAT W11[3])
 	{
-	    USINT  sx, sy, ex = m_sx+m_distX, ey = m_sy+m_distY;
-	    FLOAT  interpolatedZ;
+	     USINT  sx, sy, ex = m_sx+m_distX, ey = m_sy+m_distY;
+	     FLOAT interpolatedZ;
         bool   drawSquare = m_sampleStep>1 ? true: false;
+        INT      targetWidth =  m_pRenderTarget->GetWidth();
+        INT      deltaY=m_sampleStep*targetWidth, offsetY=m_sy*targetWidth;
+        INT      drawpos;
 
         PSInput in00(m_pTri->v[0], W00[0], m_pTri->v[1], W00[1], m_pTri->v[2], W00[2]);
         PSInput in01(m_pTri->v[0], W01[0], m_pTri->v[1], W01[1], m_pTri->v[2], W01[2]);
@@ -1084,12 +1130,13 @@ namespace SRE {
 
         FLOAT factorX = (FLOAT)m_sampleStep/(m_distX+1), factorY = (FLOAT)m_sampleStep/(m_distY+1);
         FLOAT fx, fy;
-        for(sy = m_sy, fy = 0; sy <=ey; sy+=m_sampleStep, fy+=factorY)
+        for(sy = m_sy, fy = 0; sy <=ey; sy+=m_sampleStep, fy+=factorY, offsetY += deltaY)
         {
             for(sx = m_sx, fx = 0; sx <=ex; sx+=m_sampleStep, fx+=factorX)
             {
+                drawpos = offsetY + sx;
                 interpolatedZ = Lerp(in00.vertex.z, in10.vertex.z, in01.vertex.z, in11.vertex.z, fx, fy);
-                if(ZTest(sx, sy, interpolatedZ))
+                if(ZTest(drawpos, interpolatedZ))
                 {
                     PSInput in(in00, in10, in01, in11, fx, fy, interpolatedZ);
 
@@ -1099,7 +1146,7 @@ namespace SRE {
                                                     (sy+m_sampleStep-1)<ey?sy+m_sampleStep-1:ey,
                                                     m_pPixelShader->Run(in));
                     else
-                        m_pRenderTarget->Draw(sx, sy, m_pPixelShader->Run(in));
+                        m_pRenderTarget->Draw(drawpos, m_pPixelShader->Run(in));
                 }
             }
         }
@@ -1108,9 +1155,10 @@ namespace SRE {
 
 	void PixelProcessor::Scan_ZOff_IOff(FLOAT W00[3], FLOAT W01[3], FLOAT W10[3], FLOAT W11[3])
 	{
-	    USINT  sx, sy, ex = m_sx+m_distX, ey = m_sy+m_distY;
-	    FLOAT  interpolatedZ;
+	     USINT  sx, sy, ex = m_sx+m_distX, ey = m_sy+m_distY;
         bool   drawSquare = m_sampleStep>1 ? true: false;
+        INT      targetWidth =  m_pRenderTarget->GetWidth();
+        INT      deltaY=m_sampleStep*targetWidth, offsetY=m_sy*targetWidth;
 
         PSInput in00(m_pTri->v[0], W00[0], m_pTri->v[1], W00[1], m_pTri->v[2], W00[2]);
         PSInput in01(m_pTri->v[0], W01[0], m_pTri->v[1], W01[1], m_pTri->v[2], W01[2]);
@@ -1119,11 +1167,11 @@ namespace SRE {
 
         FLOAT factorX = (FLOAT)m_sampleStep/(m_distX+1), factorY = (FLOAT)m_sampleStep/(m_distY+1);
         FLOAT fx, fy;
-        for(sy = m_sy, fy = 0; sy <= ey; sy+=m_sampleStep, fy+=factorY)
+        for(sy = m_sy, fy = 0; sy <= ey; sy+=m_sampleStep, fy+=factorY, offsetY += deltaY)
         {
             for(sx = m_sx, fx = 0; sx <= ex; sx+=m_sampleStep, fx+=factorX)
             {
-                PSInput in(in00, in10, in01, in11, fx, fy, interpolatedZ);
+                PSInput in(in00, in10, in01, in11, fx, fy);
 
                 if(drawSquare)
                     m_pRenderTarget->DrawSquare(sx, sy,
@@ -1131,7 +1179,7 @@ namespace SRE {
                                                 (sy+m_sampleStep-1)<ey?sy+m_sampleStep-1:ey,
                                                 m_pPixelShader->Run(in));
                 else
-                    m_pRenderTarget->Draw(sx, sy, m_pPixelShader->Run(in));
+                    m_pRenderTarget->Draw(offsetY + sx, m_pPixelShader->Run(in));
 
             }
         }
@@ -1139,29 +1187,34 @@ namespace SRE {
 
 	void PixelProcessor::Scan_ZOn_IOn(FLOAT W00[3], FLOAT wTri)
 	{
-	    SINT  sy=m_sy, sx=m_sx;
-        SINT  step=m_sampleStep;
-        FLOAT w0=W00[0], w1=W00[1], w2=W00[2];
-        VEC2  Barycentric;
-        FLOAT interpolatedZ;
-        bool  drawSquare = m_sampleStep>1? true: false;
+	     INT       sy=m_sy, sx=m_sx;
+        INT       step=m_sampleStep;
+        FLOAT  w0=W00[0], w1=W00[1], w2=W00[2];
+        VEC2    Barycentric;
+        FLOAT  interpolatedZ;
+        bool    drawSquare = m_sampleStep>1? true: false;
+
+        INT      targetWidth =  m_pRenderTarget->GetWidth();
+        INT      deltaY = m_sampleStep*targetWidth, offsetY = m_sy*targetWidth;
+        INT      drawpos = 0;
 
         FLOAT sty0= m_wStepY[0], sty1= m_wStepY[1], sty2= m_wStepY[2];
 
-        for(SINT distY = m_distY; ;sy+=m_sampleStep, distY-=m_sampleStep)
+        for(INT distY = m_distY; ;sy+=m_sampleStep, distY-=m_sampleStep, offsetY += deltaY)
         {
-            for(SINT distX = m_distX; ;sx+=step, distX-=m_sampleStep)
+            for(INT distX = m_distX; ;sx+=step, distX-=m_sampleStep)
             {
                 if(w0>=0 && w1>=0 && w2>=0)
                 {
+                    drawpos = offsetY + sx;
                     Barycentric.x=w0/wTri;
                     Barycentric.y=w1/wTri;
 
                     interpolatedZ=Bicp(m_pTri->v[0].vertex.z, Barycentric.x,
-												  m_pTri->v[1].vertex.z, Barycentric.y,
+												              m_pTri->v[1].vertex.z, Barycentric.y,
                                                   m_pTri->v[2].vertex.z);
 
-                    if(ZTest(sx, sy, interpolatedZ))
+                    if(ZTest(drawpos, interpolatedZ))
                     {
 
                        PSInput in(m_pTri->v[0], Barycentric.x,
@@ -1175,7 +1228,7 @@ namespace SRE {
                                                        distY>m_sampleStep?sy+m_sampleStep-1:m_sy+m_distY,
                                                        m_pPixelShader->Run(in));
                        else
-                           m_pRenderTarget->Draw(sx, sy, m_pPixelShader->Run(in));
+                           m_pRenderTarget->Draw(drawpos, m_pPixelShader->Run(in));
                     }
                 }
 				if( distX <= 0)
@@ -1203,30 +1256,27 @@ namespace SRE {
 
     void PixelProcessor::Scan_ZOff_IOn(FLOAT W00[3], FLOAT wTri)
 	{
-	     SINT  sy=m_sy, sx=m_sx;
-         SINT  step=m_sampleStep;
+	      INT     sy=m_sy, sx=m_sx;
+         INT     step=m_sampleStep;
          FLOAT w0=W00[0], w1=W00[1], w2=W00[2];
          VEC2  Barycentric;
-         FLOAT interpolatedZ;
          bool  drawSquare = m_sampleStep>1 ? true: false;
 
-        for(SINT distY = m_distY; ;sy+=m_sampleStep, distY-=m_sampleStep)
+        INT      targetWidth =  m_pRenderTarget->GetWidth();
+        INT      deltaY = m_sampleStep*targetWidth, offsetY = m_sy*targetWidth;
+
+        for(INT distY = m_distY; ;sy+=m_sampleStep, distY-=m_sampleStep, offsetY += deltaY)
         {
-            for(SINT distX = m_distX; ;sx+=step, distX-=m_sampleStep)
+            for(INT distX = m_distX; ;sx+=step, distX-=m_sampleStep)
             {
                 if(w0>=0 && w1>=0 && w2>=0)
                 {
                     Barycentric.x=w0/wTri;
                     Barycentric.y=w1/wTri;
 
-                    interpolatedZ=Bicp(m_pTri->v[0].vertex.z, Barycentric.x,
-                                                  m_pTri->v[1].vertex.z, Barycentric.y,
-                                                  m_pTri->v[2].vertex.z);
-
                     PSInput in(m_pTri->v[0], Barycentric.x,
                                     m_pTri->v[1], Barycentric.y,
-                                    m_pTri->v[2], 1-Barycentric.x-Barycentric.y,
-                                    interpolatedZ);
+                                    m_pTri->v[2], 1-Barycentric.x-Barycentric.y);
 
                     if(drawSquare)
                         m_pRenderTarget->DrawSquare(sx, sy,
@@ -1234,7 +1284,7 @@ namespace SRE {
                                                     distY>m_sampleStep?sy+m_sampleStep-1:m_sy+m_distY,
                                                     m_pPixelShader->Run(in));
                     else
-                        m_pRenderTarget->Draw(sx, sy, m_pPixelShader->Run(in));
+                        m_pRenderTarget->Draw(offsetY + sx, m_pPixelShader->Run(in));
 
                 }
 				if( distX <= 0)
@@ -1261,7 +1311,16 @@ namespace SRE {
 
 	}
 
-
+   void PixelProcessor::ClearTask()
+   {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        INT num = m_inputQueue.size();
+        while(num>0)
+        {
+           m_inputQueue.pop();
+           num--;
+        }
+   }
 
 
     //===========================================
@@ -1352,8 +1411,246 @@ namespace SRE {
 
 
 
+   //===========================================
+	//Class SREPipeLine functions
+	//
+	//
+	//===========================================
+   RESULT SREPipeLine::Init(USINT frameWidth, USINT frameHeight, bool createZbuffer)
+   {
+      if(frameWidth==0 || frameHeight==0) return RESULT::INVALIDARG;
 
+      if(createZbuffer)
+      {
+         bool re = m_zbuffer.ResetBuffer(nullptr, frameWidth*frameHeight);
+         if(!re) return RESULT::FAIL;
+      }
 
+      m_IA.SetObserver(&m_observer);
+      m_VP.SetObserver(&m_observer);
+      m_VPP.SetObserver(&m_observer);
+      m_RZ.SetObserver(&m_observer);
+
+      m_IA.SetOutputQueue(&m_IAoutputBuffer);
+      m_VP.SetInputQueue(&m_IAoutputBuffer);
+      m_VP.SetOutputQueue(&m_VPoutputBuffer);
+      m_VPP.SetInputQueue(&m_VPoutputBuffer);
+      m_VPP.SetOutputQueue(&m_VPPoutputBuffer);
+      m_RZ.SetInputQueue(&m_VPPoutputBuffer);
+
+      m_IA.SetConstantBuffer(&constbuffer);
+      m_RZ.SetConstantBuffer(&constbuffer);
+      m_VP.SetVariableBuffer(&varbuffer);
+
+      m_VPP.SetViewportWidth(frameWidth);
+      m_VPP.SetViewportHeight(frameHeight);
+
+      m_RZ.AddSubProcessors(4);
+      m_RZ.SetSamplePixelBlockSize(192);
+      m_RZ.SetSampleStep(1);
+
+      if(createZbuffer)
+         m_RZ.SetZbuffer(&m_zbuffer);
+
+      return RESULT::SUCC;
+
+   }
+
+   void SREPipeLine::Run()
+   {
+      if(nullptr == m_pExternObserver)
+      {
+#ifdef _SRE_DEBUG_
+         g_log.Write("SREPipeLine Extern Observer is null !");
+#endif // _SRE_DEBUG_
+         return;
+      }
+
+      if(!m_started)
+      {
+         OnStart();
+
+         m_IA.Start();
+         m_VP.Start();
+         m_VPP.Start();
+         m_RZ.Start();
+
+         m_started = true;
+      }
+   }
+
+   void SREPipeLine::Pause()
+   {
+      if(m_started)
+      {
+         OnPause();
+
+         m_IA.Pause();
+         m_VP.Pause();
+         m_VPP.Pause();
+         m_RZ.Pause();
+
+         m_waited = true;
+      }
+   }
+
+   void SREPipeLine::Cancel()
+   {
+      if(m_started)
+      {
+          OnCancel();
+
+ 	       m_IA.Cancel();
+          m_VP.Cancel();
+          m_VPP.Cancel();
+          m_RZ.Cancel();
+
+          m_RZ.Join();
+          m_VPP.Join();
+          m_VP.Join();
+          m_IA.Join();
+
+          OnRunFinish();
+
+          m_started = false;
+          m_waited = false;
+      }
+   }
+
+   void SREPipeLine::Resume()
+   {
+      if(m_waited)
+      {
+          OnResume();
+
+ 	       m_IA.Resume();
+          m_VP.Resume();
+          m_VPP.Resume();
+          m_RZ.Resume();
+
+          m_waited = false;
+      }
+   }
+
+   void SREPipeLine::OnCancel(){}
+
+   void SREPipeLine::OnPause(){}
+
+   void SREPipeLine::OnResume(){}
+
+   void SREPipeLine::OnRunError(){}
+
+   void SREPipeLine::OnRunFinish()
+   {
+      m_IAoutputBuffer.Clear();
+      m_VPoutputBuffer.Clear();
+      m_VPPoutputBuffer.Clear();
+   }
+
+   void SREPipeLine::OnStart(){}
+
+   void SREPipeLine::HandleMessage(SREVAR message, USINT id)
+   {
+	    if(message == SRE_MESSAGE_ENDSCENE)
+           m_pExternObserver->Notify(SRE_MESSAGE_ENDSCENE, id);
+   }
+
+   void SREPipeLine::SceneBegin()
+   {
+      m_IA.BeginSceneSetting();
+   }
+
+   void SREPipeLine::SceneEnd()
+   {
+      m_IA.EndSceneSetting();
+   }
+
+   void SREPipeLine::SetVertexBufferAndIndexBuffer(VertexBuffer* vertexbuffer, Buffer<INT>* indexbuffer)
+   {
+      m_IA.SetVertexAndIndexBuffers(vertexbuffer, indexbuffer);
+   }
+
+   void SREPipeLine::SetVertexShader(VertexShader * vshader)
+   {
+      m_VP.SetVertexShader(vshader);
+   }
+
+   void SREPipeLine::SetClipPlaneXYZ(FLOAT Distance_PlaneXToOrigin, VEC3& x_normal,
+                                                       FLOAT Distance_PlaneYToOrigin, VEC3& y_normal,
+                                                       FLOAT Distance_PlaneZToOrigin, VEC3& z_normal)
+   {
+      if(m_started) return;
+
+      m_VPP.SetClipPlaneX(Distance_PlaneXToOrigin, x_normal);
+      m_VPP.SetClipPlaneY(Distance_PlaneYToOrigin, y_normal);
+      m_VPP.SetClipPlaneZ(Distance_PlaneZToOrigin, z_normal);
+
+   }
+
+   void SREPipeLine::SetClipTolerance(FLOAT tolerance)
+   {
+      if(m_started) return;
+
+      m_VPP.SetClipTolerance(tolerance);
+   }
+
+   void SREPipeLine::SetPixelShader(PixelShader* pshader)
+   {
+      m_RZ.SetPixelShader(pshader);
+   }
+
+   void SREPipeLine::SetSubProcessors(USINT num)
+   {
+      if(m_started) return;
+
+      if(m_RZ.GetSubProcessorNum() > num)
+         m_RZ.RemoveSubProcessors(m_RZ.GetSubProcessorNum()-num);
+      else if(m_RZ.GetSubProcessorNum() < num)
+         m_RZ.AddSubProcessors(num-m_RZ.GetSubProcessorNum());
+   }
+
+   void SREPipeLine::SetSamplePixelBlockSize(USINT size)
+   {
+      m_RZ.SetSamplePixelBlockSize(size);
+   }
+
+   void SREPipeLine::SetSampleStep(USINT step)
+   {
+      m_RZ.SetSampleStep(step);
+   }
+
+   void SREPipeLine::SetRenderTarget(RenderTexture* target)
+   {
+      m_RZ.SetRenderTarget(target);
+   }
+
+   RESULT SREPipeLine::ResetFrameSize(USINT width, USINT height)
+   {
+         if(width==0 || height==0) return RESULT::INVALIDARG;
+
+         m_VPP.SetViewportWidth(width);
+         m_VPP.SetViewportHeight(height);
+
+         if(m_zbuffer.GetBufferSize()>=0)
+         {
+            if(m_zbuffer.ResetBuffer(nullptr, width*height))
+               return RESULT::SUCC;
+            else
+               return RESULT::FAIL;
+         }
+         else
+            return RESULT::SUCC;
+   }
+
+   void SREPipeLine::SetObserver(BasicObserver* observer)
+   {
+      m_pExternObserver = observer;
+   }
+
+   void SREPipeLine::ResetZbuffer(FLOAT maxDepth)
+   {
+      m_zbuffer.ResetData(maxDepth);
+   }
 
 
 

@@ -38,7 +38,7 @@ namespace SRE {
 	class Buffer: public BaseContainer, public BasicIOElement
 	{
     public:
-        Buffer(INT bufferSize, T * initData=nullptr):
+        Buffer(INT bufferSize=0, T * initData=nullptr):
                m_bufferSize(bufferSize),
                m_data(nullptr),
                m_pdata(nullptr)
@@ -62,10 +62,9 @@ namespace SRE {
         }
 
         inline void  SetData(INT pos, const T & data);
-        inline T  &  GetData(INT pos);
+        inline T  &   GetData(INT pos);
         void  ResetData(const T & resetData);
-        void  ResetData(T * resetData, INT size);
-        void  ResetSize(INT size);
+        bool  ResetBuffer(T * resetData, INT size);
         INT    GetBufferSize() const
         {
             return m_bufferSize;
@@ -78,7 +77,7 @@ namespace SRE {
     protected:
         INT                                   m_bufferSize;
         std::unique_ptr<T, array_deleter<T>>  m_data;
-        T*                                    m_pdata;
+        T*                                     m_pdata;
 
 
 
@@ -110,36 +109,29 @@ namespace SRE {
 	}
 
 	template <typename T>
-	void  Buffer<T>::ResetData(T * resetData, INT size)
+	bool  Buffer<T>::ResetBuffer(T * resetData, INT size)
 	{
-#ifdef _SRE_DEBUG_
-        if(nullptr == this->m_data)
+        if(size<=0) return false;
+        if(nullptr == m_data || size>m_bufferSize)
+         {
+                m_data.reset(new T[size]);
+                if(nullptr != resetData)
+                {
+                   T * dest = m_data.get();
+	                std::copy(resetData, resetData + size, dest);
+                }
+         }
+        else
         {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return;
-	    }
-#endif
+               std::copy(resetData, resetData + size, m_pdata);
+        }
 
-        if(nullptr == resetData || size<=0) return;
-        m_pdata = this->m_data.get();
-        INT offset = size>m_bufferSize? m_bufferSize: size;
-		std::copy(resetData, resetData + offset, m_pdata);
+        m_bufferSize = size;
+        m_pdata = m_data.get();
 
+        return true;
 	}
 
-	template <typename T>
-	void  Buffer<T>::ResetSize(INT size)
-	{
-        if(size<=0) return;
-        m_data.reset(new T[size]);
-
-        if(nullptr != m_data)
-		{
-			m_bufferSize = size;
-			m_pdata = m_data.get();
-		}
-
-	}
 
 	template<typename T>
 	void Buffer<T>::SetData(INT pos, const T & data)
@@ -363,11 +355,11 @@ namespace SRE {
 	    if(width<=0 || height<=0) return RESULT::INVALIDARG;
 
 	    if(nullptr != m_pdata)
-		{
+		 {
             for(INT i=0; i<m_height; i++)
                  delete[] m_pdata[i];
             delete[] m_pdata;
-		}
+		 }
 
         m_pdata = new T*[height];
         if(nullptr == m_pdata) return RESULT::OUTMEMORY;
@@ -498,6 +490,9 @@ namespace SRE {
 	{
     public:
         RenderTexture():
+            m_mutex(),
+            m_cond(),
+            m_lock(false),
             m_width(0),
             m_height(0),
             m_pdata(nullptr),
@@ -512,9 +507,10 @@ namespace SRE {
 
         RESULT         Create(USINT width, USINT height);
         RESULT         Resize(USINT width, USINT height);
-        void            DrawSquare(USINT sx, USINT sy, USINT ex, USINT ey, RTCOLOR color);
+        void            DrawSquare(INT sx, INT sy, INT ex, INT ey, RTCOLOR color);
         void            Clear(RTCOLOR color);
-        inline void  Draw(USINT px, USINT py, RTCOLOR color);
+        inline void  Draw(INT px, INT py, RTCOLOR color);
+        inline void  Draw(INT pos, RTCOLOR color);
         inline void  Clear(INT grayLevel);
         inline USINT GetWidth()  const;
         inline USINT GetHeight() const;
@@ -523,7 +519,18 @@ namespace SRE {
         RenderTexture & operator=(const RenderTexture & other);
 
     public:
-        inline RTCOLOR*  Get(){return m_pdata;}
+        void          Lock();
+        void          Unlock();
+        RTCOLOR*  Wait_Get();
+
+    protected:
+        inline RTCOLOR* Get();
+        friend class Device;
+
+    protected:
+        std::mutex                       m_mutex;
+        std::condition_variable  m_cond;
+        bool                                m_lock;
 
     protected:
         USINT          m_width;
@@ -531,15 +538,22 @@ namespace SRE {
         RTCOLOR*   m_pdata;
         USINT          m_byteCount;
 
+
 	};
 
     //=============================
 	//Class RenderTexture functions
 	//=============================
-    void  RenderTexture::Draw(USINT px, USINT py, RTCOLOR color)
+    void  RenderTexture::Draw(INT px, INT py, RTCOLOR color)
     {
         *(m_pdata + py*m_width + px) = color;
     }
+
+   void  RenderTexture::Draw(INT pos, RTCOLOR color)
+    {
+        *(m_pdata + pos) = color;
+    }
+
 
     void  RenderTexture::Clear(INT grayLevel)
     {
@@ -555,5 +569,12 @@ namespace SRE {
     {
     	return m_height;
     }
+
+    RTCOLOR* RenderTexture::Get()
+    {
+       return m_pdata;
+    }
+
+
 }
 #endif

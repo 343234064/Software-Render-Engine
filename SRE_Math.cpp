@@ -334,7 +334,7 @@ namespace SRE {
 	//  23    times mul
 	//  102   times add/sub
 	//=============================
-	PMAT33 Multiply(PMAT33 out, CPMAT33 mat1, CPMAT33 mat2)
+	PMAT33 Multiply(PMAT33 out, PMAT33 mat1, PMAT33 mat2)
 	{
 
 #ifdef _SRE_DEBUG_
@@ -345,17 +345,13 @@ namespace SRE {
         }
 #endif
 
-        //FLOAT m1 =
         FLOAT m2 =(mat1->_11 - mat1->_21)*(mat2->_22 - mat2->_12);
-        //FLOAT m3 =
         FLOAT m4 =(mat1->_21 + mat1->_22 - mat1->_11)*(mat2->_11 - mat2->_12 + mat2->_22);
         FLOAT m5 =(mat1->_21 + mat1->_22)*(mat2->_12 - mat2->_11);
         FLOAT m6 = mat1->_11*mat2->_11;
         FLOAT m7 =(mat1->_31 + mat1->_32 - mat1->_11)*(mat2->_11 - mat2->_13 + mat2->_23);
         FLOAT m8 =(mat1->_31 - mat1->_11)*(mat2->_13 - mat2->_23);
         FLOAT m9 =(mat1->_31 + mat1->_32)*(mat2->_13 - mat2->_11);
-        //FLOAT m10=
-        //FLOAT m11=
         FLOAT m12=( - mat1->_13 + mat1->_32 + mat1->_33)*(mat2->_22 + mat2->_31 - mat2->_32);
         FLOAT m13=(mat1->_13 - mat1->_33)*(mat2->_22 - mat2->_32);
         FLOAT m14= mat1->_13*mat2->_31;
@@ -363,11 +359,6 @@ namespace SRE {
         FLOAT m16=( - mat1->_13 + mat1->_22 + mat1->_23)*(mat2->_23+ mat2->_31 - mat2->_33);
         FLOAT m17=(mat1->_13 - mat1->_23)*(mat2->_23 - mat2->_33);
         FLOAT m18=(mat1->_22 + mat1->_23)*( - mat2->_31 + mat2->_33);
-        //FLOAT m19=
-        //FLOAT m20=
-        //FLOAT m21=
-        //FLOAT m22=
-        //FLOAT m23=
 
 
         out->_11= m6 + m14 + mat1->_12*mat2->_21;
@@ -398,7 +389,7 @@ namespace SRE {
 	//  49     times mul
 	//  198    times add/sub
 	//=============================
-	PMAT44 Multiply(PMAT44 out, CPMAT44 mat1, CPMAT44 mat2)
+	PMAT44 Multiply(PMAT44 out, PMAT44 mat1, PMAT44 mat2)
 	{
 
 #ifdef _SRE_DEBUG_
@@ -469,7 +460,7 @@ namespace SRE {
 	//
 	//
 	//=============================
-	PMAT33 Transpose(PMAT33 out, CPMAT33 mat) {
+	PMAT33 Transpose(PMAT33 out, PMAT33 mat) {
 
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == mat)
@@ -492,7 +483,7 @@ namespace SRE {
 	//
 	//
 	//=============================
-	PMAT44 Transpose(PMAT44 out, CPMAT44 mat) {
+	PMAT44 Transpose(PMAT44 out, PMAT44 mat) {
 
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == mat)
@@ -510,6 +501,47 @@ namespace SRE {
 		return out;
 	}
 
+	//=============================
+	//Transpose a 3x3 Matrix
+	//
+	//
+	//=============================
+	MAT33& Transpose(MAT33& out) {
+
+	   FLOAT _12 = out._12, _13 = out._13, _23 = out._23;
+
+      out._12 = out._21; out._13 = out._31;
+                                   out._23 = out._32;
+		out._21 = _12;
+		out._31 = _13; out._32 = _23;
+
+		return out;
+	}
+
+
+	//=============================
+	//Transpose a 4x4 Matrix
+	//
+	//
+	//=============================
+	MAT44& Transpose(MAT44& out) {
+
+	   FLOAT o1=out._12, o2=out._13, o3=out._14;
+
+      out._12 = out._21; out._13 = out._31; out._14 = out._41;
+		out._21 = o1; out._31 = o2; out._41 = o3;
+
+		o1=out._23;
+		out._23 = out._32; out._32 = o1;
+
+      o2=out._24;
+      out._24 = out._42; out._42 = o2;
+
+      o3=out._34;
+      out._34 = out._43; out._43 = o3;
+
+		return out;
+	}
 
 	//=============================
 	//Determinant of 3x3 Matrices
@@ -518,22 +550,12 @@ namespace SRE {
 	//12 times mul/div
 	//5  times add/sub
 	//=============================
-    FLOAT Determinant(CPMAT33 mat){
+    FLOAT Determinant(MAT33& mat){
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == mat)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return 0.0;
-        }
-#endif
+        return mat._11*(mat._22*mat._33 - mat._32*mat._23)-
+                   mat._12*(mat._21*mat._33 - mat._31*mat._23)+
+                   mat._13*(mat._21*mat._32 - mat._31*mat._22);
 
-        FLOAT out=0.0;
-        out=mat->_11*(mat->_22*mat->_33 - mat->_32*mat->_23)-
-            mat->_12*(mat->_21*mat->_33 - mat->_31*mat->_23)+
-            mat->_13*(mat->_21*mat->_32 - mat->_31*mat->_22);
-
-        return out;
     }
 
 
@@ -544,31 +566,24 @@ namespace SRE {
 	//40 times mul/div
 	//24 times add/sub
     //=============================
-    FLOAT Determinant(CPMAT44 mat){
+    FLOAT Determinant(MAT44& mat){
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == mat)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return 0.0;
-        }
-#endif
 
-        FLOAT out=0.0;
-        out=mat->_11*(mat->_22*(mat->_33*mat->_44 - mat->_34*mat->_43)+
-                      mat->_23*(mat->_34*mat->_42 - mat->_32*mat->_44)+
-                      mat->_24*(mat->_32*mat->_43 - mat->_33*mat->_42))-
-            mat->_12*(mat->_21*(mat->_33*mat->_44 - mat->_34*mat->_43)+
-                      mat->_23*(mat->_34*mat->_41 - mat->_31*mat->_44)+
-                      mat->_24*(mat->_31*mat->_43 - mat->_33*mat->_41))+
-            mat->_13*(mat->_21*(mat->_32*mat->_44 - mat->_34*mat->_42)+
-                      mat->_22*(mat->_34*mat->_41 - mat->_31*mat->_44)+
-                      mat->_24*(mat->_31*mat->_42 - mat->_32*mat->_41))-
-            mat->_14*(mat->_21*(mat->_32*mat->_43 - mat->_33*mat->_42)+
-                      mat->_22*(mat->_33*mat->_41 - mat->_31*mat->_43)+
-                      mat->_23*(mat->_31*mat->_42 - mat->_32*mat->_41));
+        return
+            mat._11*(mat._22*(mat._33*mat._44 - mat._34*mat._43)+
+                          mat._23*(mat._34*mat._42 - mat._32*mat._44)+
+                          mat._24*(mat._32*mat._43 - mat._33*mat._42))-
+            mat._12*(mat._21*(mat._33*mat._44 - mat._34*mat._43)+
+                          mat._23*(mat._34*mat._41 - mat._31*mat._44)+
+                          mat._24*(mat._31*mat._43 - mat._33*mat._41))+
+            mat._13*(mat._21*(mat._32*mat._44 - mat._34*mat._42)+
+                      mat._22*(mat._34*mat._41 - mat._31*mat._44)+
+                      mat._24*(mat._31*mat._42 - mat._32*mat._41))-
+            mat._14*(mat._21*(mat._32*mat._43 - mat._33*mat._42)+
+                      mat._22*(mat._33*mat._41 - mat._31*mat._43)+
+                      mat._23*(mat._31*mat._42 - mat._32*mat._41));
 
-        return out;
+
     }
 
 
@@ -624,6 +639,42 @@ namespace SRE {
     }
 
 
+    //=============================
+	 //3x3 Matrix Identity
+	 //
+	 //
+	 //
+    //=============================
+    MAT33& Identity(MAT33& out){
+
+        out._11 = 1.0;out._22 = 1.0;out._33 = 1.0;
+        out._12 = 0.0;out._13 = 0.0;
+        out._21 = 0.0;out._23 = 0.0;
+        out._31 = 0.0;out._32 = 0.0;
+
+        return out;
+    }
+
+
+    //=============================
+	 //4x4 Matrix Identity
+	 //
+	 //
+	 //
+    //=============================
+    MAT44& Identity(MAT44& out){
+
+        out._11 = 1.0;out._22 = 1.0;
+        out._33 = 1.0;out._44 = 1.0;
+        out._12 = 0.0;out._13 = 0.0;out._14 = 0.0;
+        out._21 = 0.0;out._23 = 0.0;out._24 = 0.0;
+        out._31 = 0.0;out._32 = 0.0;out._34 = 0.0;
+        out._41 = 0.0;out._42 = 0.0;out._43 = 0.0;
+
+        return out;
+    }
+
+
     //===================================
 	//Inverse a 3x3 Matrices
 	//
@@ -635,7 +686,7 @@ namespace SRE {
 	//  40      times mul/div
 	//  18      times add/sub
 	//===================================
-    bool Inverse(PMAT33 out, CPMAT33 mat){
+    bool Inverse(PMAT33 out, PMAT33 mat){
 
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == mat)
@@ -645,7 +696,7 @@ namespace SRE {
         }
 #endif
 
-        FLOAT det = Determinant(mat);
+        FLOAT det = Determinant(*mat);
         if((det >= EPSILON) || (det <= -EPSILON)){
 
             FLOAT invDet = 1/det;
@@ -718,8 +769,8 @@ namespace SRE {
 
 		    if (row[i] != i)
 		    {
-		        //swap the element
-		        temp=(*out)[i][0]; (*out)[i][0]=(*out)[row[i]][0]; (*out)[row[i]][0]=temp;
+		          //swap the element
+		          temp=(*out)[i][0]; (*out)[i][0]=(*out)[row[i]][0]; (*out)[row[i]][0]=temp;
                 temp=(*out)[i][1]; (*out)[i][1]=(*out)[row[i]][1]; (*out)[row[i]][1]=temp;
                 temp=(*out)[i][2]; (*out)[i][2]=(*out)[row[i]][2]; (*out)[row[i]][2]=temp;
                 temp=(*out)[i][3]; (*out)[i][3]=(*out)[row[i]][3]; (*out)[row[i]][3]=temp;
@@ -796,7 +847,6 @@ namespace SRE {
 	//Matrix & Vector operations
 	//
 	//==================================
-
 	//==================================
 	//Multiply a 3DVector with a 3x3 Matrix
 	//
@@ -843,7 +893,35 @@ namespace SRE {
         return out;
 	}
 
+	//==================================
+	//Multiply a 3DVector with a 3x3 Matrix
+	//
+	//==================================
+	VEC3    Multiply(VEC3& vec, MAT33& mat)
+	{
+      return VEC3(
+        vec.x*mat._11 + vec.y*mat._21 + vec.z*mat._31,
+        vec.x*mat._12 + vec.y*mat._22 + vec.z*mat._32,
+        vec.x*mat._13 + vec.y*mat._23 + vec.z*mat._33
+      );
 
+	}
+
+
+	//==================================
+	//Multiply a 4DVector with a 4x4 Matrix
+	//
+	//==================================
+	VEC4    Multiply(VEC4& vec, MAT44& mat)
+	{
+      return VEC4(
+        vec.x*mat._11 + vec.y*mat._21 + vec.z*mat._31 + vec.w*mat._41,
+        vec.x*mat._12 + vec.y*mat._22 + vec.z*mat._32 + vec.w*mat._42,
+        vec.x*mat._13 + vec.y*mat._23 + vec.z*mat._33 + vec.w*mat._43,
+        vec.x*mat._14 + vec.y*mat._24 + vec.z*mat._34 + vec.w*mat._44
+      );
+
+	}
 
 
 
@@ -938,25 +1016,16 @@ namespace SRE {
 
 
 
+
     //==================================
 	//Length
 	//
 	//return the length of a quaternion
 	//==================================
-    FLOAT    Length(CPQUAT quat)
+    FLOAT    Length(QUAT& quat)
     {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == quat )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return 0.0;
-        }
-#endif
-
-        return sqrt(quat->w*quat->w+quat->x*quat->x+quat->y*quat->y+quat->z*quat->z);
-
-
+        return sqrt(quat.w*quat.w+quat.x*quat.x+quat.y*quat.y+quat.z*quat.z);
     }
 
 
@@ -965,20 +1034,10 @@ namespace SRE {
 	//
 	//return the dot product of 2 quaternions
 	//==================================
-    FLOAT    Dot(CPQUAT quat1, CPQUAT quat2)
+    FLOAT    Dot(QUAT& quat1, QUAT& quat2)
     {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == quat1 || nullptr == quat2)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return 0.0;
-        }
-#endif
-
-        return quat1->w*quat2->w+quat1->x*quat2->x+quat1->y*quat2->y+quat1->z*quat2->z;
-
-
+        return quat1.w*quat2.w+quat1.x*quat2.x+quat1.y*quat2.y+quat1.z*quat2.z;
     }
 
 
@@ -987,53 +1046,31 @@ namespace SRE {
 	//
 	//return the cross product of 2 quaternions
 	//==================================
-    PVEC3     Cross(PVEC3 out, CPQUAT quat1, CPQUAT quat2)
+    VEC3     Cross(QUAT& quat1, QUAT& quat2)
     {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == quat1 || nullptr == quat2)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-        out->x=quat1->y*quat2->z - quat1->z*quat2->y;
-        out->y=quat1->z*quat2->x - quat1->x*quat2->z;
-        out->z=quat1->x*quat2->y - quat1->y*quat2->x;
-
-        return out;
-
+        return VEC3(
+          quat1.y*quat2.z - quat1.z*quat2.y,
+          quat1.z*quat2.x - quat1.x*quat2.z,
+          quat1.x*quat2.y - quat1.y*quat2.x
+        );
     }
 
 
-    //==================================
+
+   //==================================
 	//Inverse
 	//
 	//return the inverse of a quaternion
 	//==================================
-    bool     Inverse(PQUAT out, CPQUAT quat)
+    QUAT&   Inverse(QUAT& out)
     {
+        FLOAT length=1.0f/Length(out);
+        out.w= out.w*length;
+        out.x=-out.x*length;
+        out.y=-out.y*length;
+        out.z=-out.z*length;
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == quat)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return false;
-        }
-#endif
-
-        FLOAT length=Length(quat);
-
-        if(fabs(length) < EPSILON)
-            return false;
-
-        out->w= quat->w/length;
-        out->x=-quat->x/length;
-        out->y=-quat->y/length;
-        out->z=-quat->z/length;
-
-        return true;
+        return out;
 
     }
 
@@ -1043,68 +1080,46 @@ namespace SRE {
 	//
 	//return a identical quaternion
 	//==================================
-    PQUAT     Identity(PQUAT quat)
+    QUAT&     Identity(QUAT& quat)
     {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == quat)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-
-        quat->w=1.0;
-        quat->x=0.0;
-        quat->y=0.0;
-        quat->z=0.0;
+        quat.w=1.0;
+        quat.x=0.0;
+        quat.y=0.0;
+        quat.z=0.0;
 
         return quat;
 
     }
 
 
-
-    //==================================
+   //==================================
 	//Exponentiation
 	//
 	//
-    //
-    //raising a quaternion to an exponent
+   //
+   //raising a quaternion to an exponent
 	//==================================
-    PQUAT    Exponent(PQUAT out, CPQUAT quat, const FLOAT exponent)
+    QUAT    Exponent(QUAT& quat, const FLOAT exponent)
     {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == quat)
+        if(fabs(quat.w)<(1-EPSILON))
         {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-        if(fabs(quat->w)<(1-EPSILON))
-        {
-            FLOAT alpha=acos(quat->w);
+            FLOAT alpha=acos(quat.w);
             FLOAT newAlpha=alpha*exponent;
-            out->w=cos(newAlpha);
-
             FLOAT mult=sin(newAlpha)/sin(alpha);
-            out->x=quat->x*mult;
-            out->y=quat->y*mult;
-            out->z=quat->z*mult;
+            return QUAT(
+               cos(newAlpha),
+               quat.x*mult,
+               quat.y*mult,
+               quat.z*mult
+            );
 
         }
         else
         {
-            out->w=quat->w;
-            out->x=quat->x;
-            out->y=quat->y;
-            out->z=quat->z;
+            return quat;
         }
-
-        return out;
 
     }
 
@@ -1115,66 +1130,34 @@ namespace SRE {
     //
     //
 	//==================================
-    PQUAT    Multiply(PQUAT out, CPQUAT quat1, CPQUAT quat2)
+    QUAT    Multiply(QUAT& quat1, QUAT quat2)
     {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == quat1 || nullptr == quat2)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-
-        out->w=quat1->w*quat2->w-quat1->x*quat2->x-quat1->y*quat2->y-quat1->z*quat2->z;
-        out->x=quat1->w*quat2->x+quat1->x*quat2->w+quat1->y*quat2->z-quat1->z*quat2->y;
-        out->y=quat1->w*quat2->y-quat1->x*quat2->z+quat1->y*quat2->w+quat1->z*quat2->x;
-        out->z=quat1->w*quat2->z+quat1->x*quat2->y-quat1->y*quat2->x+quat1->z*quat2->w;
-
-
-
-        return out;
+       return QUAT(
+            quat1.w*quat2.w-quat1.x*quat2.x-quat1.y*quat2.y-quat1.z*quat2.z,
+            quat1.w*quat2.x+quat1.x*quat2.w+quat1.y*quat2.z-quat1.z*quat2.y,
+            quat1.w*quat2.y-quat1.x*quat2.z+quat1.y*quat2.w+quat1.z*quat2.x,
+            quat1.w*quat2.z+quat1.x*quat2.y-quat1.y*quat2.x+quat1.z*quat2.w
+       );
 
     }
 
 
-    //==================================
+
+
+   //==================================
 	//Normalize
 	//
-    //
-    //
+   //
+   //
 	//==================================
-    PQUAT    Normalize(PQUAT quat)
+    QUAT&    Normalize(QUAT& quat)
     {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == quat)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-		FLOAT len = Length(quat);
-
-		if ((len >= EPSILON) || (len <= -EPSILON))
-        {
-            FLOAT inv=1/len;
-            quat->w=quat->w*inv;
-            quat->x=quat->x*inv;
-            quat->y=quat->y*inv;
-            quat->z=quat->z*inv;
-
-        }
-        else
-        {
-#ifdef _SRE_DEBUG_
-            _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-#endif
-
-        }
-
+		      FLOAT inv = 1.0f/Length(quat);
+            quat.w=quat.w*inv;
+            quat.x=quat.x*inv;
+            quat.y=quat.y*inv;
+            quat.z=quat.z*inv;
 
         return quat;
 
@@ -1191,26 +1174,16 @@ namespace SRE {
     //
     //return the interpolates between start to end
 	//==================================
-    PQUAT     Slerp(PQUAT out, CPQUAT starting, CPQUAT ending, FLOAT factor)
+    QUAT     Slerp(QUAT& starting, QUAT& ending, FLOAT factor)
     {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == starting || nullptr == ending)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
+        QUAT q1=QUAT(starting.w, starting.x, starting.y, starting.z);
+        QUAT q2=QUAT(ending.w, ending.x, ending.y, ending.z);
 
-        FLOAT _factor=Clamp(factor,0,1);
+        Normalize(q1);
+        Normalize(q2);
 
-        QUAT q1=QUAT(starting->w, starting->x, starting->y, starting->z);
-        QUAT q2=QUAT(ending->w, ending->x, ending->y, ending->z);
-
-        Normalize(&q1);
-        Normalize(&q2);
-
-        FLOAT cosOmega=Dot(&q1,&q2);
+        FLOAT cosOmega=Dot(q1,q2);
         if(cosOmega<0.0)
         {
            q1.w=-q1.w;
@@ -1223,8 +1196,8 @@ namespace SRE {
         FLOAT k0,k1;
         if(cosOmega>(1-EPSILON))
         {
-            k0=1.0-_factor;
-            k1=_factor;
+            k0=1.0-factor;
+            k1=factor;
         }
         else
         {
@@ -1232,74 +1205,55 @@ namespace SRE {
             FLOAT omega=atan2(sinOmega, cosOmega);
             FLOAT invSinOmega=1.0/sinOmega;
 
-            k0=sin((1.0-_factor)*omega)*invSinOmega;
-            k1=sin(_factor*omega)*invSinOmega;
+            k0=sin((1.0-factor)*omega)*invSinOmega;
+            k1=sin(factor*omega)*invSinOmega;
 
         }
 
-        out->w=q1.w*k0+q2.w*k1;
-        out->x=q1.x*k0+q2.x*k1;
-        out->y=q1.y*k0+q2.y*k1;
-        out->z=q1.z*k0+q2.z*k1;
-
-        return out;
+        return QUAT(
+           q1.w*k0+q2.w*k1,
+           q1.x*k0+q2.x*k1,
+           q1.y*k0+q2.y*k1,
+           q1.z*k0+q2.z*k1
+        );
 
     }
 
 
-    //==================================
+   //==================================
 	//QuaternionFromRotateAxis
 	//
 	//
 	//get a quaternion from a giving axis and
 	//angle
 	//==================================
-    PQUAT    QuaternionFromRotateAxis(PQUAT out, CPVEC3 axis, const FLOAT angle)
+    QUAT    QuaternionFromRotateAxis(VEC3& axis, const FLOAT angle)
     {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == axis)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-        out->w=cos(angle/2.0);
-
-        VEC3 _axis=VEC3(axis->x, axis->y, axis->z);
-        Normalize(&_axis);
+        VEC3 _axis=axis;
+        Normalize(_axis);
 
         FLOAT Sin=sin(angle/2.0);
 
-        out->x=Sin*_axis.x;
-        out->y=Sin*_axis.y;
-        out->z=Sin*_axis.z;
-
-        return out;
-
+        return QUAT(
+             cos(angle/2.0),
+             Sin*_axis.x,
+             Sin*_axis.y,
+             Sin*_axis.z
+        );
     }
 
 
     //==================================
-	//QuaternionFromRotateYawPitchRoll
-	//
-	//Rotation order:
-	//roll->pitch->yaw
-	//
-	//get a quaternion from 3 giving euler angle
-	//==================================
-    PQUAT    QuaternionFromRotateYawPitchRoll(PQUAT out, const FLOAT yaw, const FLOAT pitch, const FLOAT roll)
+	 //QuaternionFromRotateYawPitchRoll
+	 //
+	 //Rotation order:
+	 //roll->pitch->yaw
+	 //
+	 //get a quaternion from 3 giving euler angle
+	 //==================================
+    QUAT    QuaternionFromRotateYawPitchRoll(const FLOAT yaw, const FLOAT pitch, const FLOAT roll)
     {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
 
         FLOAT CosY=cos(yaw/2.0);
         FLOAT SinY=sin(yaw/2.0);
@@ -1310,69 +1264,44 @@ namespace SRE {
         FLOAT CosZ=cos(roll/2.0);
         FLOAT SinZ=sin(roll/2.0);
 
-
-        out->w=CosY*CosX*CosZ+SinY*SinX*SinZ;
-        out->x=CosY*SinX*CosZ+SinY*CosX*SinZ;
-        out->y=SinY*CosX*CosZ-CosY*SinX*SinZ;
-        out->z=CosY*CosX*SinZ-SinY*SinX*CosZ;
-
-
-        return out;
+        return QUAT(
+            CosY*CosX*CosZ+SinY*SinX*SinZ,
+            CosY*SinX*CosZ+SinY*CosX*SinZ,
+            SinY*CosX*CosZ-CosY*SinX*SinZ,
+            CosY*CosX*SinZ-SinY*SinX*CosZ
+        );
 
     }
 
 
 
 
-    //==================================
+
+   //==================================
 	//Transform functions
 	//
 	//
 	//==================================
-
-    //==================================
+   //==================================
 	//Translation
 	//
 	//Build a translation matrix
 	//==================================
-	PMAT33 MatrixTranslation(PMAT33 out, const FLOAT tx, const FLOAT ty)
+	MAT33 MatrixTranslation(const FLOAT tx, const FLOAT ty)
 	{
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-        Identity(out);
-        out->_31=tx;
-        out->_32=ty;
-
-	    return out;
-
+       return MAT33(1.0f,  0.0f, 0.0f,
+                              0.0f, 1.0f, 0.0f,
+                                 tx,    ty, 1.0f);
 	}
 
 
-    PMAT44 MatrixTranslation(PMAT44 out, const FLOAT tx, const FLOAT ty, const FLOAT tz)
+   MAT44 MatrixTranslation(const FLOAT tx, const FLOAT ty, const FLOAT tz)
 	{
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-        Identity(out);
-        out->_41=tx;
-        out->_42=ty;
-        out->_43=tz;
-
-	    return out;
-
+       return MAT44(1.0f,  0.0f, 0.0f, 0.0f,
+                              0.0f, 1.0f,  0.0f, 0.0f,
+                              0.0f,  0.0f, 1.0f, 0.0f,
+                                 tx,    ty,    tz, 1.0f);
 	}
 
 
@@ -1386,48 +1315,21 @@ namespace SRE {
 	//z will be scaled by a factor sz
 	//w will be scaled by a factor sw
 	//==================================
-	PMAT33 MatrixScaling(PMAT33 out, const FLOAT sx, const FLOAT sy, const FLOAT sz)
+   MAT33 MatrixScaling(const FLOAT sx, const FLOAT sy, const FLOAT sz)
 	{
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-        Identity(out);
-        out->_11=sx;
-        out->_22=sy;
-        out->_33=sz;
-
-        return out;
-
+       return MAT33(   sx,  0.0f, 0.0f,
+                              0.0f,     sy, 0.0f,
+                              0.0f,  0.0f,    sz);
 	}
 
 
-    PMAT44 MatrixScaling(PMAT44 out, const FLOAT sx, const FLOAT sy, const FLOAT sz, const FLOAT sw)
+   MAT44 MatrixScaling(const FLOAT sx, const FLOAT sy, const FLOAT sz, const FLOAT sw)
 	{
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-        Identity(out);
-        out->_11=sx;
-        out->_22=sy;
-        out->_33=sz;
-        out->_44=sw;
-
-        return out;
-
+       return MAT44(   sx,  0.0f, 0.0f, 0.0f,
+                              0.0f,     sy, 0.0f, 0.0f,
+                              0.0f,  0.0f,    sz, 0.0f,
+                              0.0f,  0.0f,   0.0f, sw);
 	}
-
 
 	//==================================
 	//Scaling
@@ -1437,71 +1339,21 @@ namespace SRE {
 	//axis : An arbitrary axis which to scale along
 	//scale: scale factor
 	//==================================
-	PMAT33 MatrixScalingAxis(PMAT33 out, CPVEC3 axis, const FLOAT scale)
+   MAT44 MatrixScalingAxis(VEC3 axis, const FLOAT scale)
 	{
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-
-        VEC3 _axis = *axis;
-        Normalize(&_axis);
+        VEC3 _axis = axis;
+        Normalize(_axis);
 
         FLOAT xy=_axis.x * _axis.y;
         FLOAT xz=_axis.x * _axis.z;
         FLOAT yz=_axis.y * _axis.z;
-        out->_11=(scale - 1) * _axis.x * _axis.x+1;
-        out->_22=(scale - 1) * _axis.y * _axis.y+1;
-        out->_33=(scale - 1) * _axis.z * _axis.z+1;
-        out->_21=(scale - 1) * xy;
-        out->_31=(scale - 1) * xz;
-        out->_12=(scale - 1) * xy;
-        out->_32=(scale - 1) * yz;
-        out->_13=(scale - 1) * xz;
-        out->_23=(scale - 1) * yz;
-
-
-        return out;
+        return MAT44((scale - 1) * _axis.x * _axis.x+1, (scale - 1) * xy, (scale - 1) * xz, 0.0f,
+                              (scale - 1) * xy,  (scale - 1) * _axis.y * _axis.y+1, (scale - 1) * yz, 0.0f,
+                              (scale - 1) * xz,  (scale - 1) * yz, (scale - 1) * _axis.z * _axis.z+1, 0.0f,
+                              0.0f,  0.0f,   0.0f, 1.0f);
 	}
 
-
-    PMAT44 MatrixScalingAxis(PMAT44 out, CPVEC3 axis, const FLOAT scale)
-	{
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-        Identity(out);
-
-        VEC3 _axis = *axis;
-        Normalize(&_axis);
-
-        FLOAT xy=_axis.x * _axis.y;
-        FLOAT xz=_axis.x * _axis.z;
-        FLOAT yz=_axis.y * _axis.z;
-        out->_11=(scale - 1) * _axis.x * _axis.x+1;
-        out->_22=(scale - 1) * _axis.y * _axis.y+1;
-        out->_33=(scale - 1) * _axis.z * _axis.z+1;
-        out->_21=(scale - 1) * xy;
-        out->_31=(scale - 1) * xz;
-        out->_12=(scale - 1) * xy;
-        out->_32=(scale - 1) * yz;
-        out->_13=(scale - 1) * xz;
-        out->_23=(scale - 1) * yz;
-
-
-        return out;
-	}
 
 
 	//==================================
@@ -1516,170 +1368,42 @@ namespace SRE {
 	//If u, v or w is null, it would not be changed along
 	//this axis.
 	//==================================
-	PMAT33 MatrixScalingUVW(PMAT33 out, CPVEC3 u, const FLOAT u_scale,
-                                        CPVEC3 v, const FLOAT v_scale,
-                                        CPVEC3 w, const FLOAT w_scale)
+	MAT44 MatrixScalingUVW(VEC3& u, const FLOAT u_scale,
+                                         VEC3& v, const FLOAT v_scale,
+                                         VEC3& w, const FLOAT w_scale)
 	{
+         VEC3 _u = u;
+         Normalize(_u);
+         VEC3 _v = v;
+         Normalize(_v);
+         VEC3 _w = w;
+         Normalize(_w);
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-
-        if(nullptr!=u)
-        {
-            VEC3 _u = *u;
-            Normalize(&_u);
-            out->_11=(u_scale-1) * _u.x * _u.x + 1;
-            out->_21=(u_scale-1) * _u.x * _u.y;
-            out->_31=(u_scale-1) * _u.x * _u.z;
-        }
-        else
-        {
-            out->_11=1;
-            out->_21=0;
-            out->_31=0;
-        }
-
-        if(nullptr!=v)
-        {
-            VEC3 _v = *v;
-            Normalize(&_v);
-            out->_12=(v_scale-1) * _v.y * _v.x;
-            out->_22=(v_scale-1) * _v.y * _v.y + 1;
-            out->_32=(v_scale-1) * _v.y * _v.z;
-        }
-        else
-        {
-            out->_12=0;
-            out->_22=1;
-            out->_32=0;
-        }
-
-        if(nullptr!=w)
-        {
-            VEC3 _w = *w;
-            Normalize(&_w);
-            out->_13=(w_scale-1) * _w.z * _w.x;
-            out->_23=(w_scale-1) * _w.z * _w.y;
-            out->_33=(w_scale-1) * _w.z * _w.z + 1;
-        }
-        else
-        {
-            out->_13=0;
-            out->_23=0;
-            out->_33=1;
-        }
-
-        return out;
+        return MAT44((u_scale-1) * _u.x * _u.x + 1, (v_scale-1) * _v.y * _v.x,       (w_scale-1) * _w.z * _w.x,       0.0f,
+                              (u_scale-1) * _u.x * _u.y,        (v_scale-1) * _v.y * _v.y + 1, (w_scale-1) * _w.z * _w.y,        0.0f,
+                              (u_scale-1) * _u.x * _u.z,        (v_scale-1) * _v.y * _v.z,       (w_scale-1) * _w.z * _w.z + 1, 0.0f,
+                                                            0.0f,                                     0.0f,                                            0.0f, 1.0f);
 
 	}
 
 
-	PMAT44 MatrixScalingUVW(PMAT44 out, CPVEC3 u, const FLOAT u_scale,
-                                        CPVEC3 v, const FLOAT v_scale,
-                                        CPVEC3 w, const FLOAT w_scale)
-	{
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-        Identity(out);
-
-        if(nullptr!=u)
-        {
-            VEC3 _u = *u;
-            Normalize(&_u);
-            out->_11=(u_scale-1) * _u.x * _u.x + 1;
-            out->_21=(u_scale-1) * _u.x * _u.y;
-            out->_31=(u_scale-1) * _u.x * _u.z;
-        }
-
-
-        if(nullptr!=v)
-        {
-            VEC3 _v = *v;
-            Normalize(&_v);
-            out->_12=(v_scale-1) * _v.y * _v.x;
-            out->_22=(v_scale-1) * _v.y * _v.y + 1;
-            out->_32=(v_scale-1) * _v.y * _v.z;
-        }
-
-
-        if(nullptr!=w)
-        {
-            VEC3 _w = *w;
-            Normalize(&_w);
-            out->_13=(w_scale-1) * _w.z * _w.x;
-            out->_23=(w_scale-1) * _w.z * _w.y;
-            out->_33=(w_scale-1) * _w.z * _w.z + 1;
-        }
-
-
-        return out;
-
-	}
-
-
-    //==================================
+   //==================================
 	//Rotation
 	//
 	//Build a rotation matrix
 	//
-    //Rotate along X axis
+   //Rotate along X axis
 	//==================================
-    PMAT33 MatrixRotationX(PMAT33 out, const FLOAT angle)
+    MAT44 MatrixRotationX(const FLOAT angle)
     {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
 
          FLOAT Cos=cos(angle);
          FLOAT Sin=sin(angle);
 
-         out->_11=1; out->_12=0;    out->_13=0;
-         out->_21=0; out->_22= Cos; out->_23=Sin;
-         out->_31=0; out->_32=-Sin; out->_33=Cos;
-
-         return out;
-
-    }
-
-
-    PMAT44 MatrixRotationX(PMAT44 out, const FLOAT angle)
-    {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-         FLOAT Cos=cos(angle);
-         FLOAT Sin=sin(angle);
-
-         out->_11=1; out->_12=0;    out->_13=0;   out->_14=0;
-         out->_21=0; out->_22= Cos; out->_23=Sin; out->_24=0;
-         out->_31=0; out->_32=-Sin; out->_33=Cos; out->_34=0;
-         out->_41=0; out->_42=0;    out->_43=0;   out->_44=1;
-
-         return out;
+        return MAT44(1.0f,  0.0f, 0.0f, 0.0f,
+                              0.0f,  Cos,  Sin, 0.0f,
+                              0.0f,  -Sin, Cos, 0.0f,
+                              0.0f,  0.0f,  0.0f, 1.0f);
     }
 
 
@@ -1690,50 +1414,16 @@ namespace SRE {
 	//
     //Rotate along Y axis
 	//==================================
-    PMAT33 MatrixRotationY(PMAT33 out, const FLOAT angle)
+    MAT44 MatrixRotationY(const FLOAT angle)
     {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
 
          FLOAT Cos=cos(angle);
          FLOAT Sin=sin(angle);
 
-         out->_11=Cos; out->_12=0; out->_13=-Sin;
-         out->_21=0;   out->_22=1; out->_23=0;
-         out->_31=Sin; out->_32=0; out->_33= Cos;
-
-
-         return out;
-
-    }
-
-
-    PMAT44 MatrixRotationY(PMAT44 out, const FLOAT angle)
-    {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-         FLOAT Cos=cos(angle);
-         FLOAT Sin=sin(angle);
-
-         out->_11=Cos; out->_12=0; out->_13=-Sin; out->_14=0;
-         out->_21=0;   out->_22=1; out->_23=0;    out->_24=0;
-         out->_31=Sin; out->_32=0; out->_33= Cos; out->_34=0;
-         out->_41=0;   out->_42=0; out->_43=0;    out->_44=1;
-
-         return out;
+        return MAT44(Cos,  0.0f, -Sin, 0.0f,
+                              0.0f,  1.0f, 0.0f, 0.0f,
+                               Sin,  0.0f, Cos, 0.0f,
+                              0.0f,  0.0f,  0.0f, 1.0f);
     }
 
 
@@ -1744,51 +1434,19 @@ namespace SRE {
 	//
     //Rotate along Z axis
 	//==================================
-    PMAT33 MatrixRotationZ(PMAT33 out, const FLOAT angle)
+    MAT44 MatrixRotationZ(const FLOAT angle)
     {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
 
          FLOAT Cos=cos(angle);
          FLOAT Sin=sin(angle);
 
-         out->_11= Cos; out->_12=Sin; out->_13=0;
-         out->_21=-Sin; out->_22=Cos; out->_23=0;
-         out->_31= 0;   out->_32=0;   out->_33=1;
-
-
-         return out;
+        return MAT44(Cos,  Sin,  0.0f,  0.0f,
+                              -Sin,  Cos, 0.0f, 0.0f,
+                              0.0f,  0.0f, 1.0f, 0.0f,
+                              0.0f,  0.0f,  0.0f, 1.0f);
 
     }
 
-
-    PMAT44 MatrixRotationZ(PMAT44 out, const FLOAT angle)
-    {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-         FLOAT Cos=cos(angle);
-         FLOAT Sin=sin(angle);
-
-         out->_11= Cos; out->_12=Sin; out->_13=0; out->_14=0;
-         out->_21=-Sin; out->_22=Cos; out->_23=0; out->_24=0;
-         out->_31= 0;   out->_32=0;   out->_33=1; out->_34=0;
-         out->_41= 0;   out->_42=0;   out->_43=0; out->_44=1;
-
-         return out;
-    }
 
 
     //==================================
@@ -1800,83 +1458,19 @@ namespace SRE {
     //If axis is null, a (1,0,0) vector
     //will be applied
 	//==================================
-    PMAT33 MatrixRotationAxis(PMAT33 out, CPVEC3 axis, const FLOAT angle)
+    MAT44 MatrixRotationAxis(VEC3& axis, const FLOAT angle)
     {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-         VEC3 _axis= VEC3(1,0,0);
-
-         if(nullptr != axis)
-         {
-             _axis=*axis;
-             Normalize(&_axis);
-         }
+         VEC3 _axis= axis;
+         Normalize(_axis);
 
          FLOAT Cos=cos(angle);
          FLOAT Sin=sin(angle);
 
-         out->_11=_axis.x*_axis.x*(1-Cos)+Cos;
-         out->_12=_axis.x*_axis.y*(1-Cos)+_axis.z*Sin;
-         out->_13=_axis.x*_axis.z*(1-Cos)-_axis.y*Sin;
-
-         out->_21=_axis.x*_axis.y*(1-Cos)-_axis.z*Sin;
-         out->_22=_axis.y*_axis.y*(1-Cos)+Cos;
-         out->_23=_axis.y*_axis.z*(1-Cos)+_axis.x*Sin;
-
-         out->_31=_axis.x*_axis.z*(1-Cos)+_axis.y*Sin;
-         out->_32=_axis.y*_axis.z*(1-Cos)-_axis.x*Sin;
-         out->_33=_axis.z*_axis.z*(1-Cos)+Cos;
-
-
-         return out;
-
-    }
-
-
-    PMAT44 MatrixRotationAxis(PMAT44 out, CPVEC3 axis, const FLOAT angle)
-    {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-         Identity(out);
-         VEC3 _axis= VEC3(1,0,0);
-
-         if(nullptr != axis)
-         {
-             _axis=*axis;
-             Normalize(&_axis);
-         }
-
-         FLOAT Cos=cos(angle);
-         FLOAT Sin=sin(angle);
-
-         out->_11=_axis.x*_axis.x*(1-Cos)+Cos;
-         out->_12=_axis.x*_axis.y*(1-Cos)+_axis.z*Sin;
-         out->_13=_axis.x*_axis.z*(1-Cos)-_axis.y*Sin;
-
-         out->_21=_axis.x*_axis.y*(1-Cos)-_axis.z*Sin;
-         out->_22=_axis.y*_axis.y*(1-Cos)+Cos;
-         out->_23=_axis.y*_axis.z*(1-Cos)+_axis.x*Sin;
-
-         out->_31=_axis.x*_axis.z*(1-Cos)+_axis.y*Sin;
-         out->_32=_axis.y*_axis.z*(1-Cos)-_axis.x*Sin;
-         out->_33=_axis.z*_axis.z*(1-Cos)+Cos;
-
-
-         return out;
+        return MAT44(_axis.x*_axis.x*(1-Cos)+Cos,           _axis.x*_axis.y*(1-Cos)+_axis.z*Sin, _axis.x*_axis.z*(1-Cos)-_axis.y*Sin,  0.0f,
+                              _axis.x*_axis.y*(1-Cos)-_axis.z*Sin,  _axis.y*_axis.y*(1-Cos)+Cos,            _axis.y*_axis.z*(1-Cos)+_axis.x*Sin, 0.0f,
+                              _axis.x*_axis.z*(1-Cos)+_axis.y*Sin,  _axis.y*_axis.z*(1-Cos)-_axis.x*Sin,  _axis.z*_axis.z*(1-Cos)+Cos,           0.0f,
+                              0.0f,  0.0f,  0.0f, 1.0f);
 
     }
 
@@ -1898,70 +1492,16 @@ namespace SRE {
     //  v * M
     //this produces a rotation around the world coordinate system
 	//==================================
-    PMAT33 MatrixRotationYawPitchRoll(PMAT33 out, const FLOAT yaw, const FLOAT pitch, const FLOAT roll)
+    MAT44 MatrixRotationYawPitchRoll(const FLOAT yaw, const FLOAT pitch, const FLOAT roll)
     {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
         FLOAT CosY=cos(yaw);   FLOAT SinY=sin(yaw);
         FLOAT CosX=cos(pitch); FLOAT SinX=sin(pitch);
         FLOAT CosZ=cos(roll);  FLOAT SinZ=sin(roll);
 
-        out->_11= CosY*CosZ+SinY*SinX*SinZ;
-        out->_12= CosX*SinZ;
-        out->_13=-SinY*CosZ+CosY*SinX*SinZ;
-
-        out->_21=-CosY*SinZ+SinY*SinX*CosZ;
-        out->_22= CosX*CosZ;
-        out->_23= SinZ*SinY+CosY*SinX*CosZ;
-
-        out->_31= SinY*CosX;
-        out->_32=-SinX;
-        out->_33= CosY*CosX;
-
-        return out;
-
-    }
-
-
-    PMAT44 MatrixRotationYawPitchRoll(PMAT44 out, const FLOAT yaw, const FLOAT pitch, const FLOAT roll)
-    {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out )
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-        Identity(out);
-
-        FLOAT CosY=cos(yaw);   FLOAT SinY=sin(yaw);
-        FLOAT CosX=cos(pitch); FLOAT SinX=sin(pitch);
-        FLOAT CosZ=cos(roll);  FLOAT SinZ=sin(roll);
-
-        out->_11= CosY*CosZ+SinY*SinX*SinZ;
-        out->_12= CosX*SinZ;
-        out->_13=-SinY*CosZ+CosY*SinX*SinZ;
-
-        out->_21=-CosY*SinZ+SinY*SinX*CosZ;
-        out->_22= CosX*CosZ;
-        out->_23= SinZ*SinY+CosY*SinX*CosZ;
-
-        out->_31= SinY*CosX;
-        out->_32=-SinX;
-        out->_33= CosY*CosX;
-
-
-        return out;
-
+        return MAT44(CosY*CosZ+SinY*SinX*SinZ,    CosX*SinZ,    -SinY*CosZ+CosY*SinX*SinZ,  0.0f,
+                              -CosY*SinZ+SinY*SinX*CosZ,   CosX*CosZ,     SinZ*SinY+CosY*SinX*CosZ, 0.0f,
+                                                         SinY*CosX,          -SinX,                             CosY*CosX, 0.0f,
+                              0.0f,  0.0f,  0.0f, 1.0f);
     }
 
 
@@ -1973,63 +1513,12 @@ namespace SRE {
 	//
     //
 	//==================================
-    PMAT33 MatrixRotationQuaternion(PMAT33 out, CPQUAT quat)
+    MAT44 MatrixRotationQuaternion(QUAT& quat)
     {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == quat)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-
-        out->_11=1-2*quat->y*quat->y-2*quat->z*quat->z;
-        out->_12=2*quat->x*quat->y+2*quat->w*quat->z;
-        out->_13=2*quat->x*quat->z-2*quat->w*quat->y;
-
-        out->_21=2*quat->x*quat->y-2*quat->w*quat->z;
-        out->_22=1-2*quat->x*quat->x-2*quat->z*quat->z;
-        out->_23=2*quat->y*quat->z+2*quat->w*quat->x;
-
-        out->_31=2*quat->x*quat->z+2*quat->w*quat->y;
-        out->_32=2*quat->y*quat->z-2*quat->w*quat->x;
-        out->_33=1-2*quat->x*quat->x-2*quat->y*quat->y;
-
-        return out;
-
-    }
-
-
-    PMAT44 MatrixRotationQuaternion(PMAT44 out, CPQUAT quat)
-    {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == quat)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-        Identity(out);
-
-        out->_11=1-2*quat->y*quat->y-2*quat->z*quat->z;
-        out->_12=2*quat->x*quat->y+2*quat->w*quat->z;
-        out->_13=2*quat->x*quat->z-2*quat->w*quat->y;
-
-        out->_21=2*quat->x*quat->y-2*quat->w*quat->z;
-        out->_22=1-2*quat->x*quat->x-2*quat->z*quat->z;
-        out->_23=2*quat->y*quat->z+2*quat->w*quat->x;
-
-        out->_31=2*quat->x*quat->z+2*quat->w*quat->y;
-        out->_32=2*quat->y*quat->z-2*quat->w*quat->x;
-        out->_33=1-2*quat->x*quat->x-2*quat->y*quat->y;
-
-
-        return out;
-
+        return MAT44(1-2*quat.y*quat.y-2*quat.z*quat.z,  2*quat.x*quat.y+2*quat.w*quat.z,    2*quat.x*quat.z-2*quat.w*quat.y,  0.0f,
+                                 2*quat.x*quat.y-2*quat.w*quat.z,  1-2*quat.x*quat.x-2*quat.z*quat.z, 2*quat.y*quat.z+2*quat.w*quat.x, 0.0f,
+                                 2*quat.x*quat.z+2*quat.w*quat.y, 2*quat.y*quat.z-2*quat.w*quat.x,     1-2*quat.x*quat.x-2*quat.y*quat.y, 0.0f,
+                              0.0f,  0.0f,  0.0f, 1.0f);
     }
 
 
@@ -2044,51 +1533,22 @@ namespace SRE {
     //        looking at
     //up:     the vector that points to the up direction
 	//==================================
-    PMAT44 MatrixViewLookAt(PMAT44 out, CPVEC3 pos, CPVEC3 lookAt, CPVEC3 up)
+	 MAT44 MatrixViewLookAt(VEC3& pos, VEC3& lookAt, VEC3& up)
     {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == pos ||
-            nullptr == lookAt || nullptr == up)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
+        VEC3 view_vector=lookAt-pos;
+        Normalize(view_vector);
 
-        VEC3 view_vector=(*lookAt)-(*pos);
-        Normalize(&view_vector);
+        VEC3 right_vector=Cross(view_vector, up);
+        Normalize(right_vector);
 
-        VEC3 right_vector=VEC3();
-        Cross(&right_vector, &view_vector, up);
-        Normalize(&right_vector);
+        VEC3 up_vector=Cross(right_vector, view_vector);
+        Normalize(up_vector);
 
-        VEC3 up_vector=VEC3();
-        Cross(&up_vector, &right_vector, &view_vector);
-        Normalize(&up_vector);
-
-        out->_11=right_vector.x;
-        out->_21=right_vector.y;
-        out->_31=right_vector.z;
-        out->_41=-Dot(pos, &right_vector);
-
-        out->_12=up_vector.x;
-        out->_22=up_vector.y;
-        out->_32=up_vector.z;
-        out->_42=-Dot(pos, &up_vector);
-
-        out->_13=view_vector.x;
-        out->_23=view_vector.y;
-        out->_33=view_vector.z;
-        out->_43=-Dot(pos, &view_vector);
-
-        out->_14=0;
-        out->_24=0;
-        out->_34=0;
-        out->_44=1;
-
-
-        return out;
+        return MAT44(right_vector.x,  up_vector.x,  view_vector.x,  0.0f,
+                               right_vector.y,  up_vector.y,  view_vector.y, 0.0f,
+                               right_vector.z,  up_vector.z,  view_vector.z, 0.0f,
+                               -Dot(pos, right_vector),  -Dot(pos, up_vector),  -Dot(pos, view_vector), 1.0f);
 
     }
 
@@ -2106,50 +1566,23 @@ namespace SRE {
     //pitch: rotate pitch degrees around x axis
     //roll:  rotate roll degrees around z axis
 	//==================================
-    PMAT44 MatrixViewYawPitchRoll(PMAT44 out, CPVEC3 pos, const FLOAT yaw, const FLOAT pitch, const FLOAT roll)
+    MAT44 MatrixViewYawPitchRoll(VEC3& pos, const FLOAT yaw, const FLOAT pitch, const FLOAT roll)
     {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == pos)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
 
         FLOAT CosY=cos(yaw);   FLOAT SinY=sin(yaw);
         FLOAT CosX=cos(pitch); FLOAT SinX=sin(pitch);
         FLOAT CosZ=cos(roll);  FLOAT SinZ=sin(roll);
 
+        VEC3 xaxis=VEC3(CosY*CosZ-SinX*SinY*SinZ, -CosX*SinZ, SinY*CosZ+SinX*CosY*SinZ);
+        VEC3 yaxis=VEC3(CosY*SinZ+SinX*SinY*CosZ, CosX*CosZ, SinY*SinZ-SinX*CosY*CosZ);
+        VEC3 zaxis=VEC3(-SinY*CosX,  SinX, CosX*CosY);
 
-        out->_11= CosY*CosZ-SinX*SinY*SinZ;
-        out->_12= CosY*SinZ+SinX*SinY*CosZ;
-        out->_13=-SinY*CosX;
-        out->_14= 0;
-
-        out->_21=-CosX*SinZ;
-        out->_22= CosX*CosZ;
-        out->_23= SinX;
-        out->_24= 0;
-
-        out->_31= SinY*CosZ+SinX*CosY*SinZ;
-        out->_32= SinY*SinZ-SinX*CosY*CosZ;
-        out->_33= CosX*CosY;
-        out->_34= 0;
-
-        VEC3 xaxis=VEC3(out->_11, out->_12, out->_13);
-        VEC3 yaxis=VEC3(out->_21, out->_22, out->_23);
-        VEC3 zaxis=VEC3(out->_31, out->_32, out->_33);
-        out->_41= -Dot(pos, &xaxis);
-        out->_42= -Dot(pos, &yaxis);
-        out->_43= -Dot(pos, &zaxis);
-        out->_44= 1;
-
-
-        return out;
+        return MAT44( xaxis.x,  yaxis.x,  zaxis.x, 0.0f,
+                                xaxis.y,  yaxis.y,  zaxis.y,  0.0f,
+                                xaxis.z,  yaxis.z,  zaxis.z,  0.0f,
+                               -Dot(pos, xaxis), -Dot(pos, yaxis), -Dot(pos, zaxis), 1.0f);
 
     }
-
 
     //==================================
 	//View Matrix
@@ -2160,43 +1593,20 @@ namespace SRE {
     //
     //
 	//==================================
-    PMAT44 MatrixViewQuaternion(PMAT44 out, CPVEC3 pos, CPQUAT quat)
+    MAT44 MatrixViewQuaternion(VEC3& pos, QUAT& quat)
     {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == pos || nullptr == quat)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
 
-        out->_11=1-2*quat->y*quat->y-2*quat->z*quat->z;
-        out->_12=2*quat->x*quat->y+2*quat->w*quat->z;
-        out->_13=2*quat->x*quat->z-2*quat->w*quat->y;
+        VEC3 xaxis=VEC3(1-2*quat.y*quat.y-2*quat.z*quat.z, 2*quat.x*quat.y-2*quat.w*quat.z, 2*quat.x*quat.z+2*quat.w*quat.y);
+        VEC3 yaxis=VEC3(2*quat.x*quat.y+2*quat.w*quat.z, 1-2*quat.x*quat.x-2*quat.z*quat.z, 2*quat.y*quat.z-2*quat.w*quat.x);
+        VEC3 zaxis=VEC3(2*quat.x*quat.z-2*quat.w*quat.y, 2*quat.y*quat.z+2*quat.w*quat.x, 1-2*quat.x*quat.x-2*quat.y*quat.y);
 
-        out->_21=2*quat->x*quat->y-2*quat->w*quat->z;
-        out->_22=1-2*quat->x*quat->x-2*quat->z*quat->z;
-        out->_23=2*quat->y*quat->z+2*quat->w*quat->x;
-
-        out->_31=2*quat->x*quat->z+2*quat->w*quat->y;
-        out->_32=2*quat->y*quat->z-2*quat->w*quat->x;
-        out->_33=1-2*quat->x*quat->x-2*quat->y*quat->y;
-
-
-        VEC3 xaxis=VEC3(out->_11, out->_12, out->_13);
-        VEC3 yaxis=VEC3(out->_21, out->_22, out->_23);
-        VEC3 zaxis=VEC3(out->_31, out->_32, out->_33);
-        out->_41= -Dot(pos, &xaxis);
-        out->_42= -Dot(pos, &yaxis);
-        out->_43= -Dot(pos, &zaxis);
-        out->_44= 1;
-
-
-        return out;
+       return MAT44( xaxis.x,  yaxis.x,  zaxis.x, 0.0f,
+                                xaxis.y,  yaxis.y,  zaxis.y,  0.0f,
+                                xaxis.z,  yaxis.z,  zaxis.z,  0.0f,
+                               -Dot(pos, xaxis), -Dot(pos, yaxis), -Dot(pos, zaxis), 1.0f);
 
     }
-
 
     //==================================
 	//Projection Matrix
@@ -2218,64 +1628,18 @@ namespace SRE {
     // left plane = - right plane
     // top  plane = - bottom plane
 	//==================================
-    PMAT44 MatrixProjectOrthogonal(PMAT44 out, const FLOAT view_width,
-                                               const FLOAT view_height,
-                                               const FLOAT znear,
-                                               const FLOAT zfar)
+   MAT44 MatrixProjectOrthogonal(const FLOAT view_width,
+                                                    const FLOAT view_height,
+                                                    const FLOAT znear,
+                                                    const FLOAT zfar)
     {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == out)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-
-        if(fabs(view_width) < EPSILON)
-        {
-             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-             return out;
-        }
-
-        if(fabs(view_height) < EPSILON)
-        {
-             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-             return out;
-        }
-
-        if(fabs(zfar-znear) < EPSILON)
-        {
-             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-             return out;
-        }
-#endif
-
-
-        out->_11= 2.0/view_width;
-        out->_22= 2.0/view_height;
-        out->_33= 1.0/(zfar-znear);
-        out->_34= 0;
-
-        out->_12=0;
-        out->_13=0;
-        out->_14=0;
-
-        out->_21=0;
-        out->_23=0;
-        out->_24=0;
-
-        out->_31=0;
-        out->_32=0;
-
-        out->_41=0;
-        out->_42=0;
-        out->_43=-znear/(zfar-znear);
-        out->_44=1;
-
-        return out;
+       return MAT44( 2.0/view_width,                    0.0f,                        0.0f, 0.0f,
+                                               0.0f,  2.0/view_height,                        0.0f,  0.0f,
+                                               0.0f,                    0.0f,      1.0/(zfar-znear),  0.0f,
+                                               0.0f,                    0.0f, -znear/(zfar-znear), 1.0f);
 
     }
-
 
     //==================================
 	//Projection Matrix
@@ -2298,68 +1662,19 @@ namespace SRE {
     //znear: the minimum z value of the view volume
     //zfar:  the maximum z value of the view volume
 	//==================================
-    PMAT44 MatrixProjectOrthonalOffCenter(PMAT44 out, const FLOAT left,
+   MAT44 MatrixProjectOrthonalOffCenter(const FLOAT left,
                                                       const FLOAT right,
                                                       const FLOAT top,
                                                       const FLOAT bottom,
                                                       const FLOAT znear,
                                                       const FLOAT zfar)
     {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-
-        if(fabs(right-left) < EPSILON)
-        {
-             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-             return out;
-        }
-
-        if(fabs(top-bottom) < EPSILON)
-        {
-             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-             return out;
-        }
-
-        if(fabs(zfar-znear) < EPSILON)
-        {
-             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-             return out;
-        }
-#endif
-
-
-        out->_11= 2.0/(right-left);
-        out->_22= 2.0/(top-bottom);
-        out->_33= 1.0/(zfar-znear);
-
-        out->_14=0;
-        out->_24=0;
-        out->_34=0;
-
-        out->_12=0;
-        out->_13=0;
-
-        out->_21=0;
-        out->_23=0;
-
-        out->_31=0;
-        out->_32=0;
-
-        out->_41=-(right+left)/(right-left);
-        out->_42=-(top+bottom)/(top-bottom);
-        out->_43= znear/(zfar-znear);
-        out->_44=1;
-
-        return out;
+       return MAT44(2.0/(right-left),                       0.0f,                        0.0f, 0.0f,
+                                               0.0f, 2.0/(top-bottom),                        0.0f,  0.0f,
+                                               0.0f,                      0.0f,      1.0/(zfar-znear),  0.0f,
+                  -(right+left)/(right-left),-(top+bottom)/(top-bottom), znear/(zfar-znear), 1.0f);
 
     }
-
-
 
     //==================================
 	//Projection Matrix
@@ -2382,7 +1697,7 @@ namespace SRE {
     //znear: the minimum z value of the view volume
     //zfar:  the maximum z value of the view volume
 	//==================================
-    PMAT44 MatrixProjectPerspectiveOffCenter(PMAT44 out, const FLOAT left,
+    MAT44 MatrixProjectPerspectiveOffCenter(const FLOAT left,
                                                          const FLOAT right,
                                                          const FLOAT top,
                                                          const FLOAT bottom,
@@ -2390,57 +1705,11 @@ namespace SRE {
                                                          const FLOAT zfar)
     {
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == out)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-
-        if(fabs(right-left) < EPSILON)
-        {
-             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-             return out;
-        }
-
-        if(fabs(top-bottom) < EPSILON)
-        {
-             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-             return out;
-        }
-
-        if(fabs(zfar-znear) < EPSILON)
-        {
-             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-             return out;
-        }
-#endif
-
-
-        out->_11=(2.0*znear)/(right-left);
-        out->_12=0;
-        out->_13=0;
-        out->_14=0;
-
-        out->_21=0;
-        out->_22=(2.0*znear)/(top-bottom);
-        out->_23=0;
-        out->_24=0;
-
-        out->_31=-(right+left)/(right-left);
-        out->_32=-(top+bottom)/(top-bottom);
-        out->_33= zfar/(zfar-znear);
-        out->_34=1;
-
-        out->_41=0;
-        out->_42=0;
-        out->_43=-(zfar*znear)/(zfar-znear);
-        out->_44=0;
-
-        return out;
-
+       return MAT44((2.0*znear)/(right-left),                                        0.0f,                        0.0f,  0.0f,
+                                                          0.0f,       (2.0*znear)/(top-bottom),                        0.0f,  0.0f,
+                             -(right+left)/(right-left),-(top+bottom)/(top-bottom),     zfar/(zfar-znear),  1.0f,
+                                                           0.0f,                                       0.0f,    -(zfar*znear)/(zfar-znear), 0.0f);
     }
-
 
     //==================================
 	//Projection Matrix
@@ -2462,63 +1731,17 @@ namespace SRE {
     // left plane = - right plane
     // top  plane = - bottom plane
 	//==================================
-    PMAT44 MatrixProjectPerspective(PMAT44 out, const FLOAT view_width,
+   MAT44 MatrixProjectPerspective(const FLOAT view_width,
                                                 const FLOAT view_height,
                                                 const FLOAT znear,
                                                 const FLOAT zfar)
     {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-
-        if(fabs(view_width) < EPSILON)
-        {
-             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-             return out;
-        }
-
-        if(fabs(view_height) < EPSILON)
-        {
-             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-             return out;
-        }
-
-        if(fabs(zfar-znear) < EPSILON)
-        {
-             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-             return out;
-        }
-#endif
-
-
-        out->_11=(2.0*znear)/view_width;
-        out->_12=0;
-        out->_13=0;
-        out->_14=0;
-
-        out->_21=0;
-        out->_22=(2.0*znear)/view_height;
-        out->_23=0;
-        out->_24=0;
-
-        out->_31=0;
-        out->_32=0;
-        out->_33=zfar/(zfar-znear);
-        out->_34=1;
-
-        out->_41=0;
-        out->_42=0;
-        out->_43=-(zfar*znear)/(zfar-znear);
-        out->_44=0;
-
-        return out;
+       return MAT44((2.0*znear)/view_width,                                        0.0f,                        0.0f,  0.0f,
+                                                          0.0f,           (2.0*znear)/view_height,                        0.0f,  0.0f,
+                                                           0.0f,                                        0.0f,      zfar/(zfar-znear),  1.0f,
+                                                           0.0f,                                       0.0f,    -(zfar*znear)/(zfar-znear), 0.0f);
 
     }
-
 
     //==================================
 	//Projection Matrix
@@ -2537,73 +1760,21 @@ namespace SRE {
     //znear: the minimum z value of the view volume
     //zfar:  the maximum z value of the view volume
     //
-	//==================================
-    PMAT44 MatrixProjectPerspectiveFOV(PMAT44 out, const FLOAT fov,
+	 //==================================
+    MAT44 MatrixProjectPerspectiveFOV(const FLOAT fov,
                                                    const FLOAT aspectRatio,
                                                    const FLOAT znear,
                                                    const FLOAT zfar)
     {
 
+       FLOAT Tan  =tan(fov/2.0);
+       return MAT44(1.0/(aspectRatio*Tan),          0.0f,                                   0.0f,  0.0f,
+                                                        0.0f,  1.0f/Tan,                                    0.0f,  0.0f,
+                                                        0.0f,         0.0f,                 zfar/(zfar-znear),  1.0f,
+                                                        0.0f,         0.0f,    -(zfar*znear)/(zfar-znear), 0.0f);
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == out)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-
-        if(fabs(aspectRatio) < EPSILON)
-        {
-             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-             return out;
-        }
-
-        if(fabs(zfar-znear) < EPSILON)
-        {
-             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-             return out;
-        }
-#endif
-
-        FLOAT angle=fov/2.0;
-        FLOAT Tan  =tan(angle);
-        FLOAT as   =aspectRatio*Tan;
-
-#ifdef _SRE_DEBUG_
-        if(fabs(as) < EPSILON)
-        {
-             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-             return out;
-        }
-
-        if(fabs(Tan) < EPSILON)
-        {
-             _ERRORLOG(SRE_ERROR_DIVIDEBYZERO);
-             return out;
-        }
-#endif
-
-        out->_11=1.0/as;
-        out->_12=0;
-        out->_13=0;
-        out->_14=0;
-
-        out->_21=0;
-        out->_22=1.0/Tan;
-        out->_23=0;
-        out->_24=0;
-
-        out->_31=0;
-        out->_32=0;
-        out->_33=zfar/(zfar-znear);
-        out->_34=1;
-
-        out->_41=0;
-        out->_42=0;
-        out->_43=-(zfar*znear)/(zfar-znear);
-        out->_44=0;
-
-        return out;
 
     }
+
+
 }

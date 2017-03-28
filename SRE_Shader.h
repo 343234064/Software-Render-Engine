@@ -32,27 +32,32 @@ namespace SRE {
         VSOutput():
             vertex(),
             normal(),
-            texcoord()
+            texcoord(),
+            color()
         {}
         VSOutput(VERTEX4& v):
             vertex(v),
             normal(),
-            texcoord()
+            texcoord(),
+            color()
         {}
-        VSOutput(VERTEX4& v, VEC3& n, VEC2& uv):
+        VSOutput(VERTEX4& v, VEC3& n, VEC2& uv, VCOLOR& col):
             vertex(v),
             normal(n),
-            texcoord(uv)
+            texcoord(uv),
+            color(col)
         {}
-        VSOutput(VERTEX4* v, VEC3* n, VEC2* uv):
+        VSOutput(VERTEX4* v, VEC3* n, VEC2* uv, VCOLOR* col):
             vertex(*v),
             normal(*n),
-            texcoord(*uv)
+            texcoord(*uv),
+            color(*col)
         {}
         VSOutput(const VSOutput & other):
             vertex(other.vertex),
             normal(other.normal),
-            texcoord(other.texcoord)
+            texcoord(other.texcoord),
+            color(other.color)
         {}
 
         VSOutput(VERTEX4& v, VSOutput& vs1, VSOutput& vs2, FLOAT t):
@@ -61,16 +66,21 @@ namespace SRE {
                    vs1.normal.y + t*(vs2.normal.y-vs1.normal.y),
                    vs1.normal.z + t*(vs2.normal.z-vs1.normal.z)),
             texcoord(vs1.texcoord.x + t*(vs2.texcoord.x-vs1.texcoord.x),
-                     vs1.texcoord.y + t*(vs2.texcoord.y-vs1.texcoord.y))
+                           vs1.texcoord.y + t*(vs2.texcoord.y-vs1.texcoord.y)),
+            color(vs1.color.r + t*(vs2.color.r-vs1.color.r),
+                     vs1.color.g + t*(vs2.color.g-vs1.color.g),
+                     vs1.color.b + t*(vs2.color.g-vs1.color.b),
+                     vs1.color.a + t*(vs2.color.g-vs1.color.a))
         {}
 
         virtual ~VSOutput(){}
 
 
     public:
-        VERTEX4 vertex;
-        VEC3    normal;
-        VEC2    texcoord;
+        VERTEX4   vertex;
+        VEC3        normal;
+        VEC2        texcoord;
+        VCOLOR   color;
 
     };
 
@@ -87,22 +97,24 @@ namespace SRE {
         PSInput():
             vertex(),
             texcoord(),
-            normal()
+            normal(),
+            color()
         {}
-        PSInput(VERTEX3& _vertex, VEC3& _normal, VEC2& _uv):
-            vertex(_vertex), texcoord(_uv), normal(_normal)
+        PSInput(VERTEX3& _vertex, VEC3& _normal, VEC2& _uv, VCOLOR& _color):
+            vertex(_vertex), texcoord(_uv), normal(_normal), color(_color)
         {}
 
         //barycentric interpolation, use custom z value
         PSInput(VSOutput& v0, FLOAT w0,
-                VSOutput& v1, FLOAT w1,
-                VSOutput& v2, FLOAT w2,
-                FLOAT interpolatedZ):
-             vertex((v0.vertex.x-v2.vertex.x)*w0 + (v1.vertex.x-v2.vertex.x)*w1 + v2.vertex.x,
-                    (v0.vertex.y-v2.vertex.y)*w0 + (v1.vertex.y-v2.vertex.y)*w1 + v2.vertex.y,
-                    interpolatedZ),
+                    VSOutput& v1, FLOAT w1,
+                    VSOutput& v2, FLOAT w2,
+                    FLOAT interpolatedZ):
+            vertex((v0.vertex.x-v2.vertex.x)*w0 + (v1.vertex.x-v2.vertex.x)*w1 + v2.vertex.x,
+                      (v0.vertex.y-v2.vertex.y)*w0 + (v1.vertex.y-v2.vertex.y)*w1 + v2.vertex.y,
+                      interpolatedZ),
              texcoord(),
-             normal()
+             normal(),
+             color()
         {
            FLOAT W0 = w0*v0.vertex.w*interpolatedZ, W1 = w1*v1.vertex.w*interpolatedZ, W2 = w2*v1.vertex.w*interpolatedZ;
            texcoord.x = v0.texcoord.x*W0 + v1.texcoord.x*W1 + v2.texcoord.x*W2;
@@ -112,17 +124,22 @@ namespace SRE {
            normal.y = v0.normal.y*W0 + v1.normal.y*W1 + v2.normal.y*W2;
            normal.z = v0.normal.z*W0 + v1.normal.z*W1 + v2.normal.z*W2;
 
+           color.r  = v0.color.r*W0 + v1.color.r*W1 + v2.color.r*W2;
+           color.g = v0.color.g*W0 + v1.color.g*W1 + v2.color.g*W2;
+           color.b = v0.color.b*W0 + v1.color.b*W1 + v2.color.b*W2;
+           color.a = v0.color.a*W0 + v1.color.a*W1 + v2.color.a*W2;
         }
 
         //barycentric interpolation
         PSInput(VSOutput& v0, FLOAT w0,
-                VSOutput& v1, FLOAT w1,
-                VSOutput& v2, FLOAT w2):
+                    VSOutput& v1, FLOAT w1,
+                    VSOutput& v2, FLOAT w2):
              vertex((v0.vertex.x-v2.vertex.x)*w0 + (v1.vertex.x-v2.vertex.x)*w1 + v2.vertex.x,
                     (v0.vertex.y-v2.vertex.y)*w0 + (v1.vertex.y-v2.vertex.y)*w1 + v2.vertex.y,
                     (v0.vertex.z-v2.vertex.z)*w0 + (v1.vertex.z-v2.vertex.z)*w1 + v2.vertex.z),
              texcoord(),
-             normal()
+             normal(),
+             color()
         {
            FLOAT W0 = w0*v0.vertex.w*vertex.z, W1 = w1*v1.vertex.w*vertex.z, W2 = w2*v1.vertex.w*vertex.z;
            texcoord.x = v0.texcoord.x*W0 + v1.texcoord.x*W1 + v2.texcoord.x*W2;
@@ -132,6 +149,11 @@ namespace SRE {
            normal.y = v0.normal.y*W0 + v1.normal.y*W1 + v2.normal.y*W2;
            normal.z = v0.normal.z*W0 + v1.normal.z*W1 + v2.normal.z*W2;
 
+           color.r  = v0.color.r*W0 + v1.color.r*W1 + v2.color.r*W2;
+           color.g = v0.color.g*W0 + v1.color.g*W1 + v2.color.g*W2;
+           color.b = v0.color.b*W0 + v1.color.b*W1 + v2.color.b*W2;
+           color.a = v0.color.a*W0 + v1.color.a*W1 + v2.color.a*W2;
+
         }
         //fx*fy*(x1y1 - x1y2 - x2y1 + x2y2) - fy*(x1y1 - x1y2)  - fx*(x1y1 - x2y1) + x1y1;
         //2d-linear interpolation, use custom z value
@@ -139,26 +161,34 @@ namespace SRE {
                 FLOAT fx, FLOAT fy,
                 FLOAT interpolatedZ):
              vertex(Lerp(v00.vertex.x, v10.vertex.x, v01.vertex.x, v11.vertex.x, fx, fy),
-                    Lerp(v00.vertex.y, v10.vertex.y, v01.vertex.y, v11.vertex.y, fx, fy),
+                       Lerp(v00.vertex.y, v10.vertex.y, v01.vertex.y, v11.vertex.y, fx, fy),
                     interpolatedZ),
              texcoord(Lerp(v00.texcoord.x, v10.texcoord.x, v01.texcoord.x, v11.texcoord.x, fx, fy),
                       Lerp(v00.texcoord.y, v10.texcoord.y, v01.texcoord.y, v11.texcoord.y, fx, fy)),
              normal(Lerp(v00.normal.x, v10.normal.x, v01.normal.x, v11.normal.x, fx, fy),
-                    Lerp(v00.normal.y, v10.normal.y, v01.normal.y, v11.normal.y, fx, fy),
-                    Lerp(v00.normal.z, v10.normal.z, v01.normal.z, v11.normal.z, fx, fy))
-        {}
+                        Lerp(v00.normal.y, v10.normal.y, v01.normal.y, v11.normal.y, fx, fy),
+                        Lerp(v00.normal.z, v10.normal.z, v01.normal.z, v11.normal.z, fx, fy)),
+             color(Lerp(v00.color.r, v10.color.r, v01.color.r, v11.color.r, fx, fy),
+                      Lerp(v00.color.g, v10.color.g, v01.color.g, v11.color.g, fx, fy),
+                      Lerp(v00.color.b, v10.color.b, v01.color.b, v11.color.b, fx, fy),
+                      Lerp(v00.color.a, v10.color.a, v01.color.a, v11.color.a, fx, fy))
+         {}
 
         //2d-linear interpolation
         PSInput(PSInput& v00, PSInput& v10, PSInput& v01, PSInput& v11,
                 FLOAT fx, FLOAT fy):
              vertex(Lerp(v00.vertex.x, v10.vertex.x, v01.vertex.x, v11.vertex.x, fx, fy),
-                    Lerp(v00.vertex.y, v10.vertex.y, v01.vertex.y, v11.vertex.y, fx, fy),
-                    Lerp(v00.vertex.z, v10.vertex.z, v01.vertex.x, v11.vertex.z, fx, fy)),
+                        Lerp(v00.vertex.y, v10.vertex.y, v01.vertex.y, v11.vertex.y, fx, fy),
+                        Lerp(v00.vertex.z, v10.vertex.z, v01.vertex.x, v11.vertex.z, fx, fy)),
              texcoord(Lerp(v00.texcoord.x, v10.texcoord.x, v01.texcoord.x, v11.texcoord.x, fx, fy),
-                      Lerp(v00.texcoord.y, v10.texcoord.y, v01.texcoord.y, v11.texcoord.y, fx, fy)),
+                            Lerp(v00.texcoord.y, v10.texcoord.y, v01.texcoord.y, v11.texcoord.y, fx, fy)),
              normal(Lerp(v00.normal.x, v10.normal.x, v01.normal.x, v11.normal.x, fx, fy),
-                    Lerp(v00.normal.y, v10.normal.y, v01.normal.y, v11.normal.y, fx, fy),
-                    Lerp(v00.normal.z, v10.normal.z, v01.normal.z, v11.normal.z, fx, fy))
+                        Lerp(v00.normal.y, v10.normal.y, v01.normal.y, v11.normal.y, fx, fy),
+                        Lerp(v00.normal.z, v10.normal.z, v01.normal.z, v11.normal.z, fx, fy)),
+              color(Lerp(v00.color.r, v10.color.r, v01.color.r, v11.color.r, fx, fy),
+                      Lerp(v00.color.g, v10.color.g, v01.color.g, v11.color.g, fx, fy),
+                      Lerp(v00.color.b, v10.color.b, v01.color.b, v11.color.b, fx, fy),
+                      Lerp(v00.color.a, v10.color.a, v01.color.a, v11.color.a, fx, fy))
         {}
 
         virtual ~PSInput()
@@ -170,6 +200,7 @@ namespace SRE {
         VERTEX3  vertex;
         VEC2       texcoord;
         VEC3       normal;
+        VCOLOR  color;
 
 	};
 
@@ -183,22 +214,19 @@ namespace SRE {
 	class VertexShader
 	{
     public:
-        VertexShader(CallBackVShader* shader=nullptr, VariableBuffer* varbuffer=nullptr):
-            m_pCallBackVShader(shader),
-            m_pVarBuffer(varbuffer)
+        VertexShader(CallBackVShader* shader=nullptr):
+            m_pCallBackVShader(shader)
         {}
         virtual ~VertexShader(){}
 
-        inline VSOutput*  Run(BYTE* vs_in);
+        inline VSOutput*  Run(BYTE* vs_in, VariableBuffer* varbuffer);
         inline void  SetCallBackShader(CallBackVShader * callbackshader);
-        inline void  SetVariableBuffer(VariableBuffer * varBuffer);
 
         VertexShader(const VertexShader & other) = delete;
         VertexShader & operator=(const VertexShader & other) = delete;
 
     protected:
         CallBackVShader*  m_pCallBackVShader;
-        VariableBuffer*   m_pVarBuffer;
 
 	};
 
@@ -210,14 +238,9 @@ namespace SRE {
 	    m_pCallBackVShader = shader;
 	}
 
-	void VertexShader::SetVariableBuffer(VariableBuffer* varbuffer)
+	VSOutput* VertexShader::Run(BYTE* vs_in, VariableBuffer* varbuffer)
 	{
-	    m_pVarBuffer = varbuffer;
-	}
-
-	VSOutput* VertexShader::Run(BYTE* vs_in)
-	{
-	   return m_pCallBackVShader(vs_in, m_pVarBuffer);
+	   return m_pCallBackVShader(vs_in, varbuffer);
 	}
 
 
@@ -269,8 +292,8 @@ namespace SRE {
 
 
 
-    /*
-    //=============================
+
+   //=============================
 	//Class Technique
 	//
 	//
@@ -293,32 +316,26 @@ namespace SRE {
 
         virtual ~Technique()
         {
-            //
             m_PassList.clear();
         }
 
-        void         Run();
-        void         SetName(std::string name);
-        std::string  GetName();
+        void             Run();
+        void             SetName(std::string name);
+        std::string   GetName();
 
-        void         AddRenderPass(RenderPass * renderPass, INT index);
-        void         AddRenderPassBack(RenderPass * renderPass);
-        void         RemoveRenderPassByIndex(INT index);
-        void         RemoveRenderPassByName(std::string name);
-        void         ReleasePassList();
-        INT          GetRenderPassNumber();
+        void             AddRenderPass(RenderPass * renderPass, INT index);
+        void             AddRenderPassBack(RenderPass * renderPass);
+        void             RemoveRenderPassByIndex(INT index);
+        void             RemoveRenderPassByName(std::string name);
+        void             ClearPassList();
         RenderPass * GetRenderPassByIndex(INT index);
         RenderPass * GetRenderPassByName(std::string name);
 
-        //2 ways to set mesh?
-        //void        SetRenderMesh(BaseMesh* mesh);
-        //void        SetVertexSource(INT index, void* vertexData, void* indexData);
-        //move to device layer
+        inline INT     GetRenderPassNumber() const;
 
-        //Technique &  operator=(const Technique & other);
 
     protected:
-        std::string             m_name;
+        std::string                   m_name;
         std::list<RenderPass>  m_PassList;
 
     };
@@ -338,19 +355,10 @@ namespace SRE {
             BaseTask(),
             m_name(),
             m_pVShader(nullptr),
-            m_pPShader(nullptr),
-            m_pPipeLine(nullptr)
+            m_pPShader(nullptr)
         {}
         virtual ~RenderPass()
         {
-
-            if(nullptr != m_pVShader)
-                delete m_pVShader;
-            if(nullptr != m_pPShader)
-                delete m_pPShader;
-            if(nullptr != m_pPipeLine)
-                delete m_pPipeLine;
-
         }
 
         RenderPass(const RenderPass &);
@@ -361,28 +369,19 @@ namespace SRE {
 
         void        SetVertexShader(const VertexShader * vs);
         void        SetPixelShader(const PixelShader * ps);
-        void        SetRenderState();
-        void        SetMatrix();
-        void        SetOutputTarget();
-        void        SetInputTarget();
-
-
+        void        SetRenderState(SREVAR stateType, SREVAR val);
+        void        SetMatrix(SREVAR matrixType, MAT44& mat);
+        void        SetOutputTarget(RenderTexture* target);
 
         //RenderPass & operator=(const RenderPass &);
 
     protected:
-        void        StartPipeLine();
+        std::string                  m_name;
+        const VertexShader *   m_pVShader;
+        const PixelShader  *     m_pPShader;
 
 
-    protected:
-        std::string     m_name;
-        VertexShader *  m_pVShader;
-        PixelShader  *  m_pPShader;
-        BasicProcessor * m_pPipeLine;
-
-
-
-	};*/
+	};
 
 
 }
