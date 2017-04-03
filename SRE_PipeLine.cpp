@@ -435,6 +435,13 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
         g_log.Write("VertexProcessor Cancel!");
 #endif // _SRE_DEBUG_
+        m_cachedVertexIndex[0]=-1;
+        m_cachedVertexIndex[1]=-1;
+        m_cachedVertexIndex[2]=-1;
+        m_cachedPriority[0]=4;
+        m_cachedPriority[1]=2;
+        m_cachedPriority[2]=1;
+        m_cachedOutVertexIdx = -1;
     }
 
     void VertexProcessor::OnPause()
@@ -772,6 +779,8 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
         g_log.Write("VertexPostProcessor Cancel!");
 #endif // _SRE_DEBUG_
+        m_vlist[0].Clear();
+        m_vlist[1].Clear();
     }
 
     void VertexPostProcessor::OnPause()
@@ -827,7 +836,7 @@ namespace SRE {
 	     if(nullptr == m_pCurrentTriangle)
         {
             m_sigCount++;
-			   _pixelBlock_<BasicIOElement> block(0, 0, 0, 0, false, false);
+			   _pixelBlock_<BasicIOElement> block(0, 0, 0, 0, 0.0f, false, false);
 			   if(m_sigCount <= 1) {
 			      block.setArg = true;
             }
@@ -848,7 +857,7 @@ namespace SRE {
         //g_log.WriteKV("RZ get tri v3:", m_pCurrentTriangle->v[2].vertex.x, m_pCurrentTriangle->v[2].vertex.y, m_pCurrentTriangle->v[2].vertex.z);
 
 
-        //if cull mode is enable, then test back face and cull
+        //if cull mode is enable, then test back face
         if(m_pConstantBuffer->CullEnable == SRE_TRUE)
         {
             if(!BackFaceCulling())
@@ -857,7 +866,9 @@ namespace SRE {
             }
         }
 
-        FLOAT area = EdgeFunction2D(m_pCurrentTriangle->v[0].vertex, m_pCurrentTriangle->v[0].vertex, m_pCurrentTriangle->v[0].vertex);
+        g_log.Write("RZ get tested triangle");
+
+        FLOAT area = EdgeFunction2D(m_pCurrentTriangle->v[0].vertex, m_pCurrentTriangle->v[2].vertex, m_pCurrentTriangle->v[1].vertex);
         //calculate bounding box
         USINT x_min = std::min(m_pCurrentTriangle->v[0].vertex.x, std::min(m_pCurrentTriangle->v[1].vertex.x, m_pCurrentTriangle->v[2].vertex.x));
         USINT x_max = std::max(m_pCurrentTriangle->v[0].vertex.x, std::max(m_pCurrentTriangle->v[1].vertex.x, m_pCurrentTriangle->v[2].vertex.x));
@@ -887,9 +898,20 @@ namespace SRE {
 
 	}
 
+	//On screen space
 	bool Rasterizer::BackFaceCulling()
 	{
-	    return true;
+	   FLOAT v1x = m_pCurrentTriangle->v[1].vertex.x-m_pCurrentTriangle->v[0].vertex.x;
+      FLOAT v1y = m_pCurrentTriangle->v[1].vertex.y-m_pCurrentTriangle->v[0].vertex.y;
+      FLOAT v2x = m_pCurrentTriangle->v[2].vertex.x-m_pCurrentTriangle->v[0].vertex.x;
+      FLOAT v2y = m_pCurrentTriangle->v[2].vertex.y-m_pCurrentTriangle->v[0].vertex.y;
+
+      if(m_pConstantBuffer->CullMode == SRE_CULLMODE_CCW)
+         return (v1x*v2y - v1y*v2x)>0? true: false;
+      else if(m_pConstantBuffer->CullMode == SRE_CULLMODE_CW)
+         return (v1y*v2x - v1x*v2y)>0? true: false;
+      else
+         return false;
 	}
 
 	void Rasterizer::AddSubProcessors(USINT num)
@@ -981,7 +1003,9 @@ namespace SRE {
 #ifdef _SRE_DEBUG_
         g_log.Write("Rasterizer Cancel!");
 #endif // _SRE_DEBUG_
-
+        m_subIndex = 0;
+        m_finishCount = 0;
+        m_sigCount = 0;
     }
 
     void Rasterizer::OnPause()
@@ -1063,7 +1087,7 @@ namespace SRE {
 	{
         std::unique_lock<std::mutex> lock(m_mutex);
         m_cond.wait(lock, [this]{return !m_inputQueue.empty()||m_cancel;});
-        if(m_cancel) {m_end = true;return  task.tempData;}
+        if(m_cancel) {m_end = true;return  std::shared_ptr<BasicIOElement>();}
 
         _pixelBlock_<BasicIOElement> task = m_inputQueue.front();
         m_inputQueue.pop();
@@ -1116,27 +1140,30 @@ namespace SRE {
             //simplified-EdgeFunction
             //stepX:w0_new - w0 = (b.y-a.y)*s
             //stepY:w0_new - w0 = -(b.x-a.x)*s
-            m_wStepX[0] =  (m_pTri->v[1].vertex.y - m_pTri->v[2].vertex.y)*m_sampleStep;
-            m_wStepX[1] =  (m_pTri->v[0].vertex.y - m_pTri->v[1].vertex.y)*m_sampleStep;
-            m_wStepX[2] =  (m_pTri->v[2].vertex.y - m_pTri->v[0].vertex.y)*m_sampleStep;
+            USINT id1 = 1, id2 =2;
+            if(m_pConstantBuffer->CullMode == SRE_CULLMODE_CW) {id1=2;id2=1;}
 
-            m_wStepY[0] = -(m_pTri->v[1].vertex.x - m_pTri->v[2].vertex.x)*m_sampleStep;
-            m_wStepY[1] = -(m_pTri->v[0].vertex.x - m_pTri->v[1].vertex.x)*m_sampleStep;
-            m_wStepY[2] = -(m_pTri->v[2].vertex.x - m_pTri->v[0].vertex.x)*m_sampleStep;
+            m_wStepX[0] =  (m_pTri->v[id1].vertex.y - m_pTri->v[id2].vertex.y)*m_sampleStep;
+            m_wStepX[1] =  (m_pTri->v[0].vertex.y    - m_pTri->v[id1].vertex.y)*m_sampleStep;
+            m_wStepX[2] =  (m_pTri->v[id2].vertex.y - m_pTri->v[0].vertex.y)*m_sampleStep;
+
+            m_wStepY[0] = -(m_pTri->v[id1].vertex.x - m_pTri->v[id2].vertex.x)*m_sampleStep;
+            m_wStepY[1] = -(m_pTri->v[0].vertex.x    - m_pTri->v[id1].vertex.x)*m_sampleStep;
+            m_wStepY[2] = -(m_pTri->v[id2].vertex.x - m_pTri->v[0].vertex.x)*m_sampleStep;
 
             FLOAT w00[3], w01[3], w10[3], w11[3];
             //calculate edgeFunction for 4 corners
-            w00[0]=EdgeFunction2D(m_pTri->v[2].vertex.x, m_pTri->v[2].vertex.y, m_pTri->v[1].vertex.x, m_pTri->v[1].vertex.y, m_sx, m_sy);
-            w00[1]=EdgeFunction2D(m_pTri->v[1].vertex.x, m_pTri->v[1].vertex.y, m_pTri->v[0].vertex.x, m_pTri->v[0].vertex.y, m_sx, m_sy);
-            w00[2]=EdgeFunction2D(m_pTri->v[0].vertex.x, m_pTri->v[0].vertex.y, m_pTri->v[2].vertex.x, m_pTri->v[2].vertex.y, m_sx, m_sy);
+            w00[0]=EdgeFunction2D(m_pTri->v[id2].vertex.x, m_pTri->v[id2].vertex.y, m_pTri->v[id1].vertex.x, m_pTri->v[id1].vertex.y, m_sx, m_sy);
+            w00[1]=EdgeFunction2D(m_pTri->v[id1].vertex.x, m_pTri->v[id1].vertex.y, m_pTri->v[0].vertex.x, m_pTri->v[0].vertex.y, m_sx, m_sy);
+            w00[2]=EdgeFunction2D(m_pTri->v[0].vertex.x, m_pTri->v[0].vertex.y, m_pTri->v[id2].vertex.x, m_pTri->v[id2].vertex.y, m_sx, m_sy);
 
-            w01[0]=w00[0]+m_distY*(-(m_pTri->v[1].vertex.x - m_pTri->v[2].vertex.x));
-            w01[1]=w00[1]+m_distY*(-(m_pTri->v[0].vertex.x - m_pTri->v[1].vertex.x));
-            w01[2]=w00[2]+m_distY*(-(m_pTri->v[2].vertex.x - m_pTri->v[0].vertex.x));
+            w01[0]=w00[0]+m_distY*(-(m_pTri->v[id1].vertex.x - m_pTri->v[id2].vertex.x));
+            w01[1]=w00[1]+m_distY*(-(m_pTri->v[0].vertex.x    - m_pTri->v[id1].vertex.x));
+            w01[2]=w00[2]+m_distY*(-(m_pTri->v[id2].vertex.x - m_pTri->v[0].vertex.x));
 
-            w10[0]=w00[0]+m_distX*(m_pTri->v[1].vertex.y - m_pTri->v[2].vertex.y);
-            w10[1]=w00[1]+m_distX*(m_pTri->v[0].vertex.y - m_pTri->v[1].vertex.y);
-            w10[2]=w00[2]+m_distX*(m_pTri->v[2].vertex.y - m_pTri->v[0].vertex.y);
+            w10[0]=w00[0]+m_distX*(m_pTri->v[id1].vertex.y - m_pTri->v[id2].vertex.y);
+            w10[1]=w00[1]+m_distX*(m_pTri->v[0].vertex.y    - m_pTri->v[id1].vertex.y);
+            w10[2]=w00[2]+m_distX*(m_pTri->v[id2].vertex.y - m_pTri->v[0].vertex.y);
 
             w11[0]=w01[0]+w10[0]-w00[0];
             w11[1]=w01[1]+w10[1]-w00[1];

@@ -83,7 +83,7 @@ namespace SRE {
             primitiveTopology(SRE_PRIMITIVETYPE_TRIANGLELIST),
             FillMode(SRE_FILLMODE_SOLID),
             CullEnable(SRE_TRUE),
-            CullMode(SRE_CULLMODE_CCW),
+            CullMode(SRE_CULLMODE_CW),
             ClipEnable(SRE_TRUE),
             ZEnable(SRE_TRUE),
             AlphaTest(SRE_FALSE),
@@ -403,7 +403,7 @@ namespace SRE {
 	class _pixelBlock_:public BasicIOElement
 	{
     public:
-        _pixelBlock_(USINT _sx=0, USINT _sy=0, USINT _distX=0, USINT _distY=0, FLOAT _area,bool _isEnd=false, bool _setArg=false,
+        _pixelBlock_(USINT _sx=0, USINT _sy=0, USINT _distX=0, USINT _distY=0, FLOAT _area=0.0f, bool _isEnd=false, bool _setArg=false,
                      std::shared_ptr<T> _data=nullptr):
             sx(_sx), sy(_sy), distX(_distX), distY(_distY),
             area(_area),
@@ -955,8 +955,7 @@ namespace SRE {
         void  Scan_ZOn_IOn(FLOAT  W00[3],  FLOAT wTri);
         void  Scan_ZOff_IOn(FLOAT  W00[3], FLOAT wTri);
 
-        std::shared_ptr<BasicIOElement>
-                             GetTask();
+        std::shared_ptr<BasicIOElement> GetTask(FLOAT& triArea);
         //inline bool   ZTest(INT pos, FLOAT interpolatedZ);
 
     protected:

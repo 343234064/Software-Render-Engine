@@ -133,7 +133,7 @@ Color4 myPS(PSInput & in)
 
 bool SceneInit()
 {
-    char* filePath = ".\\Cube.obj";
+    char* filePath = ".\\Cube_C.obj";
     if(RESULT::SUCC != LoadObjMesh(filePath, &global.object))
        return false;
 
@@ -170,7 +170,9 @@ void OnRender()
 
      global.main_pipeline.constbuffer.ZEnable = SRE_TRUE;
      global.main_pipeline.constbuffer.ClipEnable = SRE_TRUE;
-     global.main_pipeline.constbuffer.CullEnable = SRE_FALSE;
+     global.main_pipeline.constbuffer.CullEnable = SRE_TRUE;
+     global.main_pipeline.constbuffer.CullMode = SRE_CULLMODE_CCW;
+
      global.main_pipeline.constbuffer.primitiveTopology = SRE_PRIMITIVETYPE_TRIANGLELIST;
 
      global.main_pipeline.ResetZbuffer(zfar);
