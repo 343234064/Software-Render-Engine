@@ -1,7 +1,7 @@
 //*****************************************************
 //
 // Software Render Engine
-// Version 0.01
+// Version 0.01 by XJL
 //
 // File: SRE_Device.h
 // Date: 2017/03/06
@@ -64,9 +64,7 @@ namespace SRE {
 	{
     public:
         Device():
-           	m_cond(),
-        	   m_mutex(),
-        	   m_present(false),
+            m_msgbuffer(),
             m_framebuffers(),
             m_front(nullptr),
             m_pDeviceAdapter(nullptr)
@@ -98,10 +96,8 @@ namespace SRE {
         Device(const Device & other) = delete;
         Device & operator=(const Device & other) = delete;
 
-	private:
-		  std::condition_variable  m_cond;
-		  std::mutex                       m_mutex;
-		  bool                                m_present;
+	 private:
+		  BasicIOBufferEx<SREVAR>            m_msgbuffer;
 
     protected:
         CLList<RenderTexture*>              m_framebuffers;

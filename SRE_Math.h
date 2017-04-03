@@ -1,7 +1,7 @@
 //*****************************************************
 //
 // Software Render Engine
-// Version 0.01
+// Version 0.01 by XJL
 //
 // File: SRE_Math.h
 // Date: 2016/4/28
@@ -92,10 +92,9 @@ namespace SRE {
 	//Matrix functions
 	//
 	//=============================
-	PMAT33   Multiply(PMAT33 out, PMAT33 mat1, PMAT33 mat2);
-   PMAT44   Multiply(PMAT44 out, PMAT44 mat1, PMAT44 mat2);
-	PMAT33   Transpose(PMAT33 out, PMAT33 mat);
-	PMAT44   Transpose(PMAT44 out, PMAT44 mat);
+	MAT33     Multiply(MAT33& mat1, MAT33& mat2);
+   MAT44     Multiply(MAT44& mat1, MAT44& mat2);
+   MAT33&   Transpose(MAT33& out);
 	MAT44&   Transpose(MAT44& out);
 	FLOAT      Determinant(MAT33& out);
 	FLOAT      Determinant(MAT44& out);
@@ -158,7 +157,7 @@ namespace SRE {
    MAT44 MatrixProjectOrthonalOffCenter(const FLOAT left, const FLOAT right, const FLOAT top, const FLOAT bottom,
                                                                 const FLOAT znear, const FLOAT zfar);
    MAT44 MatrixProjectPerspective(const FLOAT view_width, const FLOAT view_height,
-                                                      const FLOAT znear, const FLOAT zfar);
+                                                    const FLOAT znear, const FLOAT zfar);
    MAT44 MatrixProjectPerspectiveOffCenter(const FLOAT left, const FLOAT right, const FLOAT top, const FLOAT bottom,
                                                                   const FLOAT znear, const FLOAT zfar);
    MAT44 MatrixProjectPerspectiveFOV(const FLOAT fov, const FLOAT aspectRatio, const FLOAT znear, const FLOAT zfar);
@@ -364,6 +363,7 @@ namespace SRE {
 	class Vector {
 	public:
 		Vector(const FLOAT & _x = 0.0f):x(_x) {}
+		Vector(const Vector & vector):x(vector.x){}
 		~Vector() {};
 
 		inline bool   operator == (const VEC &) const;
@@ -393,8 +393,9 @@ namespace SRE {
 	class Vector2:public Vector {
 	public:
 		Vector2(const FLOAT & _x = 0.0f,
-			    const FLOAT & _y = 0.0f):Vector(_x), y(_y) {}
-		Vector2(const VEC  & vector):Vector(vector), y(0.0) {}
+                  const FLOAT & _y = 0.0f):Vector(_x), y(_y) {}
+      Vector2(const Vector & vector):Vector(vector), y(0.0f){}
+		Vector2(const Vector2 & vector):Vector(vector), y(vector.y){}
 		~Vector2() {};
 
 
@@ -405,8 +406,7 @@ namespace SRE {
 		inline VEC2    operator -  () const;
 		inline VEC2 &  operator =  (const VEC4 &);
 		inline VEC2 &  operator =  (const VEC3 &);
-		inline VEC2 &  operator =  (const VEC2 &);
-        inline VEC2 &  operator =  (const VEC  &);
+      inline VEC2 &  operator =  (const VEC  &);
 
 		inline friend VEC2 operator *  (FLOAT, const VEC2 &);
 		inline friend VEC2 operator *  (const VEC2 &, FLOAT);
@@ -430,10 +430,11 @@ namespace SRE {
 	class Vector3 :public Vector2 {
 	public:
 		Vector3(const FLOAT & _x = 0.0f,
-			    const FLOAT & _y = 0.0f,
-			    const FLOAT & _z = 0.0f):Vector2(_x, _y), z(_z) {}
+			         const FLOAT & _y = 0.0f,
+			         const FLOAT & _z = 0.0f):Vector2(_x, _y), z(_z) {}
+		Vector3(const VEC2 & vector):Vector2(vector), z(0.0f) {}
+		Vector3(const VEC3 & vector):Vector2(vector), z(vector.z) {}
 
-		Vector3(const VEC2 & vector):Vector2(vector), z(0.0) {}
 
 
 		~Vector3() {};
@@ -445,7 +446,6 @@ namespace SRE {
 		inline VEC3    operator -  (const VEC3 &) const;
 		inline VEC3    operator -  () const;
 		inline VEC3 &  operator =  (const VEC4 &);
-		inline VEC3 &  operator =  (const VEC3 &);
       inline VEC3 &  operator =  (const VEC2 &);
       inline VEC3 &  operator =  (const VEC  &);
 
@@ -474,10 +474,9 @@ namespace SRE {
 			    const FLOAT & _y = 0.0f,
 			    const FLOAT & _z = 0.0f,
 			    const FLOAT & _w = 0.0f) :Vector3(_x, _y, _z), w(_w) {}
-
-		Vector4(const VEC3 & vector) :Vector3(vector), w(0.0) {}
-        Vector4(const VEC2 & vector) :Vector3(vector), w(0.0) {}
-
+		Vector4(const VEC2 & vector) :Vector3(vector), w(0.0f) {}
+      Vector4(const VEC3 & vector) :Vector3(vector), w(0.0f) {}
+      Vector4(const VEC4 & vector) :Vector3(vector), w(vector.w) {}
 
 		~Vector4() {};
 
@@ -487,7 +486,6 @@ namespace SRE {
 		inline VEC4    operator +  (const VEC4 &) const;
 		inline VEC4    operator -  (const VEC4 &) const;
 		inline VEC4    operator -  () const;
-      inline VEC4 &  operator =  (const VEC4 &);
       inline VEC4 &  operator =  (const VEC3 &);
       inline VEC4 &  operator =  (const VEC2 &);
       inline VEC4 &  operator =  (const VEC  &);
@@ -663,8 +661,8 @@ namespace SRE {
 
 
       return VEC3(vec1.y*vec2.z - vec1.z*vec2.y,
-		          vec1.z*vec2.x - vec1.x*vec2.z,
-		          vec1.x*vec2.y - vec1.y*vec2.x);
+		                    vec1.z*vec2.x - vec1.x*vec2.z,
+		                    vec1.x*vec2.y - vec1.y*vec2.x);
 
 	}
 
@@ -708,7 +706,7 @@ namespace SRE {
 
 
 
- //=============================
+   //=============================
 	//Lenth of vector
 	//
 	//vector2
@@ -842,7 +840,7 @@ namespace SRE {
     VEC2    BaryInterpolate(VEC2 & v0, FLOAT w0, VEC2 & v1, FLOAT w1, VEC2 & v2)
     {
         return VEC2((v0.x-v2.x)*w0 + (v1.x-v2.x)*w1 + v2.x,
-                    (v0.y-v2.y)*w0 + (v1.y-v2.y)*w1 + v2.y);
+                            (v0.y-v2.y)*w0 + (v1.y-v2.y)*w1 + v2.y);
     }
 
 
@@ -877,17 +875,14 @@ namespace SRE {
 		return fabs(x - vec.x) <= EPSILON;
 	}
 
-
 	bool Vector::operator != (const VEC & vec) const {
 		return fabs(x - vec.x) > EPSILON;
 	}
-
 
 	VEC Vector::operator + (const VEC & vec) const {
 
 		return VEC(x + vec.x);
 	}
-
 
 	VEC Vector::operator - (const VEC & vec) const {
 
@@ -901,20 +896,15 @@ namespace SRE {
 
 	VEC & Vector::operator = (const VEC & vec) {
 
-	    if(this == &vec)
-            return *this;
-
         this->x=vec.x;
 
         return *this;
 	}
 
-
 	VEC operator * (FLOAT factor, const VEC & vec) {
 
 		return VEC(factor * vec.x);
 	}
-
 
     VEC operator * (const VEC & vec, FLOAT factor) {
 
@@ -926,7 +916,6 @@ namespace SRE {
 		return VEC(factor + vec.x);
 	}
 
-
     VEC operator + (const VEC & vec, FLOAT factor) {
 
 		return VEC(factor + vec.x);
@@ -936,7 +925,6 @@ namespace SRE {
 
 		return VEC(factor - vec.x);
 	}
-
 
     VEC operator - (const VEC & vec, FLOAT factor) {
 
@@ -982,9 +970,6 @@ namespace SRE {
 
 	VEC2 & Vector2::operator = (const VEC4 & vec) {
 
-        if(this == &vec)
-            return *this;
-
         this->x=vec.x;
         this->y=vec.y;
 
@@ -993,20 +978,6 @@ namespace SRE {
 
 	VEC2 & Vector2::operator = (const VEC3 & vec) {
 
-        if(this == &vec)
-            return *this;
-
-        this->x=vec.x;
-        this->y=vec.y;
-
-        return *this;
-	}
-
-	VEC2 & Vector2::operator = (const VEC2 & vec) {
-
-        if(this == &vec)
-            return *this;
-
         this->x=vec.x;
         this->y=vec.y;
 
@@ -1014,9 +985,6 @@ namespace SRE {
 	}
 
     VEC2 & Vector2::operator = (const VEC & vec) {
-
-        if(this == &vec)
-            return *this;
 
         this->x=vec.x;
         this->y=0.0f;
@@ -1093,21 +1061,6 @@ namespace SRE {
 
     VEC3 & Vector3::operator = (const VEC4 & vec) {
 
-        if(this == &vec)
-            return *this;
-
-        this->x=vec.x;
-        this->y=vec.y;
-        this->z=vec.z;
-
-        return *this;
-	}
-
-	VEC3 & Vector3::operator = (const VEC3 & vec) {
-
-        if(this == &vec)
-            return *this;
-
         this->x=vec.x;
         this->y=vec.y;
         this->z=vec.z;
@@ -1117,9 +1070,6 @@ namespace SRE {
 
 	VEC3 & Vector3::operator = (const VEC2 & vec) {
 
-        if(this == &vec)
-            return *this;
-
         this->x=vec.x;
         this->y=vec.y;
         this->z=0.0f;
@@ -1128,9 +1078,6 @@ namespace SRE {
 	}
 
 	VEC3 & Vector3::operator = (const VEC & vec) {
-
-        if(this == &vec)
-            return *this;
 
         this->x=vec.x;
         this->y=0.0f;
@@ -1207,23 +1154,7 @@ namespace SRE {
 		return VEC4(-x, -y, -z, -w);
 	}
 
-	VEC4 & Vector4::operator = (const VEC4 & vec) {
-
-        if(this == &vec)
-            return *this;
-
-        this->x=vec.x;
-        this->y=vec.y;
-        this->z=vec.z;
-        this->w=vec.w;
-
-        return *this;
-	}
-
 	VEC4 & Vector4::operator = (const VEC3 & vec) {
-
-        if(this == &vec)
-            return *this;
 
         this->x=vec.x;
         this->y=vec.y;
@@ -1235,9 +1166,6 @@ namespace SRE {
 
     VEC4 & Vector4::operator = (const VEC2 & vec) {
 
-        if(this == &vec)
-            return *this;
-
         this->x=vec.x;
         this->y=vec.y;
         this->z=0.0f;
@@ -1247,9 +1175,6 @@ namespace SRE {
 	}
 
     VEC4 & Vector4::operator = (const VEC & vec) {
-
-        if(this == &vec)
-            return *this;
 
         this->x=vec.x;
         this->y=0.0f;

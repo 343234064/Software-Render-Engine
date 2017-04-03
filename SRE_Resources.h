@@ -1,7 +1,7 @@
 //*****************************************************
 //
 // Software Render Engine
-// Version 0.01
+// Version 0.01 by XJL
 //
 // File: SRE_Resources.h
 // Date: 2016/6/17
@@ -27,6 +27,211 @@ namespace SRE {
     RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer*  out);
 
 
+  //=============================
+	//Class Basic I/O Buffer
+	//
+	//
+	//=============================
+	template<typename T>
+	class BasicIOBuffer
+	{
+    public:
+        BasicIOBuffer():
+            m_queue(),
+            m_mutex(),
+            m_cond(),
+            m_stopwait(false)
+        {}
+        virtual ~BasicIOBuffer()
+        {}
+
+        void push(T data)
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_stopwait = false;
+            m_queue.push(std::make_shared(data));
+            m_cond.notify_one();
+        }
+
+        void push(T* pdata)
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_stopwait = false;
+            m_queue.push(std::shared_ptr<T>(pdata));
+            m_cond.notify_one();
+        }
+
+        void push(std::shared_ptr<T> pdata)
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_stopwait = false;
+            m_queue.push(pdata);
+            m_cond.notify_one();
+        }
+
+        std::shared_ptr<T> wait_and_pop()
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_cond.wait(lock, [this]{return !m_queue.empty()||m_stopwait;});
+            if(m_stopwait) {return std::shared_ptr<T>();}
+
+            std::shared_ptr<T> res = m_queue.front();
+            m_queue.pop();
+
+            return res;
+        }
+
+        std::shared_ptr<T> top()
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            std::shared_ptr<T> res = m_queue.front();
+            return res;
+        }
+
+        void wait_and_pop(T ** out)
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_cond.wait(lock, [this]{return !m_queue.empty()||m_stopwait;});
+            if(m_stopwait) {*out=nullptr;return;}
+
+            std::shared_ptr<T> p = m_queue.front();
+            *out = p.get();
+            m_queue.pop();
+        }
+
+        void top(T ** out)
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            std::shared_ptr<T> p = m_queue.front();
+            *out = p.get();
+        }
+
+        bool empty() const
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            return m_queue.empty();
+        }
+
+        void StopWait()
+        {
+        	   std::lock_guard<std::mutex> lock(m_mutex);
+           	m_stopwait = true;
+            m_cond.notify_all();
+        }
+
+        void Clear()
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            INT num=m_queue.size();
+            while(num>0)
+            {
+               m_queue.pop();
+               num--;
+            }
+        }
+
+        INT Size()
+        {
+           std::lock_guard<std::mutex> lock(m_mutex);
+           return m_queue.size();
+        }
+
+        BasicIOBuffer(const BasicIOBuffer & other) = delete;
+        BasicIOBuffer & operator=(const BasicIOBuffer & other) = delete;
+
+    protected:
+        std::queue<std::shared_ptr<T>>
+                                         m_queue;
+        std::mutex                m_mutex;
+        std::condition_variable
+                                         m_cond;
+		bool                           m_stopwait;
+
+
+
+	};
+
+   template<typename T>
+	class BasicIOBufferEx
+	{
+    public:
+        BasicIOBufferEx():
+            m_queue(),
+            m_mutex(),
+            m_cond(),
+            m_stopwait(false)
+        {}
+        virtual ~BasicIOBufferEx()
+        {}
+
+        void push(T data)
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_stopwait = false;
+            m_queue.push(data);
+            m_cond.notify_one();
+        }
+
+        T top()
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            return m_queue.front();
+        }
+
+        void wait_and_pop(T & out)
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_cond.wait(lock, [this]{return !m_queue.empty()||m_stopwait;});
+            if(m_stopwait) {return;}
+
+            out = m_queue.front();
+            m_queue.pop();
+        }
+
+        void top(T & out)
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            out= m_queue.front();
+        }
+
+        bool empty() const
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            return m_queue.empty();
+        }
+
+        void StopWait()
+        {
+        	   std::lock_guard<std::mutex> lock(m_mutex);
+           	m_stopwait = true;
+            m_cond.notify_all();
+        }
+
+        void Clear()
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            INT num=m_queue.size();
+            while(num>0)
+            {
+               m_queue.pop();
+               num--;
+            }
+        }
+
+        BasicIOBufferEx(const BasicIOBufferEx & other) = delete;
+        BasicIOBufferEx & operator=(const BasicIOBufferEx & other) = delete;
+
+    protected:
+        std::queue<T>           m_queue;
+        std::mutex                  m_mutex;
+        std::condition_variable
+                                           m_cond;
+		  bool                           m_stopwait;
+
+
+
+	};
+
     //=============================
 	//Class Buffer
 	//
@@ -39,6 +244,8 @@ namespace SRE {
 	{
     public:
         Buffer(INT bufferSize=0, T * initData=nullptr):
+               m_width(0),
+               m_height(0),
                m_bufferSize(bufferSize),
                m_data(nullptr),
                m_pdata(nullptr)
@@ -56,6 +263,30 @@ namespace SRE {
             else
                 m_bufferSize = 0;
         }
+        Buffer(INT width, INT height, T * initData=nullptr):
+               m_width(0),
+               m_height(0),
+               m_bufferSize(width*height),
+               m_data(nullptr),
+               m_pdata(nullptr)
+        {
+            if(m_bufferSize > 0)
+            {
+                m_data.reset(new T[m_bufferSize]);
+                if(nullptr != initData)
+                {
+                   T * dest = this->m_data.get();
+	               std::copy(initData, initData + m_bufferSize, dest);
+                }
+                m_pdata = m_data.get();
+                m_width = width;
+                m_height = height;
+            }
+            else
+            {
+                m_bufferSize = 0;
+            }
+        }
         virtual ~Buffer()
         {
            m_data.reset(nullptr);
@@ -63,8 +294,10 @@ namespace SRE {
 
         inline void  SetData(INT pos, const T & data);
         inline T  &   GetData(INT pos);
+        void  SetDataSquare(INT sx, INT sy, INT ex, INT ey, const T & data);
         void  ResetData(const T & resetData);
         bool  ResetBuffer(T * resetData, INT size);
+        bool  ResetBuffer(T * resetData, INT width, INT height);
         INT    GetBufferSize() const
         {
             return m_bufferSize;
@@ -75,6 +308,8 @@ namespace SRE {
         Buffer & operator=(const Buffer & other) = delete;
 
     protected:
+        INT                                   m_width;
+        INT                                   m_height;
         INT                                   m_bufferSize;
         std::unique_ptr<T, array_deleter<T>>  m_data;
         T*                                     m_pdata;
@@ -132,6 +367,32 @@ namespace SRE {
         return true;
 	}
 
+	template <typename T>
+	bool  Buffer<T>::ResetBuffer(T * resetData, INT width, INT height)
+	{
+	     INT size = width*height;
+        if(size<=0) return false;
+        if(nullptr == m_data || size>m_bufferSize)
+         {
+                m_data.reset(new T[size]);
+                if(nullptr != resetData)
+                {
+                   T * dest = m_data.get();
+	                std::copy(resetData, resetData + size, dest);
+                }
+         }
+        else
+        {
+               std::copy(resetData, resetData + size, m_pdata);
+        }
+
+        m_width = width;
+        m_height = height;
+        m_bufferSize = size;
+        m_pdata = m_data.get();
+
+        return true;
+	}
 
 	template<typename T>
 	void Buffer<T>::SetData(INT pos, const T & data)
@@ -151,6 +412,35 @@ namespace SRE {
 #endif
         m_pdata[pos] = data;
 	}
+
+	 template<typename T>
+    void  Buffer<T>::SetDataSquare(INT sx, INT sy, INT ex, INT ey, const T & data)
+    {
+#ifdef _SRE_DEBUG_
+        if(nullptr == this->m_data)
+        {
+            _ERRORLOG(SRE_ERROR_NULLPOINTER);
+            return;
+	    }
+
+	    if(m_width <= 0 || m_height <= 0)
+        {
+            _ERRORLOG(SRE_ERROR_FAIL);
+            return;
+        }
+
+	    if(m_width <= ex || m_height <= ey || sx<0 || sy <0)
+        {
+            _ERRORLOG(SRE_ERROR_INVALIDARG);
+            return;
+        }
+#endif
+
+		for(INT py=sy; py<=ey; py++)
+         for(INT px=sx; px<=ex; px++)
+				*(m_pdata+py*m_width+px) = data;
+
+    }
 
 	template<typename T>
 	T & Buffer<T>::GetData(INT pos)
@@ -411,21 +701,18 @@ namespace SRE {
 	class VertexBuffer:public BaseContainer, public BasicIOElement
 	{
     public:
-    	VertexBuffer():
-			 m_vertexes(nullptr),
-             m_marks(nullptr),
+    	  VertexBuffer():
+			    m_vertexes(nullptr),
              m_vertexNum(0),
              m_attriSize(0),
              m_vertexDimen(0),
              m_vertexSize(0),
              m_vertexFormat(0)
-		{}
+		  {}
         virtual ~VertexBuffer()
         {
             if(nullptr != m_vertexes)
                 delete[] m_vertexes;
-            if(nullptr != m_marks)
-                delete[] m_marks;
         }
 
         BYTE*     GetVertex(INT index);
@@ -441,16 +728,12 @@ namespace SRE {
         inline INT     GetVertexDimension();
         inline SREVAR  GetVertexFormat();
 
-        inline void   SetMark(INT index, bool m){m_marks[index]=m;}
-        inline bool  GetMark(INT index){return m_marks[index];}
-        inline void   ResetMark(bool val){memset(m_marks, val, m_vertexNum*sizeof(bool));}
 
         VertexBuffer & operator=(const VertexBuffer & other) = delete;
         VertexBuffer(const VertexBuffer & other) = delete;
 
     public:
         BYTE *         m_vertexes;
-        bool *         m_marks;
         INT              m_vertexNum;
         INT              m_attriSize;
         INT              m_vertexDimen;
@@ -459,7 +742,7 @@ namespace SRE {
 
     protected:
 		friend RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer** out);
-        friend RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer*   out);
+      friend RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer*   out);
 
 	};
 

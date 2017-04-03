@@ -1,7 +1,7 @@
 //*****************************************************
 //
 // Software Render Engine
-// Version 0.01
+// Version 0.01 by XJL
 //
 // File: SRE_Shader.h
 // Date: 2016/11/23
@@ -31,42 +31,42 @@ namespace SRE {
     public:
         VSOutput():
             vertex(),
-            normal(),
             texcoord(),
+            normal(),
             color()
         {}
         VSOutput(VERTEX4& v):
             vertex(v),
-            normal(),
             texcoord(),
+            normal(),
             color()
         {}
-        VSOutput(VERTEX4& v, VEC3& n, VEC2& uv, VCOLOR& col):
+        VSOutput(VERTEX4& v, VEC2& uv, VEC3& n, VCOLOR& col):
             vertex(v),
-            normal(n),
             texcoord(uv),
+            normal(n),
             color(col)
         {}
-        VSOutput(VERTEX4* v, VEC3* n, VEC2* uv, VCOLOR* col):
+        VSOutput(VERTEX4* v, VEC2* uv, VEC3* n, VCOLOR* col):
             vertex(*v),
-            normal(*n),
             texcoord(*uv),
+            normal(*n),
             color(*col)
         {}
         VSOutput(const VSOutput & other):
             vertex(other.vertex),
-            normal(other.normal),
             texcoord(other.texcoord),
+            normal(other.normal),
             color(other.color)
         {}
 
         VSOutput(VERTEX4& v, VSOutput& vs1, VSOutput& vs2, FLOAT t):
             vertex(v),
-            normal(vs1.normal.x + t*(vs2.normal.x-vs1.normal.x),
-                   vs1.normal.y + t*(vs2.normal.y-vs1.normal.y),
-                   vs1.normal.z + t*(vs2.normal.z-vs1.normal.z)),
             texcoord(vs1.texcoord.x + t*(vs2.texcoord.x-vs1.texcoord.x),
                            vs1.texcoord.y + t*(vs2.texcoord.y-vs1.texcoord.y)),
+            normal(vs1.normal.x + t*(vs2.normal.x-vs1.normal.x),
+                       vs1.normal.y + t*(vs2.normal.y-vs1.normal.y),
+                       vs1.normal.z + t*(vs2.normal.z-vs1.normal.z)),
             color(vs1.color.r + t*(vs2.color.r-vs1.color.r),
                      vs1.color.g + t*(vs2.color.g-vs1.color.g),
                      vs1.color.b + t*(vs2.color.g-vs1.color.b),
@@ -78,8 +78,8 @@ namespace SRE {
 
     public:
         VERTEX4   vertex;
-        VEC3        normal;
         VEC2        texcoord;
+        VEC3        normal;
         VCOLOR   color;
 
     };

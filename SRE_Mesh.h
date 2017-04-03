@@ -1,7 +1,7 @@
 //*****************************************************
 //
 // Software Render Engine
-// Version 0.01
+// Version 0.01 by XJL
 //
 // File: SRE_Mesh.h
 // Date: 2016/6/08
@@ -17,42 +17,71 @@
 
 
 #include "SRE_Math.h"
+#include "SRE_Resources.h"
 #include "SRE_GlobalsAndUtils.h"
 
 namespace SRE {
-    //=============================
+   //===========================================
+	//Public functions
+	//===========================================
+    RESULT LoadObjMesh(char* filePath,  Mesh* p_outmesh);
+    RESULT LoadObjMeshFromGroup(char* filePath,  char* groupName, Mesh* p_outmesh);
+
+
+
+   //=============================
+	//Class Mesh
+	//
+	//
+	//=============================
+   class Mesh:public BaseMesh
+   {
+   public:
+         Mesh(const char* _name="\0"):
+            BaseMesh(_name),
+            vertexes(),
+            indexes()
+         {}
+         virtual ~Mesh(){}
+
+   public:
+         VBUFFER    vertexes;
+         IBUFFER     indexes;
+         //texture
+
+   };
+
+
+
+
+
+
+   /***************Unused**************************/
+   //=============================
 	//Function definitions
 	//
 	//=============================
-	RESULT CreateTriangleMesh(const INT vertexNumber,
+	RESULT CreateTMesh(const INT vertexNumber,
                               const SREVAR vertexFormat,
                               const INT vertexStructSize,
                               const void * pVertexes,
                               const INT   indexNumber,
                               const INT * pIndexes,
                               const SREVAR primitiveType,
-                              TriangleMesh** ppOutTriangleMesh
+                              TMesh** ppOutTMesh
                               );//maybe return shared_ptr?
 
-    RESULT CreateTriangleMeshFromObj();
-    RESULT CreateTriangleMeshFromPmx();
-
-    RESULT LoadObjMesh(char* filePath,
-                                     VertexBuffer** pp_OutVbuffer,
-                                     Buffer<INT>** pp_OutIbuffer);
-
-
-
-
-    //=============================
-	//Class TriangleMesh
+    RESULT CreateTMeshFromObj();
+    RESULT CreateTMeshFromPmx();
+   //=============================
+	//Class TMesh
 	//
 	//Concrete Mesh class
 	//=============================
-    class TriangleMesh : public BaseMesh
+    class TMesh : public BaseMesh
     {
     public:
-        TriangleMesh(VERTEX4 * vertexes = nullptr,
+        TMesh(VERTEX4 * vertexes = nullptr,
                      INT ** edges = nullptr,
                      INT ** faces = nullptr,
                      BYTE * attributes = nullptr,
@@ -99,7 +128,7 @@ namespace SRE {
                   throw;
               }
             }
-        TriangleMesh(unique_vertex4_array vertexes = nullptr,
+        TMesh(unique_vertex4_array vertexes = nullptr,
                      unique_int_matrix edges = nullptr,
                      unique_int_matrix faces = nullptr,
                      unique_byte_array attributes = nullptr,
@@ -120,10 +149,10 @@ namespace SRE {
             m_perAttrSize(perAttrSize)
             {}
 
-        TriangleMesh(const TriangleMesh & other);
-        TriangleMesh(TriangleMesh && other);
+        TMesh(const TMesh & other);
+        TMesh(TMesh && other);
 
-        virtual ~TriangleMesh()
+        virtual ~TMesh()
         {
             m_pVertexList.reset(nullptr);
             m_pEdgeList.reset(nullptr);
@@ -133,8 +162,8 @@ namespace SRE {
 
         void Release();
 
-        TriangleMesh & operator=(const TriangleMesh & other);
-        TriangleMesh & operator=(TriangleMesh && other);
+        TMesh & operator=(const TMesh & other);
+        TMesh & operator=(TMesh && other);
 
 
     protected:
@@ -152,7 +181,7 @@ namespace SRE {
         INT m_faceNumber;
         INT m_perAttrSize;
 
-        friend class TriangleMeshManager;
+        friend class TMeshManager;
     };
 
 
@@ -160,34 +189,34 @@ namespace SRE {
 
 
     //=============================
-	//Class TriangleMeshManager
+	//Class TMeshManager
 	//
 	//
 	//Mesh class visit layer
 	//=============================
-    class TriangleMeshManager: public BaseMeshManager
+    class TMeshManager: public BaseMeshManager
     {
     public:
-        TriangleMeshManager():
+        TMeshManager():
             BaseMeshManager()
         {}
 
-        virtual ~TriangleMeshManager()
+        virtual ~TMeshManager()
         {}
 
 
-        static void * GetVertex(INT vertexIndex, TriangleMesh * mesh);
-        static void * GetVertexFromFace(INT faceIndex, INT vertexIndex, TriangleMesh * mesh);
-        static void * GetVertexFromEdge(INT edgeIndex, INT vertexIndex, TriangleMesh * mesh);
-        static void * GetAttribute(INT vertexIndex, TriangleMesh * mesh);
-        static INT    GetVertexNumber(TriangleMesh * mesh);
-        static INT    GetEdgeNumber(TriangleMesh * mesh);
-        static INT    GetFaceNumber(TriangleMesh * mesh);
+        static void * GetVertex(INT vertexIndex, TMesh * mesh);
+        static void * GetVertexFromFace(INT faceIndex, INT vertexIndex, TMesh * mesh);
+        static void * GetVertexFromEdge(INT edgeIndex, INT vertexIndex, TMesh * mesh);
+        static void * GetAttribute(INT vertexIndex, TMesh * mesh);
+        static INT    GetVertexNumber(TMesh * mesh);
+        static INT    GetEdgeNumber(TMesh * mesh);
+        static INT    GetFaceNumber(TMesh * mesh);
 
 
     };
 
-
+   /***************Unused**************************/
 
 
 

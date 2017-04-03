@@ -1,7 +1,7 @@
 //*****************************************************
 //
 // Software Render Engine
-// Version 0.01
+// Version 0.01 by XJL
 //
 // File: SRE_Math.cpp
 // Date: 2016/4/28
@@ -334,49 +334,36 @@ namespace SRE {
 	//  23    times mul
 	//  102   times add/sub
 	//=============================
-	PMAT33 Multiply(PMAT33 out, PMAT33 mat1, PMAT33 mat2)
+	MAT33 Multiply(MAT33& mat1, MAT33& mat2)
 	{
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == mat1 || nullptr == mat2)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
+        FLOAT m2 =(mat1._11 - mat1._21)*(mat2._22 - mat2._12);
+        FLOAT m4 =(mat1._21 + mat1._22 - mat1._11)*(mat2._11 - mat2._12 + mat2._22);
+        FLOAT m5 =(mat1._21 + mat1._22)*(mat2._12 - mat2._11);
+        FLOAT m6 = mat1._11*mat2._11;
+        FLOAT m7 =(mat1._31 + mat1._32 - mat1._11)*(mat2._11 - mat2._13 + mat2._23);
+        FLOAT m8 =(mat1._31 - mat1._11)*(mat2._13 - mat2._23);
+        FLOAT m9 =(mat1._31 + mat1._32)*(mat2._13 - mat2._11);
+        FLOAT m12=( - mat1._13 + mat1._32 + mat1._33)*(mat2._22 + mat2._31 - mat2._32);
+        FLOAT m13=(mat1._13 - mat1._33)*(mat2._22 - mat2._32);
+        FLOAT m14= mat1._13*mat2._31;
+        FLOAT m15=(mat1._32 + mat1._33)*( - mat2._31 + mat2._32);
+        FLOAT m16=( - mat1._13 + mat1._22 + mat1._23)*(mat2._23+ mat2._31 - mat2._33);
+        FLOAT m17=(mat1._13 - mat1._23)*(mat2._23 - mat2._33);
+        FLOAT m18=(mat1._22 + mat1._23)*( - mat2._31 + mat2._33);
 
-        FLOAT m2 =(mat1->_11 - mat1->_21)*(mat2->_22 - mat2->_12);
-        FLOAT m4 =(mat1->_21 + mat1->_22 - mat1->_11)*(mat2->_11 - mat2->_12 + mat2->_22);
-        FLOAT m5 =(mat1->_21 + mat1->_22)*(mat2->_12 - mat2->_11);
-        FLOAT m6 = mat1->_11*mat2->_11;
-        FLOAT m7 =(mat1->_31 + mat1->_32 - mat1->_11)*(mat2->_11 - mat2->_13 + mat2->_23);
-        FLOAT m8 =(mat1->_31 - mat1->_11)*(mat2->_13 - mat2->_23);
-        FLOAT m9 =(mat1->_31 + mat1->_32)*(mat2->_13 - mat2->_11);
-        FLOAT m12=( - mat1->_13 + mat1->_32 + mat1->_33)*(mat2->_22 + mat2->_31 - mat2->_32);
-        FLOAT m13=(mat1->_13 - mat1->_33)*(mat2->_22 - mat2->_32);
-        FLOAT m14= mat1->_13*mat2->_31;
-        FLOAT m15=(mat1->_32 + mat1->_33)*( - mat2->_31 + mat2->_32);
-        FLOAT m16=( - mat1->_13 + mat1->_22 + mat1->_23)*(mat2->_23+ mat2->_31 - mat2->_33);
-        FLOAT m17=(mat1->_13 - mat1->_23)*(mat2->_23 - mat2->_33);
-        FLOAT m18=(mat1->_22 + mat1->_23)*( - mat2->_31 + mat2->_33);
+        return MAT33(
+               m6 + m14 + mat1._12*mat2._21,
+               (mat1._11 + mat1._12 + mat1._13 -mat1._21 - mat1._22 - mat1._32 - mat1._33)*mat2._22 + m4 + m5 + m6 + m12 + m14 + m15,
+               m6 + m7 + m9 +(mat1._11 + mat1._12 + mat1._13 - mat1._22 - mat1._23 - mat1._31 - mat1._32)*mat2._23 + m14 + m16 + m18,
+               m2 + mat1._22*(mat2._12 + mat2._21 + mat2._33 - mat2._11 - mat2._22 - mat2._23 - mat2._31) + m4 + m6 + m14 + m16 + m17,
+               m2 + m4 + m5 + m6 +  mat1._23*mat2._32,
+               m14 + m16 + m17 + m18 + mat1._21*mat2._13,
+               m6 + m7 + m8 + mat1._32*(mat2._13 + mat2._21 + mat2._32 - mat2._11 - mat2._22 - mat2._23 - mat2._31) + m12 + m13 + m14,
+               m12 + m13 + m14 + m15 + mat1._31*mat2._12,
+               m6 + m7 + m8 + m9 + mat1._33*mat2._33
+        );
 
-
-        out->_11= m6 + m14 + mat1->_12*mat2->_21;
-        out->_12= (mat1->_11 + mat1->_12 + mat1->_13 -
-                   mat1->_21 - mat1->_22 - mat1->_32 - mat1->_33)*mat2->_22 + m4 + m5 + m6 + m12 + m14 + m15;
-        out->_13= m6 + m7 + m9 +(mat1->_11 + mat1->_12 + mat1->_13 -
-                                 mat1->_22 - mat1->_23 - mat1->_31 - mat1->_32)*mat2->_23 + m14 + m16 + m18;
-        out->_21= m2 + mat1->_22*(mat2->_12 + mat2->_21 + mat2->_33 -
-                                  mat2->_11 - mat2->_22 - mat2->_23 - mat2->_31) + m4 + m6 + m14 + m16 + m17;
-        out->_22= m2 + m4 + m5 + m6 +  mat1->_23*mat2->_32;
-        out->_23= m14 + m16 + m17 + m18 + mat1->_21*mat2->_13;
-        out->_31= m6 + m7 + m8 + mat1->_32*(mat2->_13 + mat2->_21 + mat2->_32 -
-                                 mat2->_11 - mat2->_22 - mat2->_23 - mat2->_31) + m12 + m13 + m14;
-        out->_32= m12 + m13 + m14 + m15 + mat1->_31*mat2->_12;
-        out->_33= m6 + m7 + m8 + m9 + mat1->_33*mat2->_33;
-
-
-        return out;
 	}
 
 
@@ -389,117 +376,61 @@ namespace SRE {
 	//  49     times mul
 	//  198    times add/sub
 	//=============================
-	PMAT44 Multiply(PMAT44 out, PMAT44 mat1, PMAT44 mat2)
+	MAT44 Multiply(MAT44& mat1, MAT44& mat2)
 	{
 
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == mat1 || nullptr == mat2)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-        float fTmp[7][4];
+       float fTmp[7][4];
 
 	    Multiply2X2(fTmp[0][0], fTmp[0][1], fTmp[0][2], fTmp[0][3],
-					mat1->_11 + mat1->_33, mat1->_12 + mat1->_34, mat1->_21 + mat1->_43, mat1->_22 + mat1->_44,
-					mat2->_11 + mat2->_33, mat2->_12 + mat2->_34, mat2->_21 + mat2->_43, mat2->_22 + mat2->_44);
+					mat1._11 + mat1._33, mat1._12 + mat1._34, mat1._21 + mat1._43, mat1._22 + mat1._44,
+					mat2._11 + mat2._33, mat2._12 + mat2._34, mat2._21 + mat2._43, mat2._22 + mat2._44);
 
 	    Multiply2X2(fTmp[1][0], fTmp[1][1], fTmp[1][2], fTmp[1][3],
-					mat1->_31 + mat1->_33, mat1->_32 + mat1->_34, mat1->_41 + mat1->_43, mat1->_42 + mat1->_44,
-					mat2->_11, mat2->_12, mat2->_21, mat2->_22);
+					mat1._31 + mat1._33, mat1._32 + mat1._34, mat1._41 + mat1._43, mat1._42 + mat1._44,
+					mat2._11, mat2._12, mat2._21, mat2._22);
 
 	    Multiply2X2(fTmp[2][0], fTmp[2][1], fTmp[2][2], fTmp[2][3],
-					mat1->_11, mat1->_12, mat1->_21, mat1->_22,
-					mat2->_13 - mat2->_33, mat2->_14 - mat2->_34, mat2->_23 - mat2->_43, mat2->_24 - mat2->_44);
+					mat1._11, mat1._12, mat1._21, mat1._22,
+					mat2._13 - mat2._33, mat2._14 - mat2._34, mat2._23 - mat2._43, mat2._24 - mat2._44);
 
         Multiply2X2(fTmp[3][0], fTmp[3][1], fTmp[3][2], fTmp[3][3],
-					mat1->_33, mat1->_34, mat1->_43, mat1->_44,
-					mat2->_31 - mat2->_11, mat2->_32 - mat2->_12, mat2->_41 - mat2->_21, mat2->_42 - mat2->_22);
+					mat1._33, mat1._34, mat1._43, mat1._44,
+					mat2._31 - mat2._11, mat2._32 - mat2._12, mat2._41 - mat2._21, mat2._42 - mat2._22);
 
 	    Multiply2X2(fTmp[4][0], fTmp[4][1], fTmp[4][2], fTmp[4][3],
-					mat1->_11 + mat1->_13, mat1->_12 + mat1->_14, mat1->_21 + mat1->_23, mat1->_22 + mat1->_24,
-					mat2->_33, mat2->_34, mat2->_43, mat2->_44);
+					mat1._11 + mat1._13, mat1._12 + mat1._14, mat1._21 + mat1._23, mat1._22 + mat1._24,
+					mat2._33, mat2._34, mat2._43, mat2._44);
 
 	    Multiply2X2(fTmp[5][0], fTmp[5][1], fTmp[5][2], fTmp[5][3],
-					mat1->_31 - mat1->_11, mat1->_32 - mat1->_12, mat1->_41 - mat1->_21, mat1->_42 - mat1->_22,
-					mat2->_11 + mat2->_13, mat2->_12 + mat2->_14, mat2->_21 + mat2->_23, mat2->_22 + mat2->_24);
+					mat1._31 - mat1._11, mat1._32 - mat1._12, mat1._41 - mat1._21, mat1._42 - mat1._22,
+					mat2._11 + mat2._13, mat2._12 + mat2._14, mat2._21 + mat2._23, mat2._22 + mat2._24);
 
         Multiply2X2(fTmp[6][0], fTmp[6][1], fTmp[6][2], fTmp[6][3],
-					mat1->_13 - mat1->_33, mat1->_14 - mat1->_34, mat1->_23 - mat1->_43, mat1->_24 - mat1->_44,
-					mat2->_31 + mat2->_33, mat2->_32 + mat2->_34, mat2->_41 + mat2->_43, mat2->_42 + mat2->_44);
+					mat1._13 - mat1._33, mat1._14 - mat1._34, mat1._23 - mat1._43, mat1._24 - mat1._44,
+					mat2._31 + mat2._33, mat2._32 + mat2._34, mat2._41 + mat2._43, mat2._42 + mat2._44);
 
-        out->_11 = fTmp[0][0] + fTmp[3][0] - fTmp[4][0] + fTmp[6][0];
-        out->_12 = fTmp[0][1] + fTmp[3][1] - fTmp[4][1] + fTmp[6][1];
-        out->_21 = fTmp[0][2] + fTmp[3][2] - fTmp[4][2] + fTmp[6][2];
-	    out->_22 = fTmp[0][3] + fTmp[3][3] - fTmp[4][3] + fTmp[6][3];
+		return MAT44(
+             fTmp[0][0] + fTmp[3][0] - fTmp[4][0] + fTmp[6][0],
+             fTmp[0][1] + fTmp[3][1] - fTmp[4][1] + fTmp[6][1],
+             fTmp[2][0] + fTmp[4][0],
+	          fTmp[2][1] + fTmp[4][1],
+             fTmp[0][2] + fTmp[3][2] - fTmp[4][2] + fTmp[6][2],
+             fTmp[0][3] + fTmp[3][3] - fTmp[4][3] + fTmp[6][3],
+             fTmp[2][2] + fTmp[4][2],
+	          fTmp[2][3] + fTmp[4][3],
+	          fTmp[1][0] + fTmp[3][0],
+	          fTmp[1][1] + fTmp[3][1],
+             fTmp[0][0] - fTmp[1][0] + fTmp[2][0] + fTmp[5][0],
+	          fTmp[0][1] - fTmp[1][1] + fTmp[2][1] + fTmp[5][1],
+	          fTmp[1][2] + fTmp[3][2],
+             fTmp[1][3] + fTmp[3][3],
+	          fTmp[0][2] - fTmp[1][2] + fTmp[2][2] + fTmp[5][2],
+             fTmp[0][3] - fTmp[1][3] + fTmp[2][3] + fTmp[5][3]
+	     );
 
-	    out->_13 = fTmp[2][0] + fTmp[4][0];
-	    out->_14 = fTmp[2][1] + fTmp[4][1];
-	    out->_23 = fTmp[2][2] + fTmp[4][2];
-	    out->_24 = fTmp[2][3] + fTmp[4][3];
-
-	    out->_31 = fTmp[1][0] + fTmp[3][0];
-	    out->_32 = fTmp[1][1] + fTmp[3][1];
-	    out->_41 = fTmp[1][2] + fTmp[3][2];
-        out->_42 = fTmp[1][3] + fTmp[3][3];
-
-	    out->_33 = fTmp[0][0] - fTmp[1][0] + fTmp[2][0] + fTmp[5][0];
-	    out->_34 = fTmp[0][1] - fTmp[1][1] + fTmp[2][1] + fTmp[5][1];
-	    out->_43 = fTmp[0][2] - fTmp[1][2] + fTmp[2][2] + fTmp[5][2];
-	    out->_44 = fTmp[0][3] - fTmp[1][3] + fTmp[2][3] + fTmp[5][3];
-
-	    return out;
 
 	}
 
-
-	//=============================
-	//Transpose a 3x3 Matrix
-	//
-	//
-	//=============================
-	PMAT33 Transpose(PMAT33 out, PMAT33 mat) {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == mat)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-		out->_11 = mat->_11; out->_12 = mat->_21; out->_13 = mat->_31;
-		out->_21 = mat->_12; out->_22 = mat->_22; out->_23 = mat->_32;
-		out->_31 = mat->_13; out->_32 = mat->_23; out->_33 = mat->_33;
-
-		return out;
-	}
-
-
-	//=============================
-	//Transpose a 4x4 Matrix
-	//
-	//
-	//=============================
-	PMAT44 Transpose(PMAT44 out, PMAT44 mat) {
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == mat)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-		out->_11 = mat->_11; out->_12 = mat->_21; out->_13 = mat->_31; out->_14 = mat->_41;
-		out->_21 = mat->_12; out->_22 = mat->_22; out->_23 = mat->_32; out->_24 = mat->_42;
-		out->_31 = mat->_13; out->_32 = mat->_23; out->_33 = mat->_33; out->_34 = mat->_43;
-		out->_41 = mat->_14; out->_42 = mat->_24; out->_43 = mat->_34; out->_44 = mat->_44;
-
-		return out;
-	}
 
 	//=============================
 	//Transpose a 3x3 Matrix
@@ -584,58 +515,6 @@ namespace SRE {
                       mat._23*(mat._31*mat._42 - mat._32*mat._41));
 
 
-    }
-
-
-    //=============================
-	//3x3 Matrix Identity
-	//
-	//
-	//
-    //=============================
-    PMAT33 Identity(PMAT33 out){
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-        out->_11 = 1.0;out->_22 = 1.0;out->_33 = 1.0;
-        out->_12 = 0.0;out->_13 = 0.0;
-        out->_21 = 0.0;out->_23 = 0.0;
-        out->_31 = 0.0;out->_32 = 0.0;
-
-        return out;
-    }
-
-
-    //=============================
-	//4x4 Matrix Identity
-	//
-	//
-	//
-    //=============================
-    PMAT44 Identity(PMAT44 out){
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-        out->_11 = 1.0;out->_22 = 1.0;
-        out->_33 = 1.0;out->_44 = 1.0;
-        out->_12 = 0.0;out->_13 = 0.0;out->_14 = 0.0;
-        out->_21 = 0.0;out->_23 = 0.0;out->_24 = 0.0;
-        out->_31 = 0.0;out->_32 = 0.0;out->_34 = 0.0;
-        out->_41 = 0.0;out->_42 = 0.0;out->_43 = 0.0;
-
-        return out;
     }
 
 
@@ -731,7 +610,7 @@ namespace SRE {
 	//  64    times mul/div
 	//  83    times add/sub
 	//==================================
-    bool Inverse(PMAT44 out, CPMAT44 mat){
+    bool Inverse(PMAT44 out, PMAT44 mat){
 
 #ifdef _SRE_DEBUG_
 		if (nullptr == out || nullptr == mat)
@@ -847,52 +726,6 @@ namespace SRE {
 	//Matrix & Vector operations
 	//
 	//==================================
-	//==================================
-	//Multiply a 3DVector with a 3x3 Matrix
-	//
-	//==================================
-	PVEC3    Multiply(PVEC3 out, CPVEC3 vec, CPMAT33 mat)
-	{
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == mat || nullptr == vec)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-        out->x = vec->x*mat->_11 + vec->y*mat->_21 + vec->z*mat->_31;
-        out->y = vec->x*mat->_12 + vec->y*mat->_22 + vec->z*mat->_32;
-        out->z = vec->x*mat->_13 + vec->y*mat->_23 + vec->z*mat->_33;
-
-        return out;
-	}
-
-
-	//==================================
-	//Multiply a 4DVector with a 4x4 Matrix
-	//
-	//==================================
-	PVEC4    Multiply(PVEC4 out, CPVEC4 vec, CPMAT44 mat)
-	{
-
-#ifdef _SRE_DEBUG_
-		if (nullptr == out || nullptr == mat || nullptr == vec)
-        {
-            _ERRORLOG(SRE_ERROR_NULLPOINTER);
-            return nullptr;
-        }
-#endif
-
-        out->x = vec->x*mat->_11 + vec->y*mat->_21 + vec->z*mat->_31 + vec->w*mat->_41;
-        out->y = vec->x*mat->_12 + vec->y*mat->_22 + vec->z*mat->_32 + vec->w*mat->_42;
-        out->z = vec->x*mat->_13 + vec->y*mat->_23 + vec->z*mat->_33 + vec->w*mat->_43;
-        out->w = vec->x*mat->_14 + vec->y*mat->_24 + vec->z*mat->_34 + vec->w*mat->_44;
-
-        return out;
-	}
-
 	//==================================
 	//Multiply a 3DVector with a 3x3 Matrix
 	//
@@ -1130,7 +963,7 @@ namespace SRE {
     //
     //
 	//==================================
-    QUAT    Multiply(QUAT& quat1, QUAT quat2)
+    QUAT    Multiply(QUAT& quat1, QUAT& quat2)
     {
        return QUAT(
             quat1.w*quat2.w-quat1.x*quat2.x-quat1.y*quat2.y-quat1.z*quat2.z,
@@ -1287,14 +1120,6 @@ namespace SRE {
 	//
 	//Build a translation matrix
 	//==================================
-	MAT33 MatrixTranslation(const FLOAT tx, const FLOAT ty)
-	{
-       return MAT33(1.0f,  0.0f, 0.0f,
-                              0.0f, 1.0f, 0.0f,
-                                 tx,    ty, 1.0f);
-	}
-
-
    MAT44 MatrixTranslation(const FLOAT tx, const FLOAT ty, const FLOAT tz)
 	{
 
@@ -1315,14 +1140,6 @@ namespace SRE {
 	//z will be scaled by a factor sz
 	//w will be scaled by a factor sw
 	//==================================
-   MAT33 MatrixScaling(const FLOAT sx, const FLOAT sy, const FLOAT sz)
-	{
-       return MAT33(   sx,  0.0f, 0.0f,
-                              0.0f,     sy, 0.0f,
-                              0.0f,  0.0f,    sz);
-	}
-
-
    MAT44 MatrixScaling(const FLOAT sx, const FLOAT sy, const FLOAT sz, const FLOAT sw)
 	{
        return MAT44(   sx,  0.0f, 0.0f, 0.0f,
@@ -1339,7 +1156,7 @@ namespace SRE {
 	//axis : An arbitrary axis which to scale along
 	//scale: scale factor
 	//==================================
-   MAT44 MatrixScalingAxis(VEC3 axis, const FLOAT scale)
+   MAT44 MatrixScalingAxis(VEC3& axis, const FLOAT scale)
 	{
 
         VEC3 _axis = axis;
@@ -1539,11 +1356,10 @@ namespace SRE {
         VEC3 view_vector=lookAt-pos;
         Normalize(view_vector);
 
-        VEC3 right_vector=Cross(view_vector, up);
+        VEC3 right_vector=Cross(up, view_vector);
         Normalize(right_vector);
 
-        VEC3 up_vector=Cross(right_vector, view_vector);
-        Normalize(up_vector);
+        VEC3 up_vector=Cross(view_vector, right_vector);
 
         return MAT44(right_vector.x,  up_vector.x,  view_vector.x,  0.0f,
                                right_vector.y,  up_vector.y,  view_vector.y, 0.0f,
@@ -1637,7 +1453,7 @@ namespace SRE {
        return MAT44( 2.0/view_width,                    0.0f,                        0.0f, 0.0f,
                                                0.0f,  2.0/view_height,                        0.0f,  0.0f,
                                                0.0f,                    0.0f,      1.0/(zfar-znear),  0.0f,
-                                               0.0f,                    0.0f, -znear/(zfar-znear), 1.0f);
+                                               0.0f,                    0.0f,  znear/(znear-zfar), 1.0f);
 
     }
 
@@ -1672,7 +1488,7 @@ namespace SRE {
        return MAT44(2.0/(right-left),                       0.0f,                        0.0f, 0.0f,
                                                0.0f, 2.0/(top-bottom),                        0.0f,  0.0f,
                                                0.0f,                      0.0f,      1.0/(zfar-znear),  0.0f,
-                  -(right+left)/(right-left),-(top+bottom)/(top-bottom), znear/(zfar-znear), 1.0f);
+                  (right+left)/(left-right),(top+bottom)/(bottom-top), znear/(znear-zfar), 1.0f);
 
     }
 
@@ -1686,6 +1502,7 @@ namespace SRE {
     // -1 < y < 1
     //  0 < z < 1
     //
+    //*LH*
     //left: left plane of the view volume
     //      (the minimum x value of the view volume)
     //right: right plane of the view volume
@@ -1705,10 +1522,10 @@ namespace SRE {
                                                          const FLOAT zfar)
     {
 
-       return MAT44((2.0*znear)/(right-left),                                        0.0f,                        0.0f,  0.0f,
-                                                          0.0f,       (2.0*znear)/(top-bottom),                        0.0f,  0.0f,
-                             -(right+left)/(right-left),-(top+bottom)/(top-bottom),     zfar/(zfar-znear),  1.0f,
-                                                           0.0f,                                       0.0f,    -(zfar*znear)/(zfar-znear), 0.0f);
+       return MAT44((2.0*znear)/(right-left),                                        0.0f,                        0.0f,             0.0f,
+                                                          0.0f,       (2.0*znear)/(top-bottom),                        0.0f,             0.0f,
+                              (right+left)/(left-right),   (top+bottom)/(bottom-top),     zfar/(zfar-znear),            1.0f,
+                                                           0.0f,                                       0.0f,    (zfar*znear)/(znear-zfar), 0.0f);
     }
 
     //==================================
@@ -1732,14 +1549,14 @@ namespace SRE {
     // top  plane = - bottom plane
 	//==================================
    MAT44 MatrixProjectPerspective(const FLOAT view_width,
-                                                const FLOAT view_height,
-                                                const FLOAT znear,
-                                                const FLOAT zfar)
+                                                    const FLOAT view_height,
+                                                    const FLOAT znear,
+                                                    const FLOAT zfar)
     {
-       return MAT44((2.0*znear)/view_width,                                        0.0f,                        0.0f,  0.0f,
-                                                          0.0f,           (2.0*znear)/view_height,                        0.0f,  0.0f,
-                                                           0.0f,                                        0.0f,      zfar/(zfar-znear),  1.0f,
-                                                           0.0f,                                       0.0f,    -(zfar*znear)/(zfar-znear), 0.0f);
+       return MAT44((2.0*znear)/view_width,                                        0.0f,                                   0.0f,  0.0f,
+                                                          0.0f,           (2.0*znear)/view_height,                                  0.0f,  0.0f,
+                                                          0.0f,                                        0.0f,               zfar/(zfar-znear),  1.0f,
+                                                          0.0f,                                        0.0f,    (zfar*znear)/(znear-zfar), 0.0f);
 
     }
 
@@ -1771,7 +1588,7 @@ namespace SRE {
        return MAT44(1.0/(aspectRatio*Tan),          0.0f,                                   0.0f,  0.0f,
                                                         0.0f,  1.0f/Tan,                                    0.0f,  0.0f,
                                                         0.0f,         0.0f,                 zfar/(zfar-znear),  1.0f,
-                                                        0.0f,         0.0f,    -(zfar*znear)/(zfar-znear), 0.0f);
+                                                        0.0f,         0.0f,      (zfar*znear)/(znear-zfar), 0.0f);
 
 
     }

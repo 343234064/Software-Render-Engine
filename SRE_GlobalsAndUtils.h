@@ -1,7 +1,7 @@
 //*****************************************************
 //
 // Software Render Engine
-// Version 0.01
+// Version 0.01 by XJL
 //
 // File: SRE_GlobalsAndUtils.h
 // Date: 2016/5/04
@@ -39,7 +39,7 @@ using std::endl;
 #include <stdlib.h>
 #include <condition_variable>
 #include <fstream>
-
+#include <sstream>
 
 namespace SRE {
     //==============================
@@ -76,9 +76,10 @@ namespace SRE {
     class Quaternion;
 
     class BaseMesh;
-    class TriangleMesh;
+    class Mesh;
+    class TMesh;
 	 class BaseMeshManager;
-	 class TriangleMeshManager;
+	 class TMeshManager;
 
     class Color3;
     class Color4;
@@ -90,6 +91,8 @@ namespace SRE {
 
     template<typename T>
     class BasicIOBuffer;
+    template<typename T>
+    class BasicIOBufferEx;
 
     class BasicIOElement;
     class BasicObserver;
@@ -172,11 +175,15 @@ namespace SRE {
     typedef VSOutput* (CallBackVShader)(BYTE*, VariableBuffer*);
     typedef Color4      (CallBackPShader)(PSInput&);
 
-    typedef TriangleMeshManager TMManager;
+    typedef TMeshManager TMManager;
+
+    typedef BasicIOBuffer<BasicIOElement> PIOBUFFER;
 
     typedef Color4 DECOLOR;
     typedef Color4 RTCOLOR;
     typedef Buffer<FLOAT> ZBUFFER;
+    typedef Buffer<USINT>   IBUFFER;
+    typedef VertexBuffer      VBUFFER;
     typedef Color4  VCOLOR;
 
     //==============================
@@ -216,15 +223,16 @@ namespace SRE {
       It must be a 4 floating point data
     */
     const SREVAR SRE_FORMAT_VERTEX_XYZW=0x00000004;
-    /*
-      Vertex normal, 3 floating point data
-    */
-    const SREVAR SRE_FORMAT_ATTRIBUTE_NORMAL=0x00000008;
    /*
       Vertex texture coordinate set , in UV order
     */
-    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORDUV=0x00000010;
-    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORDUVW=0x0000020;
+    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORDUV=0x00000008;
+    const SREVAR SRE_FORMAT_ATTRIBUTE_TEXCOORDUVW=0x0000010;
+    /*
+      Vertex normal, 3 floating point data
+    */
+    const SREVAR SRE_FORMAT_ATTRIBUTE_NORMAL=0x00000020;
+
     /*
       Vertex diffuse color, in ARGB order,3 floating point data
     */
@@ -241,8 +249,7 @@ namespace SRE {
       Vertex tangent, 3 floating point data
     */
     const SREVAR SRE_FORMAT_ATTRIBUTE_TANGENT=0x00000200;
-
-    /* 1111 1111 1111 1111 1111 1111 1111 1111
+    /*
       Some other vertex data
     */
     const SREVAR SRE_FORMAT_ATTRIBUTE_OTHER1=0x00000400;
@@ -362,15 +369,11 @@ namespace SRE {
     class BaseMesh
     {
     public:
-        BaseMesh():name("\0"){}
-        BaseMesh(std::string _name):name(_name){}
+        BaseMesh(std::string _name="\0"):name(_name){}
         virtual ~BaseMesh(){}
 
-        void         SetName(std::string _name){name=_name;}
-        std::string  getName(){return name;}
-
-    protected:
-        std::string  name;
+    public:
+        std::string name;
 
     };
 
@@ -401,6 +404,7 @@ namespace SRE {
 	{
     public:
         BasicIOElement(){}
+        virtual ~BasicIOElement(){}
 
 	};
 

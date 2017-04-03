@@ -1,7 +1,7 @@
 //*****************************************************
 //
 // Software Render Engine
-// Version 0.01
+// Version 0.01 by XJL
 //
 // File: SRE_Mesh.cpp
 // Date: 2016/06/29
@@ -11,24 +11,167 @@
 //
 //
 //*****************************************************
-#include <string>
-#include <cstring>
-
 #include "SRE_Mesh.h"
 
 
 namespace SRE {
-
-
-
-    //===========================================
+   //===========================================
 	//Public functions
 	//
 	//
 	//===========================================
+   RESULT LoadObjMesh(char* filePath,  Mesh* p_outmesh)
+   {
+       if(nullptr == filePath) return RESULT::INVALIDARG;
+       if(nullptr == p_outmesh) return RESULT::INVALIDARG;
 
+       std::ifstream file(filePath, std::ios::in);
+
+       std::string line;
+       std::string name="\0";
+       INT faceCount=0;
+       bool tex=false, nor=false;
+       std::vector<VERTEX3> vertexes;
+       std::vector<VEC3>      normals;
+       std::vector<VEC2>      texcoord;
+       std::vector<USINT>     indexes;
+
+       FLOAT x, y, z;
+       USINT  index;
+       while(getline(file, line))
+       {
+          if(line.substr(0,2)=="g ")
+          {
+              name = line.substr(2);
+          }
+          if(line.substr(0,2)== "v ")
+          {
+              std::istringstream s(line.substr(2));
+              s>>x;s>>y;s>>z;
+              vertexes.push_back(VERTEX3(x, y, z));
+          }
+          else if(line.substr(0,3)== "vt ")
+          {
+              std::istringstream s(line.substr(3));
+              s>>x;s>>y;
+              texcoord.push_back(VEC2(x, y));
+              tex=true;
+          }
+          else if(line.substr(0,3)== "vn ")
+          {
+              std::istringstream s(line.substr(3));
+              s>>x;s>>y;s>>z;
+              normals.push_back(VEC3(x, y, z));
+              nor=true;
+          }
+          else if(line.substr(0,2)== "f ")
+          {
+              std::istringstream s(line.substr(2));
+              USINT i=0;
+              while(i<4)
+              {
+                  s>>index;
+                  indexes.push_back(index);
+                  if(tex){
+                     s.ignore(line.size(), '/');
+                     s>>index;
+                     indexes.push_back(index);
+                  }
+                  if(nor){
+                     s.ignore(line.size(), '/');
+                     s>>index;
+                     indexes.push_back(index);
+                  }
+                  i++;
+              }
+              faceCount ++;
+           }
+       }
+
+       if(vertexes.size()>0)
+       {
+          BYTE*    vbuffer = nullptr;
+          USINT*   ibuffer = nullptr;
+
+          INT ver_num = 4*faceCount;
+          INT ind_num = 6*faceCount;
+          INT sizever3 = sizeof(VERTEX3);
+          INT sizevec3 = sizeof(VEC3);
+          INT sizevec2 = sizeof(VEC2);
+
+          INT per_ver_size = sizever3;
+
+          if(nor) per_ver_size += sizevec3;
+          if(tex) per_ver_size += sizevec2;
+
+          vbuffer = new BYTE[ver_num*per_ver_size];
+          if(nullptr == vbuffer) return RESULT::OUTMEMORY;
+
+          ibuffer = new USINT[ind_num];
+          if(nullptr == ibuffer) return RESULT::OUTMEMORY;
+
+          INT i=0, vn=0, in=0, ct=0;
+          USINT pv1=0, pv2=0, pv3=0;
+          while(i<indexes.size())
+          {
+              *(VERTEX3*)(vbuffer + vn*per_ver_size) = vertexes[indexes[i]-1];
+
+             if(ct == 3)
+             {
+                 *(ibuffer+in) = pv3;in++;
+                 *(ibuffer+in) = vn;in++;
+                 *(ibuffer+in) = pv1;in++;
+                 ct = 0;
+              }
+             else
+             {
+                *(ibuffer+in) = vn;in++;
+                ct++;
+             }
+
+             pv1 = pv2;
+             pv2 = pv3;
+             pv3 = vn;
+
+             if(tex)
+                *(VEC2*)(vbuffer + vn*per_ver_size + sizever3) = texcoord[indexes[++i]-1];
+
+             if(nor)
+                *(VEC3*)(vbuffer + vn*per_ver_size + sizever3 + sizevec2) = normals[indexes[++i]-1];
+
+             vn++;
+             i++;
+          }
+
+
+
+          RESULT re = CreateVertexBuffer(ver_num, per_ver_size, SRE_FORMAT_VERTEX_XYZ | SRE_FORMAT_ATTRIBUTE_TEXCOORDUV | SRE_FORMAT_ATTRIBUTE_NORMAL,
+                                                           vbuffer,  &(p_outmesh->vertexes));
+          if(re == RESULT::SUCC)
+          {
+             if(!p_outmesh->indexes.ResetBuffer(ibuffer, ind_num))
+                 re = RESULT::FAIL;
+             else
+                 p_outmesh->name = name;
+          }
+          delete[] vbuffer;
+          delete[] ibuffer;
+          return re;
+       }
+       else
+          return RESULT::FAIL;
+
+   }
+
+
+
+
+
+
+
+	/***************Unused**************************/
     //===========================================
-	//CreateTriangleMesh
+	//CreateTMesh
 	//
 	//
 	//vertexNumber: the number of vertex in the mesh
@@ -44,24 +187,24 @@ namespace SRE {
     //               decide how the index number in
     //               the index array to construct the
     //               mesh, see SRE_GlobalsAndUtils.h
-    //ppOutTriangleMesh: the output mesh
+    //ppOutTMesh: the output mesh
     //
     //It will automatically ignore the single vertex
     //or single edge
 	//===========================================
-	RESULT CreateTriangleMesh(const INT vertexNumber,
+	RESULT CreateTMesh(const INT vertexNumber,
                               const SREVAR vertexFormat,
                               const INT vertexStructSize,
                               const void * pVertexes,
                               const INT   indexNumber,
                               const INT * pIndexes,
                               const SREVAR primitiveType,
-                              TriangleMesh** ppOutTriangleMesh
+                              TMesh** ppOutTMesh
                               )
     {
 #ifdef _SRE_DEBUG_
        if(nullptr == pVertexes || nullptr == pIndexes ||
-          nullptr == ppOutTriangleMesh)
+          nullptr == ppOutTMesh)
        {
            _ERRORLOG(SRE_ERROR_NULLPOINTER);
            return RESULT::INVALIDARG;
@@ -467,8 +610,8 @@ namespace SRE {
 
 
        /*Generate the triangle mesh*/
-       TriangleMesh* triangle
-                          = new TriangleMesh(vertexList,
+       TMesh* triangle
+                          = new TMesh(vertexList,
                                              edgeList,
                                              faceList,
                                              attributesList,
@@ -479,21 +622,20 @@ namespace SRE {
                                              perAttrSize);
        if(nullptr == triangle)
           return RESULT::OUTMEMORY;
-       *ppOutTriangleMesh = triangle;
+       *ppOutTMesh = triangle;
 
        return RESULT::SUCC;
     }
 
 
 
-
     //===========================================
-	//Class TriangleMesh functions
+	//Class TMesh functions
 	//
 	//
 	//===========================================
 	//Release
-	void TriangleMesh::Release()
+	void TMesh::Release()
 	{
         m_pVertexList.reset(nullptr);
         m_pFaceList.reset(nullptr);
@@ -507,7 +649,7 @@ namespace SRE {
 	}
 
 	//copy constructor
-	TriangleMesh::TriangleMesh(const TriangleMesh & other):
+	TMesh::TMesh(const TMesh & other):
 	        BaseMesh(other.name),
             m_pVertexList(nullptr),
             m_pEdgeList(nullptr),
@@ -563,7 +705,7 @@ namespace SRE {
 	}
 
     //assignment operator
-    TriangleMesh & TriangleMesh::operator=(const TriangleMesh & other)
+    TMesh & TMesh::operator=(const TMesh & other)
     {
         if(this == &other)
           return *this;
@@ -628,7 +770,7 @@ namespace SRE {
     }
 
     //move constructor
-    TriangleMesh::TriangleMesh(TriangleMesh && other):
+    TMesh::TMesh(TMesh && other):
             BaseMesh(std::move(other.name)),
             m_pVertexList(std::move(other.m_pVertexList)),
             m_pEdgeList(std::move(other.m_pEdgeList)),
@@ -647,7 +789,7 @@ namespace SRE {
     }
 
     //move assignment
-    TriangleMesh & TriangleMesh::operator=(TriangleMesh && other)
+    TMesh & TMesh::operator=(TMesh && other)
     {
         if(this != &other)
         {
@@ -679,11 +821,11 @@ namespace SRE {
 
 
     //===========================================
-	//Class TriangleMeshManager functions
+	//Class TMeshManager functions
 	//
 	//
 	//===========================================
-	INT TriangleMeshManager::GetVertexNumber(TriangleMesh * mesh)
+	INT TMeshManager::GetVertexNumber(TMesh * mesh)
 	{
 #ifdef _SRE_DEBUG_
         if(nullptr == mesh) return 0;
@@ -691,7 +833,7 @@ namespace SRE {
 	    return mesh->m_vertexNumber;
 	}
 
-	INT TriangleMeshManager::GetEdgeNumber(TriangleMesh * mesh)
+	INT TMeshManager::GetEdgeNumber(TMesh * mesh)
 	{
 #ifdef _SRE_DEBUG_
         if(nullptr == mesh) return 0;
@@ -699,7 +841,7 @@ namespace SRE {
 	    return mesh->m_edgeNumber;
 	}
 
-	INT TriangleMeshManager::GetFaceNumber(TriangleMesh * mesh)
+	INT TMeshManager::GetFaceNumber(TMesh * mesh)
 	{
 #ifdef _SRE_DEBUG_
         if(nullptr == mesh) return 0;
@@ -707,7 +849,7 @@ namespace SRE {
 	    return mesh->m_faceNumber;
 	}
 
-    void * TriangleMeshManager::GetVertex(INT vertexIndex, TriangleMesh * mesh)
+    void * TMeshManager::GetVertex(INT vertexIndex, TMesh * mesh)
     {
 #ifdef _SRE_DEBUG_
         if(nullptr == mesh) return nullptr;
@@ -716,7 +858,7 @@ namespace SRE {
         return (void*)(&(mesh->m_pVertexList.get()[vertexIndex]));
     }
 
-    void * TriangleMeshManager::GetVertexFromEdge(INT edgeIndex, INT vertexIndex, TriangleMesh * mesh)
+    void * TMeshManager::GetVertexFromEdge(INT edgeIndex, INT vertexIndex, TMesh * mesh)
     {
 #ifdef _SRE_DEBUG_
         if(nullptr == mesh) return nullptr;
@@ -728,7 +870,7 @@ namespace SRE {
     }
 
 
-    void * TriangleMeshManager::GetVertexFromFace(INT faceIndex, INT vertexIndex, TriangleMesh * mesh)
+    void * TMeshManager::GetVertexFromFace(INT faceIndex, INT vertexIndex, TMesh * mesh)
     {
 #ifdef _SRE_DEBUG_
         if(nullptr == mesh) return nullptr;
@@ -739,7 +881,7 @@ namespace SRE {
         return (void*)(&(mesh->m_pFaceList.get()[faceIndex].get()[vertexIndex]));
     }
 
-    void * TriangleMeshManager::GetAttribute(INT vertexIndex, TriangleMesh * mesh)
+    void * TMeshManager::GetAttribute(INT vertexIndex, TMesh * mesh)
     {
 #ifdef _SRE_DEBUG_
         if(nullptr == mesh) return nullptr;
@@ -748,5 +890,5 @@ namespace SRE {
         BYTE* attribute = mesh->m_pAttributes.get();
         return  (void*)(attribute + vertexIndex * mesh->m_perAttrSize);
     }
-
+    /***************Unused**************************/
 }

@@ -1,7 +1,7 @@
 //*****************************************************
 //
 // Software Render Engine
-// Version 0.01
+// Version 0.01 by XJL
 //
 // File: SRE_Device.cpp
 // Date: 2017/03/11
@@ -61,7 +61,6 @@ namespace SRE {
 
         m_front = m_framebuffers.Begin();
         m_pDeviceAdapter = deviceAdapter;
-        m_present = false;
 
         return RESULT::SUCC;
     }
@@ -103,11 +102,10 @@ namespace SRE {
 
 	void  Device::Present()
 	{
-		std::unique_lock<std::mutex> lock(m_mutex);
-		m_cond.wait(lock, [this]{return m_present;});
+		SREVAR get;
+		m_msgbuffer.wait_and_pop(get);
 
-		m_present = false;
-		m_pDeviceAdapter->PresentToScreen((BYTE*)m_front->data->Get(),
+      m_pDeviceAdapter->PresentToScreen((BYTE*)m_front->data->Get(),
 											                       m_front->data->GetWidth(),
 											                       m_front->data->GetHeight());
       m_front->data->Unlock();
@@ -117,10 +115,7 @@ namespace SRE {
 
 	void  Device::PresentReady()
 	{
-		std::lock_guard<std::mutex> lock(m_mutex);
-		m_present = true;
-
-		m_cond.notify_one();
+		m_msgbuffer.push(SRE_MESSAGE_ENDSCENE);
 	}
 
    RenderTexture*  Device::GetFrontFrameBuffer()

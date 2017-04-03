@@ -1,7 +1,7 @@
 //*****************************************************
 //
 // Software Render Engine
-// Version 0.01
+// Version 0.01 by XJL
 //
 // File: SRE_PipeLine.h
 // Date: 2016/11/16
@@ -21,6 +21,24 @@
 #include "SRE_GlobalsAndUtils.h"
 
 namespace SRE {
+    //===========================================
+    //Functions
+    //
+    //magnitude of the cross product:(v1-v0) and (V2-v0).
+    //E01(P)=(V2.x-V0.x)*(V1.y-V0.y)-(V2.y-V0.y)*(V1.x-V0.x).
+    //v0->v1->v2, CW
+    //===========================================
+    inline FLOAT EdgeFunction2D(const VEC4& v1, const VEC4& v2, const VEC4& v3)
+    {
+        return (v3.x - v1.x) * (v2.y - v1.y) - (v3.y - v1.y) * (v2.x - v1.x);
+    }
+
+    inline FLOAT EdgeFunction2D(FLOAT v1x, FLOAT v1y, FLOAT v2x, FLOAT v2y, FLOAT v3x, FLOAT v3y)
+    {
+        return (v3x - v1x) * (v2y - v1y) - (v3y - v1y) * (v2x - v1x);
+    }
+
+
    //=============================
 	//Class VariableBuffer
 	//
@@ -42,7 +60,7 @@ namespace SRE {
         virtual ~VariableBuffer(){}
 
     public:
-        VEC2   ViewportSize;
+        VEC2     ViewportSize;
         MAT44  WorldViewProj;
         MAT44  WorldView;
         MAT44  ViewProj;
@@ -66,6 +84,7 @@ namespace SRE {
             FillMode(SRE_FILLMODE_SOLID),
             CullEnable(SRE_TRUE),
             CullMode(SRE_CULLMODE_CCW),
+            ClipEnable(SRE_TRUE),
             ZEnable(SRE_TRUE),
             AlphaTest(SRE_FALSE),
             AlphaBlend(SRE_FALSE),
@@ -78,129 +97,13 @@ namespace SRE {
         SREVAR FillMode;
         SREVAR CullEnable;
         SREVAR CullMode;
+        SREVAR ClipEnable;
         SREVAR ZEnable;
         SREVAR AlphaTest;
         SREVAR AlphaBlend;
         SREVAR OutputChannel;
 	};
 
-
-    //=============================
-	//Class Basic I/O Buffer
-	//
-	//
-	//=============================
-	template<typename T>
-	class BasicIOBuffer
-	{
-    public:
-        BasicIOBuffer():
-            m_queue(),
-            m_mutex(),
-            m_cond()
-        {}
-        virtual ~BasicIOBuffer()
-        {}
-
-        void push(T data)
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            m_stopwait = false;
-            m_queue.push(std::make_shared(data));
-            m_cond.notify_one();
-        }
-
-        void push(T* pdata)
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            m_stopwait = false;
-            m_queue.push(std::shared_ptr<T>(pdata));
-            m_cond.notify_one();
-        }
-
-        void push(std::shared_ptr<T> pdata)
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            m_stopwait = false;
-            m_queue.push(pdata);
-            m_cond.notify_one();
-        }
-
-        std::shared_ptr<T> wait_and_pop()
-        {
-            std::unique_lock<std::mutex> lock(m_mutex);
-            m_cond.wait(lock, [this]{return !m_queue.empty()||m_stopwait;});
-            if(m_stopwait) {return std::shared_ptr<T>();}
-
-            std::shared_ptr<T> res = m_queue.front();
-            m_queue.pop();
-
-            return res;
-        }
-
-        std::shared_ptr<T> top()
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            std::shared_ptr<T> res = m_queue.front();
-            return res;
-        }
-
-        void wait_and_pop(T ** out)
-        {
-            std::unique_lock<std::mutex> lock(m_mutex);
-            m_cond.wait(lock, [this]{return !m_queue.empty()||m_stopwait;});
-            if(m_stopwait) {*out=nullptr;return;}
-
-            std::shared_ptr<T> p = m_queue.front();
-            *out = p.get();
-            m_queue.pop();
-        }
-
-        void top(T ** out)
-        {
-            std::unique_lock<std::mutex> lock(m_mutex);
-            std::shared_ptr<T> p = m_queue.front();
-            *out = p.get();
-        }
-
-        bool empty() const
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            return m_queue.empty();
-        }
-
-        void StopWait()
-        {
-        	   std::lock_guard<std::mutex> lock(m_mutex);
-           	m_stopwait = true;
-            m_cond.notify_all();
-        }
-
-        void Clear()
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            INT num=m_queue.size();
-            while(num>0)
-            {
-               m_queue.pop();
-               num--;
-            }
-        }
-
-        BasicIOBuffer(const BasicIOBuffer & other) = delete;
-        BasicIOBuffer & operator=(const BasicIOBuffer & other) = delete;
-
-    protected:
-        std::queue<std::shared_ptr<T>>
-                                         m_queue;
-        std::mutex                m_mutex;
-        std::condition_variable
-                                         m_cond;
-		bool                           m_stopwait;
-
-
-
-	};
 
 
 
@@ -287,8 +190,8 @@ namespace SRE {
 	{
     public:
         BasicProcessor(USINT id=0,
-							  BasicIOBuffer<BasicIOElement> * input=nullptr,
-                              BasicIOBuffer<BasicIOElement> * output=nullptr,
+							         PIOBUFFER * input=nullptr,
+                              PIOBUFFER * output=nullptr,
                               BasicObserver     * observer=nullptr,
                               CallBackFunctions * callbacks=nullptr):
             BaseTask(),
@@ -317,10 +220,10 @@ namespace SRE {
         inline void Cancel();
 
         inline std::shared_ptr<BasicIOElement> GetInput();
-        inline void Output(std::shared_ptr<BasicIOElement> out);
         inline void Output(BasicIOElement* out);
-        inline void SetInputQueue(BasicIOBuffer<BasicIOElement> * inputQueue);
-        inline void SetOutputQueue(BasicIOBuffer<BasicIOElement> * outpueQueue);
+        inline void Output(std::shared_ptr<BasicIOElement> out);
+        inline void SetInputQueue(PIOBUFFER * inputQueue);
+        inline void SetOutputQueue(PIOBUFFER * outpueQueue);
         inline void SetObserver(BasicObserver  * observer);
         inline void Input(BasicIOElement* element);
         inline void SetCallBacks(CallBackFunctions * callbacks);
@@ -331,14 +234,14 @@ namespace SRE {
         BasicProcessor & operator=(const BasicProcessor & other) = delete;
 
 	public:
-		USINT                                             m_id;
+		  USINT                                             m_id;
 
-    private:
-        BasicIOBuffer<BasicIOElement> *     m_pInputQueue;
-        BasicIOBuffer<BasicIOElement> *     m_pOutputQueue;
-        std::thread                                     m_thread;
-        CallBackFunctions   *                       m_callBacks;
-        std::mutex                                     m_mutex;
+    protected:
+        PIOBUFFER *   m_pInputQueue;
+        PIOBUFFER *   m_pOutputQueue;
+        std::thread                                        m_thread;
+        CallBackFunctions   *                          m_callBacks;
+        std::mutex                                        m_mutex;
 
     protected:
         BasicObserver  *                              m_pObserver;
@@ -380,13 +283,13 @@ namespace SRE {
 
     }
 
-    void BasicProcessor::SetInputQueue(BasicIOBuffer<BasicIOElement> * inputQueue)
+    void BasicProcessor::SetInputQueue(PIOBUFFER * inputQueue)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_pInputQueue = inputQueue;
     }
 
-    void BasicProcessor::SetOutputQueue(BasicIOBuffer<BasicIOElement> * outpueQueue)
+    void BasicProcessor::SetOutputQueue(PIOBUFFER * outpueQueue)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_pOutputQueue = outpueQueue;
@@ -413,12 +316,12 @@ namespace SRE {
         return m_pInputQueue->wait_and_pop();
     }
 
-    void BasicProcessor::Output(std::shared_ptr<BasicIOElement> out)
+    void BasicProcessor::Output(BasicIOElement* out)
     {
         m_pOutputQueue->push(out);
     }
 
-    void BasicProcessor::Output(BasicIOElement* out)
+    void BasicProcessor::Output(std::shared_ptr<BasicIOElement> out)
     {
         m_pOutputQueue->push(out);
     }
@@ -478,38 +381,32 @@ namespace SRE {
 	class _Triangle_:public BasicIOElement
 	{//A temp data structure for primitive output
     public:
+        _Triangle_(VSOutput * v1, VSOutput * v2, VSOutput * v3)
+        {
+            v[0]=*v1;v[1]=*v2;v[2]=*v3;
+        }
         _Triangle_(VSOutput & v1, VSOutput & v2, VSOutput & v3)
         {
             v[0]=v1;v[1]=v2;v[2]=v3;
         }
+
         ~_Triangle_()
-        {}
+        {
+
+        }
 
     public:
         VSOutput  v[3];
-	};
-
-
-	class _target_:public BasicIOElement
-	{//A temp data structure for Rasterizer output
-    public:
-        _target_(RenderTexture* tex=nullptr):
-        	texture(tex)
-        {}
-        ~_target_()
-        {}
-
-    public:
-        RenderTexture*  texture;
 	};
 
 	template<typename T>
 	class _pixelBlock_:public BasicIOElement
 	{
     public:
-        _pixelBlock_(USINT _sx=0, USINT _sy=0, USINT _distX=0, USINT _distY=0, bool _isEnd=false, bool _setArg=false,
+        _pixelBlock_(USINT _sx=0, USINT _sy=0, USINT _distX=0, USINT _distY=0, FLOAT _area,bool _isEnd=false, bool _setArg=false,
                      std::shared_ptr<T> _data=nullptr):
             sx(_sx), sy(_sy), distX(_distX), distY(_distY),
+            area(_area),
             isEnd(_isEnd),
             setArg(_setArg),
             tempData(_data)
@@ -517,6 +414,7 @@ namespace SRE {
         _pixelBlock_(const _pixelBlock_<T> & other):
             sx(other.sx), sy(other.sy),
             distX(other.distX), distY(other.distY),
+            area(other.area),
             isEnd(other.isEnd),
             setArg(other.setArg),
             tempData(other.tempData)
@@ -525,8 +423,9 @@ namespace SRE {
         {}
 
     public:
-	    USINT sx, sy;
-	    USINT distX, distY;
+	    USINT   sx, sy;
+	    USINT   distX, distY;
+	    FLOAT  area;
 	    bool    isEnd;
 	    bool    setArg;
 	    std::shared_ptr<T> tempData;
@@ -543,8 +442,8 @@ namespace SRE {
 	{
     public:
         InputAssembler(USINT id=0,
-					            BasicIOBuffer<BasicIOElement> * output=nullptr,
-                           BasicObserver *                           observer=nullptr):
+					            PIOBUFFER * output=nullptr,
+                           BasicObserver *  observer=nullptr):
             BasicProcessor(id, nullptr, output, observer, this),
             m_vertexBuffers(),
             m_indexBuffers(),
@@ -569,7 +468,7 @@ namespace SRE {
         void OnStart();
 
         void ClearVertexbufferAndIndexbuffer();
-        void SetVertexAndIndexBuffers(VertexBuffer* vertexbuffer, Buffer<INT>* indexbuffer=nullptr);
+        void SetVertexAndIndexBuffers(VBUFFER* vertexbuffer, IBUFFER* indexbuffer=nullptr);
         inline void SetConstantBuffer(const ConstantBuffer * cbuffer);
         inline void BeginSceneSetting();
         inline void EndSceneSetting();
@@ -581,12 +480,12 @@ namespace SRE {
         void SendVertex(INT & actualIndex);
 
     private:
-        std::queue<VertexBuffer*>       m_vertexBuffers;
-        std::queue<Buffer<INT>*>       m_indexBuffers;
-        const ConstantBuffer *              m_pConstantBuffer;
+        std::queue<VBUFFER*>       m_vertexBuffers;
+        std::queue<IBUFFER*>        m_indexBuffers;
+        const ConstantBuffer *        m_pConstantBuffer;
 
-        VertexBuffer*                              m_pCurrentHandleVbuffer;
-        Buffer<INT>*                              m_pCurrentHandleIbuffer;
+        VBUFFER*                             m_pCurrentHandleVbuffer;
+        IBUFFER*                              m_pCurrentHandleIbuffer;
 
         INT                                 m_currentIndex;
         INT                                 m_currentIndex2;
@@ -627,15 +526,18 @@ namespace SRE {
     {
     public:
         VertexProcessor(USINT id=0,
-						         BasicIOBuffer<BasicIOElement> * input=nullptr,
-                                 BasicIOBuffer<BasicIOElement> * output=nullptr,
+                                 PIOBUFFER * input=nullptr,
+                                 PIOBUFFER * output=nullptr,
                                  BasicObserver * observer=nullptr):
             BasicProcessor(id, input, output, observer, this),
             m_pVertexShader(nullptr),
             m_pVariableBuffer(nullptr),
 			   m_pCVertexShader(nullptr),
-            m_pCVariableBuffer(nullptr)
+            m_pCVariableBuffer(nullptr),
+            m_cachedOutVertexIdx(-1)
         {
+            m_cachedOutVertex[0] = nullptr;
+            m_cachedOutVertex[1] = nullptr;
             m_cachedVertexIndex[0]=-1;
             m_cachedVertexIndex[1]=-1;
             m_cachedVertexIndex[2]=-1;
@@ -644,7 +546,12 @@ namespace SRE {
             m_cachedPriority[2]=1;
         }
         virtual ~VertexProcessor()
-        {}
+        {
+           if(nullptr != m_cachedOutVertex[0])
+             delete m_cachedOutVertex[0];
+           if(nullptr != m_cachedOutVertex[1])
+             delete m_cachedOutVertex[1];
+        }
 
         void HandleElement();
         void HandleMessage(SREVAR message, USINT id=0);
@@ -663,6 +570,7 @@ namespace SRE {
 
 	protected:
 		void   SetArgus();
+      void   SetOutputVertex(VSOutput* out);
 
     protected:
         VertexShader*   m_pVertexShader;
@@ -670,10 +578,12 @@ namespace SRE {
         VertexShader*   m_pCVertexShader;
         VariableBuffer*  m_pCVariableBuffer;
 
-
+        SINT                  m_cachedOutVertexIdx;
+        VSOutput*         m_cachedOutVertex[2];
         VSOutput          m_cachedVertex[3];
         USINT               m_cachedVertexIndex[3];
         USINT               m_cachedPriority[3];
+
     };
 
     void VertexProcessor::SetVertexShader(VertexShader * vshader)
@@ -688,7 +598,7 @@ namespace SRE {
         m_pCVariableBuffer = varbuffer;
     }
 
-    //=============================
+   //=============================
 	//Class PrimitiveAssembler
 	//*Unused*
 	//
@@ -736,27 +646,25 @@ namespace SRE {
     {
     public:
         VertexPostProcessor(USINT id=0,
-							            BasicIOBuffer<BasicIOElement> * input=nullptr,
-                                        BasicIOBuffer<BasicIOElement> * output=nullptr,
+							                   PIOBUFFER * input=nullptr,
+                                        PIOBUFFER * output=nullptr,
                                         BasicObserver * observer=nullptr):
             BasicProcessor(id, input, output, observer, this),
+            m_pConstantBuffer(nullptr),
             m_pCurrentTriangle(nullptr),
             m_clipEpsilon(0.00),
             m_viewportHeightHalf(300),
             m_viewportWidthHalf(400)
         {
-            m_clipPlaneDistance[0]= 1;m_clipPlaneNormal[0].x=  1;
-            m_clipPlaneDistance[1]= 1;m_clipPlaneNormal[1].x=-1;
-            m_clipPlaneDistance[2]= 1;m_clipPlaneNormal[2].y=  1;
-            m_clipPlaneDistance[3]= 1;m_clipPlaneNormal[3].y=-1;
-            m_clipPlaneDistance[4]= 0;m_clipPlaneNormal[4].z=  1;
-            m_clipPlaneDistance[5]= 1;m_clipPlaneNormal[5].z=-1;
+            m_clipPlaneDistance[0]= 1.0f;m_clipPlaneNormal[0].x=  1.0f;
+            m_clipPlaneDistance[1]= 1.0f;m_clipPlaneNormal[1].x=-1.0f;
+            m_clipPlaneDistance[2]= 1.0f;m_clipPlaneNormal[2].y=  1.0f;
+            m_clipPlaneDistance[3]= 1.0f;m_clipPlaneNormal[3].y=-1.0f;
+            m_clipPlaneDistance[4]= 1.0f;m_clipPlaneNormal[4].z=  1.0f;
+            m_clipPlaneDistance[5]= 1.0f;m_clipPlaneNormal[5].z=-1.0f;
         }
         virtual ~VertexPostProcessor()
-        {
-            if(nullptr != m_pCurrentTriangle)
-                delete m_pCurrentTriangle;
-        }
+        {}
 
         void HandleElement();
         void HandleMessage(SREVAR message, USINT id=0);
@@ -767,12 +675,14 @@ namespace SRE {
         void OnRunFinish();
         void OnStart();
 
-        inline void SetClipPlaneX(FLOAT Distance_PlaneToOrigin, VEC3& normal);
-        inline void SetClipPlaneY(FLOAT Distance_PlaneToOrigin, VEC3& normal);
-        inline void SetClipPlaneZ(FLOAT Distance_PlaneToOrigin, VEC3& normal);
+        inline void SetClipXValue(FLOAT _min, FLOAT _max);
+        inline void SetClipYValue(FLOAT _min, FLOAT _max);
+        inline void SetClipZValue(FLOAT _min, FLOAT _max);
+
         inline void SetClipTolerance(FLOAT tolerance);
         inline void SetViewportHeight(USINT height);
         inline void SetViewportWidth(USINT width);
+        inline void SetConstantBuffer(const ConstantBuffer* cbuffer);
 
         VertexPostProcessor(const VertexPostProcessor & other) = delete;
         VertexPostProcessor & operator=(const VertexPostProcessor & other) = delete;
@@ -787,7 +697,8 @@ namespace SRE {
         void SendTriangle(VSOutput & v1, VSOutput & v2, VSOutput & v3);
 
     protected:
-        _Triangle_*  m_pCurrentTriangle;
+       const ConstantBuffer*                    m_pConstantBuffer;
+        std::shared_ptr<BasicIOElement> m_pCurrentTriangle;
         FLOAT         m_clipPlaneDistance[6];//-x, x, -y, y, -z, z
         VEC3           m_clipPlaneNormal[6];
         FLOAT         m_clipEpsilon;
@@ -814,32 +725,29 @@ namespace SRE {
         if(width>0) m_viewportWidthHalf = ((FLOAT)width-1)/2;
     }
 
-    void VertexPostProcessor::SetClipPlaneX(FLOAT Distance_PlaneToOrigin, VEC3& normal)
+    void VertexPostProcessor::SetClipXValue(FLOAT _min, FLOAT _max)
     {
-        m_clipPlaneDistance[0] = Distance_PlaneToOrigin;
-        m_clipPlaneDistance[1] = Distance_PlaneToOrigin;
-
-        m_clipPlaneNormal[0] = normal;
-        m_clipPlaneNormal[1] = -normal;
+        m_clipPlaneDistance[0] = fabs(_min);
+        m_clipPlaneDistance[1] = fabs(_max);
     }
 
-    void VertexPostProcessor::SetClipPlaneY(FLOAT Distance_PlaneToOrigin, VEC3& normal)
+    void VertexPostProcessor::SetClipYValue(FLOAT _min, FLOAT _max)
     {
-        m_clipPlaneDistance[2] = Distance_PlaneToOrigin;
-        m_clipPlaneDistance[3] = Distance_PlaneToOrigin;
-
-        m_clipPlaneNormal[2] = normal;
-        m_clipPlaneNormal[3] = -normal;
+        m_clipPlaneDistance[2] = fabs(_min);
+        m_clipPlaneDistance[3] = fabs(_max);
     }
 
-    void VertexPostProcessor::SetClipPlaneZ(FLOAT Distance_PlaneToOrigin, VEC3& normal)
+    void VertexPostProcessor::SetClipZValue(FLOAT _min, FLOAT _max)
     {
-        m_clipPlaneDistance[4] = Distance_PlaneToOrigin;
-        m_clipPlaneDistance[5] = Distance_PlaneToOrigin;
-
-        m_clipPlaneNormal[4] = normal;
-        m_clipPlaneNormal[5] = -normal;
+        m_clipPlaneDistance[4] = fabs(_min);
+        m_clipPlaneDistance[5] = fabs(_max);
     }
+
+	void VertexPostProcessor::SetConstantBuffer(const ConstantBuffer * cbuffer)
+	{
+	    if(nullptr != cbuffer)
+        m_pConstantBuffer = cbuffer;
+	}
 
 
     //=============================
@@ -852,9 +760,9 @@ namespace SRE {
     {
     public:
         Rasterizer(USINT id=0,
-						BasicIOBuffer<BasicIOElement> * input=nullptr,
+						      PIOBUFFER * input=nullptr,
                         BasicObserver * observer=nullptr,
-                        USINT samplePixelBlockSize=256):
+                        USINT samplePixelBlockSize=192):
             BasicProcessor(id, input, nullptr, observer, this),
             m_subObserver(this),
             m_pConstantBuffer(nullptr),
@@ -868,10 +776,12 @@ namespace SRE {
             m_pZbuffer(nullptr),
             m_pRenderTarget(nullptr),
             m_pPixelShader(nullptr),
-			m_sigCount(0)
+			   m_sigCount(0)
         {}
         virtual ~Rasterizer()
         {
+           if(nullptr != m_pCurrentTriangle)
+             delete m_pCurrentTriangle;
         }
 
         void HandleElement();
@@ -902,10 +812,10 @@ namespace SRE {
         bool BackFaceCulling();//Using cross product(CCW, CW mode will give different result) to calculate face normal
                                            //and then test the face normal with the eye ray
                                            //if BackFaceCulling return true, we send this triangle to rasterizer
-		void  SetProcessorArgus(USINT id);
+		  void  SetProcessorArgus(USINT id);
 
     protected:
-    	BasicObserver               m_subObserver;
+    	  BasicObserver               m_subObserver;
         const ConstantBuffer*  m_pConstantBuffer;
         _Triangle_ *                  m_pCurrentTriangle;
 
@@ -963,9 +873,8 @@ namespace SRE {
 
 	void Rasterizer::SetSamplePixelBlockSize(USINT blockSize)
 	{
-	    if(!m_Started)
-          m_perPixelBlockSize = blockSize;
-    }
+      m_perPixelBlockSize = blockSize;
+   }
 
 
     //=============================
@@ -1048,9 +957,7 @@ namespace SRE {
 
         std::shared_ptr<BasicIOElement>
                              GetTask();
-        inline FLOAT EdgeFunction2D(const VEC4& v1, const VEC4& v2, const VEC4& v3);
-        inline FLOAT EdgeFunction2D(FLOAT v1x, FLOAT v1y, FLOAT v2x, FLOAT v2y, FLOAT v3x, FLOAT v3y);
-        inline bool   ZTest(INT pos, FLOAT interpolatedZ);
+        //inline bool   ZTest(INT pos, FLOAT interpolatedZ);
 
     protected:
     	  USINT                            m_id;
@@ -1123,22 +1030,11 @@ namespace SRE {
     void PixelProcessor::Join()
     {
     	if(m_thread.joinable())
-			m_thread.join();
+			 m_thread.join();
     }
 
-    //magnitude of the cross product:(v1-v0) and (V2-v0).
-    //E01(P)=(V2.x-V0.x)*(V1.y-V0.y)-(V2.y-V0.y)*(V1.x-V0.x).
-    //v0->v1->v2, CW
-    FLOAT PixelProcessor::EdgeFunction2D(const VEC4& v1, const VEC4& v2, const VEC4& v3)
-    {
-        return (v3.x - v1.x) * (v2.y - v1.y) - (v3.y - v1.y) * (v2.x - v1.x);
-    }
 
-    FLOAT PixelProcessor::EdgeFunction2D(FLOAT v1x, FLOAT v1y, FLOAT v2x, FLOAT v2y, FLOAT v3x, FLOAT v3y)
-    {
-        return (v3x - v1x) * (v2y - v1y) - (v3y - v1y) * (v2x - v1x);
-    }
-
+    /*
 	bool PixelProcessor::ZTest(INT pos, FLOAT interpolatedZ)
 	{
         if(interpolatedZ < m_pZbuffer->GetData(pos))
@@ -1150,7 +1046,7 @@ namespace SRE {
         {
             return false;
         }
-	}
+	}*/
 
 
 
@@ -1311,11 +1207,11 @@ namespace SRE {
     public:
         void SceneBegin();
         void SceneEnd();
-        void SetVertexBufferAndIndexBuffer(VertexBuffer* vertexbuffer, Buffer<INT>* indexbuffer=nullptr);
+        void SetVertexBufferAndIndexBuffer(VBUFFER* vertexbuffer, IBUFFER* indexbuffer=nullptr);
         void SetVertexShader(VertexShader * vshader);
-        void SetClipPlaneXYZ(FLOAT Distance_PlaneXToOrigin, VEC3& x_normal,
-                                         FLOAT Distance_PlaneYToOrigin, VEC3& y_normal,
-                                         FLOAT Distance_PlaneZToOrigin, VEC3& z_normal);
+        void SetClipXValue(FLOAT x_min, FLOAT x_max);
+        void SetClipYValue(FLOAT y_min, FLOAT y_max);
+        void SetClipZValue(FLOAT z_min, FLOAT z_max);
         void SetClipTolerance(FLOAT tolerance);
         void SetPixelShader(PixelShader* pshader);
         void SetSubProcessors(USINT num);
@@ -1333,9 +1229,9 @@ namespace SRE {
         Rasterizer                      m_RZ;
 
     protected:
-        BasicIOBuffer<BasicIOElement> m_IAoutputBuffer;
-        BasicIOBuffer<BasicIOElement> m_VPoutputBuffer;
-        BasicIOBuffer<BasicIOElement> m_VPPoutputBuffer;
+        PIOBUFFER m_IAoutputBuffer;
+        PIOBUFFER m_VPoutputBuffer;
+        PIOBUFFER m_VPPoutputBuffer;
 
     protected:
         ZBUFFER                          m_zbuffer;

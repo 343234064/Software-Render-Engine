@@ -1,7 +1,7 @@
 //*****************************************************
 //
 // Software Render Engine
-// Version 0.01
+// Version 0.01 by XJL
 //
 // File: SRE_Resources.cpp
 // Date: 2016/10/10
@@ -165,33 +165,29 @@ namespace SRE {
         if(nullptr == vertexes) return RESULT::INVALIDARG;
 
         INT vertexDimen=0, attriSize=0;
-		if((dataFormat & SRE_FORMAT_VERTEX_XY)==SRE_FORMAT_VERTEX_XY)
-			vertexDimen = 2;
-		else if((dataFormat & SRE_FORMAT_VERTEX_XYZ)==SRE_FORMAT_VERTEX_XYZ)
-			vertexDimen = 3;
-		else if((dataFormat & SRE_FORMAT_VERTEX_XYZW)==SRE_FORMAT_VERTEX_XYZW)
-			vertexDimen = 4;
+		  if((dataFormat & SRE_FORMAT_VERTEX_XY)==SRE_FORMAT_VERTEX_XY)
+			   vertexDimen = 2;
+		  else if((dataFormat & SRE_FORMAT_VERTEX_XYZ)==SRE_FORMAT_VERTEX_XYZ)
+			   vertexDimen = 3;
+		  else if((dataFormat & SRE_FORMAT_VERTEX_XYZW)==SRE_FORMAT_VERTEX_XYZW)
+			   vertexDimen = 4;
         else
-			return RESULT::INVALIDARG;
+			   return RESULT::INVALIDARG;
 
-		attriSize = vertexSize - vertexDimen*sizeof(FLOAT);
-		if(attriSize<0) return RESULT::FAIL;
+		  attriSize = vertexSize - vertexDimen*sizeof(FLOAT);
+		  if(attriSize<0) return RESULT::FAIL;
 
         VertexBuffer* buffer=nullptr;
         buffer = new VertexBuffer();
         if(nullptr == *out) return RESULT::OUTMEMORY;
 
-		INT length = vertexNumber * vertexSize;
-		buffer->m_vertexes = new BYTE[length];
-		if(nullptr == buffer->m_vertexes) return RESULT::OUTMEMORY;
-		memcpy(buffer->m_vertexes, vertexes, length);
+        INT length = vertexNumber * vertexSize;
+		  buffer->m_vertexes = new BYTE[length];
+		  if(nullptr == buffer->m_vertexes) return RESULT::OUTMEMORY;
+		  memcpy(buffer->m_vertexes, vertexes, length);
 
-		buffer->m_marks = new bool[vertexNumber];
-		if(nullptr == buffer->m_marks) return RESULT::OUTMEMORY;
-		memset(buffer->m_marks, 0, vertexNumber*sizeof(bool));
-
-		buffer->m_vertexDimen = vertexDimen;
-		buffer->m_attriSize = attriSize;
+		  buffer->m_vertexDimen = vertexDimen;
+		  buffer->m_attriSize = attriSize;
         buffer->m_vertexFormat = dataFormat;
         buffer->m_vertexSize = vertexSize;
         buffer->m_vertexNum = vertexNumber;
@@ -224,10 +220,6 @@ namespace SRE {
 		out->m_vertexes = new BYTE[length];
 		if(nullptr == out->m_vertexes) return RESULT::OUTMEMORY;
 		memcpy(out->m_vertexes, vertexes, length);
-
-		out->m_marks = new bool[vertexNumber];
-		if(nullptr == out->m_marks) return RESULT::OUTMEMORY;
-		memset(out->m_marks, 0, vertexNumber*sizeof(bool));
 
         out->m_vertexFormat = dataFormat;
         out->m_vertexSize = vertexSize;
