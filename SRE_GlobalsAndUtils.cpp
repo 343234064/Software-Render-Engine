@@ -20,12 +20,12 @@ namespace SRE {
     //functions
     //
     //==============================
-	void OutputAsImage(DECOLOR* colorbuffer, INT width, INT height)
+	void OutputAsImage(BYTE* colorbuffer, INT width, INT height, INT BytesPerColor)
 	{
 		std::ofstream ofs;
 		ofs.open("./outputImage.ppm");
 		ofs << "P6\n" << width<< " " << height << "\n255\n";
-		ofs.write((char*)colorbuffer, width * height * sizeof(DECOLOR));
+		ofs.write((char*)colorbuffer, width * height * BytesPerColor);
 		ofs.close();
 	}
 

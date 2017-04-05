@@ -14,6 +14,17 @@
 #include <stdio.h>
 #include "SoftRenderEngine.h"
 
+/*****************************************
+*Load a image for texturing
+*This is not necessary if do not need
+******************************************/
+#define USE_IMAGE_TEXTRUE
+
+#ifdef USE_IMAGE_TEXTRUE
+#include "ImageLoader/ImageLoader.h"
+#endif
+
+
 using namespace SRE;
 using  std::cout;
 using  std::endl;
@@ -51,6 +62,7 @@ public:
    PixelShader         pshader;
 
    Mesh                  object;
+   Sampler              sampler;
 
    BasicObserver     pileLineObserver;
 
@@ -63,10 +75,10 @@ public:
 };
 
 Global global;
-Mesh Triangle;
 
-const USINT frame_width = 800;
-const USINT frame_height = 600;
+
+USINT frame_width = 800;
+USINT frame_height = 600;
 
 FLOAT frameTime=0;
 /********************************************
@@ -81,9 +93,10 @@ FLOAT frameTime=0;
  *when z = zfar,   z-projected = 1, z>zfar,   z-projected>1
 /********************************************/
 FLOAT znear = 1.0f;
-FLOAT zfar = 10.0f;
+FLOAT zfar = 5.0f;
 
-VEC3 camera_pos = VEC3(0.0f, 1.5f, 2.0f);
+VEC3 camer_speed = VEC3(0.01f, 0.01f, 0.01f);
+VEC3 camera_pos = VEC3(0.0f, 1.5f, 3.0f);
 VEC3 camera_lookat = VEC3(0.0f, 0.0f, 0.0f);
 VEC3 camera_up = VEC3(0.0f, 1.0f, 0.0f);
 
@@ -95,7 +108,8 @@ VEC3 camera_up = VEC3(0.0f, 1.0f, 0.0f);
  *so the camera view can be 4.0x3.0 units
  *in world space
 /********************************/
-VEC2 camera_view =  VEC2(4.0f, 3.0f);
+VEC2 camera_view =  VEC2(2.0f, 1.5f);
+
 
 MAT44 view = MatrixViewLookAt(camera_pos , camera_lookat, camera_up);
 MAT44 project = MatrixProjectPerspective(camera_view.x, camera_view.y, znear, zfar);
@@ -119,7 +133,11 @@ VSOutput* myVS(BYTE* v, VariableBuffer* varbuffer)
 
     MAT44 world = MatrixRotationY(rotateAngle*rotateFactor);
     out->vertex = Multiply(out->vertex, world);
-    out->vertex = Multiply(out->vertex, viewproject);
+    MAT44 mview = MatrixViewLookAt(camera_pos , camera_lookat, camera_up);
+    out->vertex = Multiply(out->vertex, mview);
+
+    out->vertex = Multiply(out->vertex, project);
+
 
     return out;
 }
@@ -127,26 +145,36 @@ VSOutput* myVS(BYTE* v, VariableBuffer* varbuffer)
 
 Color4 myPS(PSInput & in)
 {
-	return Color4(255,0,0,0);
+   Color3 color;
+#ifdef USE_IMAGE_TEXTRUE
+   //texture
+    color = global.sampler.getcolor3(&global.object.texture, in.texcoord.x, in.texcoord.y);
+#endif
+   //pong
+    Color4 col;
+    col.r = color.r;
+    col.g = color.g;
+    col.b = color.b;
+	return col;
 }
 
 
 bool SceneInit()
 {
-    char* filePath = ".\\Cube_C.obj";
+    char* filePath = ".\\resources\\TexPlane.obj";
     if(RESULT::SUCC != LoadObjMesh(filePath, &global.object))
        return false;
 
-    vertex vertexs[3];
-    vertexs[0].ver = VERTEX3(-0.5, 0.5, 0.0);
-    vertexs[1].ver = VERTEX3(  0.5, 0.5, 0.0);
-    vertexs[2].ver = VERTEX3(  0.5, -0.5, 0.0);
-    vertexs[0].color = Color4(255, 0, 0, 0);
-    vertexs[1].color = Color4(0, 255, 0, 0);
-    vertexs[2].color = Color4(0, 0, 255, 0);
-
-    if(RESULT::SUCC != CreateVertexBuffer(3, sizeof(vertex), SRE_FORMAT_VERTEX_XYZ, vertexs, &(Triangle.vertexes)))
-       return false;
+#ifdef USE_IMAGE_TEXTRUE
+    BYTE* image=nullptr;
+    INT w=0, h=0, p=0;
+    if(!LoadImageToBuffer(".\\resources\\TexPlaneTex.jpg", &image, p, w, h))
+    {
+		 return false;
+    }
+    global.object.texture.Set(image, w, h, p);
+    global.sampler.FilterMode = SRE_FILTERMODE_NEAREST;
+#endif
 
     global.vshader.SetCallBackShader(&myVS);
     global.pshader.SetCallBackShader(&myPS);
@@ -154,6 +182,7 @@ bool SceneInit()
     global.main_pipeline.SetSamplePixelBlockSize(300);
     global.main_pipeline.SetSampleStep(1);
     global.main_pipeline.SetClipZValue(znear, zfar);
+
 
     global.main_pipeline.SetObserver(&global.pileLineObserver);
 
@@ -191,6 +220,32 @@ void OnResize(INT width, INT height)
     //main_device.Resize(width, height);;
 }
 
+void OnKeyDown(UINT key)
+{
+   switch (key)
+   {
+   case 'A':
+      camera_lookat.x -= frameTime*camer_speed.x;
+      break;
+   case 'D':
+      camera_lookat.x += frameTime*camer_speed.x;
+      break;
+   case 'W':
+      camera_lookat.z += frameTime*camer_speed.x;
+      break;
+   case 'S':
+      camera_lookat.z -= frameTime*camer_speed.x;
+      break;
+   case 'Q':
+      camera_lookat.y += frameTime*camer_speed.x;
+      break;
+   case 'E':
+      camera_lookat.z -= frameTime*camer_speed.x;
+      break;
+   default:
+      break;
+   }
+}
 
 void OnFrame()
 {
@@ -222,9 +277,9 @@ void OnFrame()
 
  	OnRender();
 
-	global.main_device.Present();
+   global.main_device.Present();
 	g_log.Write("Present End");
-	once = false;
+	//once = false;
    //}
 
 }
@@ -236,7 +291,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR sCmdLine,
 
     if(global.main_view.Create(hInstance, "SoftwareEngine -ver0.01 -FPS:0", frame_width, frame_height))
     {
+
 	      global.win_adapter.SetHDC(global.main_view.GetHDC());
+
 	      RESULT re = global.main_device.Create(frame_width, frame_height, SRE_FORMAT_PIXEL_R8G8B8, &global.win_adapter);
 	      if(re != RESULT::SUCC)
 	      {
@@ -258,7 +315,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR sCmdLine,
 
         global.main_pipeline.Run();
 
-		  SetWndCallBackOnFrame(&OnFrame);
+    	  SetWndCallBackOnFrame(&OnFrame);
+        SetWndCallBackOnKeyDown(&OnKeyDown);
 
         global.main_view.ShowWindow();
 		  global.main_view.MsgLoop();

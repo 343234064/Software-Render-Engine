@@ -40,14 +40,15 @@ namespace SRE {
          Mesh(const char* _name="\0"):
             BaseMesh(_name),
             vertexes(),
-            indexes()
+            indexes(),
+            texture()
          {}
          virtual ~Mesh(){}
 
    public:
          VBUFFER    vertexes;
          IBUFFER     indexes;
-         //texture
+         Texture     texture;
 
    };
 

@@ -576,11 +576,12 @@ namespace SRE {
 	//===========================================
 	void VertexPostProcessor::TriangleClipping()
 	{
-	     //if(m_pCurrentTriangle->v[0].vertex.w <= 0) return;
-	     //if(m_pCurrentTriangle->v[1].vertex.w <= 0) return;
-	     //if(m_pCurrentTriangle->v[2].vertex.w <= 0) return;
-
 	     _Triangle_* ptriangle = (_Triangle_*)m_pCurrentTriangle.get();
+
+        if(ptriangle->v[0].vertex.w <= 0) return;
+	     if(ptriangle->v[1].vertex.w <= 0) return;
+	     if(ptriangle->v[2].vertex.w <= 0) return;
+
 	     m_vlist[0].Add_back(_vertex_(ptriangle->v[0].vertex, 0, 0, 0));
 	     m_vlist[0].Add_back(_vertex_(ptriangle->v[1].vertex, 0, 1, 1));
 	     m_vlist[0].Add_back(_vertex_(ptriangle->v[2].vertex, 0, 2, 2));
@@ -598,6 +599,9 @@ namespace SRE {
             {//for each vertex in m_vlist[src]
                 _vertex_* va = &(it->data);
                 _vertex_* vb = &(it->next->data);
+
+                _vertex_ a= *va;
+                _vertex_ b= *vb;
 
                 it = it->next;
 
@@ -706,17 +710,22 @@ namespace SRE {
 
 	void VertexPostProcessor::OtherTranforms(VSOutput & input)
 	{
+        g_log.WriteKV("VPP get:", input.vertex.x, input.vertex.y, input.vertex.z, input.vertex.w);
+
         //Perspective Divide
         input.vertex.x = input.vertex.x/input.vertex.w;
         input.vertex.y = input.vertex.y/input.vertex.w;
         input.vertex.z = input.vertex.z/input.vertex.w;
 
+        g_log.WriteKV("VPP divided:", input.vertex.x, input.vertex.y, input.vertex.z, input.vertex.w);
         //Viewport Transform
         //Notice that : FLOAT -> INT
         input.vertex.x = INT(input.vertex.x*  m_viewportWidthHalf   + m_viewportWidthHalf );
         input.vertex.y = INT(input.vertex.y*(-m_viewportHeightHalf) + m_viewportHeightHalf );
 
         input.vertex.w = 1/fabs(input.vertex.w);
+
+        g_log.WriteKV("VPP transed:", input.vertex.x, input.vertex.y, input.vertex.z, input.vertex.w);
 
         //Notice that:
         //viewport :800 : 600

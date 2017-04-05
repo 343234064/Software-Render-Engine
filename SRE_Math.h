@@ -190,9 +190,15 @@ namespace SRE {
 		inline friend Color3 operator -  (const Color3 &, FLOAT);
 
     public:
+#ifdef _BGRA_OREDER_
         BYTE b;
         BYTE g;
         BYTE r;
+#else
+        BYTE b;
+        BYTE g;
+        BYTE r;
+#endif
 
     };
 
@@ -547,7 +553,7 @@ namespace SRE {
 
     public:
 
-           FLOAT _11, _12, _13;
+         FLOAT _11, _12, _13;
 		   FLOAT _21, _22, _23;
 		   FLOAT _31, _32, _33;
 

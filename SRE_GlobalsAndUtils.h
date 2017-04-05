@@ -19,12 +19,42 @@
 //==============================
 #define _SRE_DEBUG_
 //==============================
-
 #ifdef _SRE_DEBUG_
 #include "SRE_DebugLog.h"
 #include <iostream>
 using std::cout;
 using std::endl;
+#endif
+
+//=============================
+//8 bit per channel
+//=============================
+//=============================
+//Little endian ) B, G, R, A
+//=============================
+#define _BGRA_OREDER_
+//=============================
+//BIG endian R, G, B, A
+//=============================
+//#define _RGBA_OREDER_
+
+
+#define _SRE_PLATFORM_WIN_
+#ifdef _SRE_PLATFORM_WIN_
+#include <windows.h>
+/************************************
+ *if compile in visual studio, add
+ *the following code here:
+ *
+ *   #pragma comment(lib, "winmm.lib")
+ *
+ *else if compile in codeblocks, add
+ *libgdi32.a to the linker:
+ *Setting -> Compiler ->Linker Setting-> Add:
+ *
+ *   CodeBlocks\MinGW\lib\libgdi32.a
+ *
+ ************************************/
 #endif
 
 #include <math.h>
@@ -40,6 +70,7 @@ using std::endl;
 #include <condition_variable>
 #include <fstream>
 #include <sstream>
+
 
 namespace SRE {
     //==============================
@@ -87,7 +118,9 @@ namespace SRE {
     template <typename T>
 	 class Buffer;
     class VertexBuffer;
+    class Texture;
     class RenderTexture;
+    class Sampler;
 
     template<typename T>
     class BasicIOBuffer;
@@ -292,8 +325,13 @@ namespace SRE {
     const SREVAR SRE_MESSAGE_ENDDRAW=0x10000091;
     const SREVAR SRE_MESSAGE_ENDSCENE=0x10000092;
 
-    const SREVAR SRE_TYPE_RENDERTARGET=0x100000a0;
-    const SREVAR SRE_TYPE_FRAMEBUFFER=0x100000a1;
+    const SREVAR SRE_WRAPMODE_WRAP=0x100000a0;
+    const SREVAR SRE_WRAPMODE_MIRROR=0x100000a1;
+    const SREVAR SRE_WRAPMODE_CLAMP=0x100000a3;
+    const SREVAR SRE_WRAPMODE_BORDER=0x100000a4;
+
+    const SREVAR SRE_FILTERMODE_NEAREST=0x100000b0;
+    const SREVAR SRE_FILTERMODE_BILINEAR=0x100000b1;
 
 
     /*
@@ -324,7 +362,7 @@ namespace SRE {
     //function declarations
     //
     //==============================
-	void OutputAsImage(DECOLOR* colorbuffer, INT width, INT height);
+	void OutputAsImage(BYTE* colorbuffer, INT width, INT height, INT BytesPerColor);
 	DECOLOR* RenderTargetToDeviceBuffer(DECOLOR* dest, const RTCOLOR* renderTarget, INT size);
 
 

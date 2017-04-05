@@ -87,8 +87,7 @@ namespace SRE {
             ClipEnable(SRE_TRUE),
             ZEnable(SRE_TRUE),
             AlphaTest(SRE_FALSE),
-            AlphaBlend(SRE_FALSE),
-            OutputChannel(SRE_TYPE_FRAMEBUFFER)
+            AlphaBlend(SRE_FALSE)
         {}
         virtual ~ConstantBuffer(){}
 
@@ -101,7 +100,6 @@ namespace SRE {
         SREVAR ZEnable;
         SREVAR AlphaTest;
         SREVAR AlphaBlend;
-        SREVAR OutputChannel;
 	};
 
 
@@ -727,20 +725,20 @@ namespace SRE {
 
     void VertexPostProcessor::SetClipXValue(FLOAT _min, FLOAT _max)
     {
-        m_clipPlaneDistance[0] = fabs(_min);
-        m_clipPlaneDistance[1] = fabs(_max);
+        m_clipPlaneDistance[0] = -_min;
+        m_clipPlaneDistance[1] =   _max;
     }
 
     void VertexPostProcessor::SetClipYValue(FLOAT _min, FLOAT _max)
     {
-        m_clipPlaneDistance[2] = fabs(_min);
-        m_clipPlaneDistance[3] = fabs(_max);
+        m_clipPlaneDistance[2] = -_min;
+        m_clipPlaneDistance[3] =   _max;
     }
 
     void VertexPostProcessor::SetClipZValue(FLOAT _min, FLOAT _max)
     {
-        m_clipPlaneDistance[4] = fabs(_min);
-        m_clipPlaneDistance[5] = fabs(_max);
+        m_clipPlaneDistance[4] = -_min;
+        m_clipPlaneDistance[5] =   _max;
     }
 
 	void VertexPostProcessor::SetConstantBuffer(const ConstantBuffer * cbuffer)

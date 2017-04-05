@@ -19,7 +19,7 @@
 #include "SRE_GlobalsAndUtils.h"
 
 namespace SRE {
-    //=============================
+   //=============================
 	//Functions declaration
 	//
 	//=============================
@@ -27,7 +27,7 @@ namespace SRE {
     RESULT CreateVertexBuffer(INT vertexNumber, INT vertexSize, SREVAR dataFormat, void* vertexes, VertexBuffer*  out);
 
 
-  //=============================
+   //=============================
 	//Class Basic I/O Buffer
 	//
 	//
@@ -765,27 +765,88 @@ namespace SRE {
     }
 
 
-    //=============================
+
+
+
+   //=============================
+	//Class Texture
+	//
+	//=============================
+    class Texture:public BasicIOElement
+    {
+    public:
+          Texture():
+             m_width(0),
+             m_height(0),
+             m_bytesPerColor(0),
+             m_data(nullptr)
+          {}
+          Texture(USINT width, USINT height, USINT bytesPerColor, BYTE* bits):
+             m_width(width),
+             m_height(height),
+             m_bytesPerColor(bytesPerColor),
+             m_data(bits)
+          {}
+          virtual ~Texture()
+          {
+             if(nullptr != m_data)
+               delete[] m_data;
+          }
+
+          void   Set(BYTE* image, USINT width, USINT height, USINT bytesPerColor);
+          inline USINT  GetWidth() const;
+          inline USINT  GetHeight() const;
+          inline USINT  GetBytesPerColor() const;
+
+
+    protected:
+          USINT m_width;
+          USINT m_height;
+          USINT m_bytesPerColor;
+          BYTE* m_data;
+
+          friend class Sampler;
+    };
+
+   //=============================
+	//Class Texture functions
+	//=============================
+   USINT Texture::GetWidth() const
+   {
+      return m_width;
+   }
+
+   USINT Texture::GetHeight() const
+   {
+      return m_height;
+   }
+
+   USINT Texture::GetBytesPerColor() const
+   {
+      return m_bytesPerColor;
+   }
+
+
+   //=============================
 	//Class RenderTexture
 	//
 	//=============================
-	class RenderTexture:public BaseContainer, public BasicIOElement
+	class RenderTexture:public Texture
 	{
     public:
         RenderTexture():
+            Texture(),
             m_mutex(),
             m_cond(),
             m_lock(false),
-            m_width(0),
-            m_height(0),
-            m_pdata(nullptr),
-            m_byteCount(0)
+            m_pdata(nullptr)
         {}
         RenderTexture(const RenderTexture & other);
         virtual ~RenderTexture()
         {
-        	if(nullptr != m_pdata)
+        	   if(nullptr != m_pdata)
                delete[] m_pdata;
+            m_data = nullptr;
         }
 
         RESULT         Create(USINT width, USINT height);
@@ -795,8 +856,6 @@ namespace SRE {
         inline void  Draw(INT px, INT py, RTCOLOR color);
         inline void  Draw(INT pos, RTCOLOR color);
         inline void  Clear(INT grayLevel);
-        inline USINT GetWidth()  const;
-        inline USINT GetHeight() const;
         //bool CreateFromFile()
 
         RenderTexture & operator=(const RenderTexture & other);
@@ -814,17 +873,12 @@ namespace SRE {
         std::mutex                       m_mutex;
         std::condition_variable  m_cond;
         bool                                m_lock;
+        RTCOLOR*                        m_pdata;
 
-    protected:
-        USINT          m_width;
-        USINT          m_height;
-        RTCOLOR*   m_pdata;
-        USINT          m_byteCount;
-
-
+        friend class Sampler;
 	};
 
-    //=============================
+   //=============================
 	//Class RenderTexture functions
 	//=============================
     void  RenderTexture::Draw(INT px, INT py, RTCOLOR color)
@@ -840,23 +894,37 @@ namespace SRE {
 
     void  RenderTexture::Clear(INT grayLevel)
     {
-        memset(m_pdata, grayLevel, m_width*m_height*m_byteCount);
+        memset(m_pdata, grayLevel, m_width*m_height*m_bytesPerColor);
     }
 
-    USINT RenderTexture::GetWidth() const
-    {
-    	return m_width;
-    }
-
-    USINT RenderTexture::GetHeight() const
-    {
-    	return m_height;
-    }
 
     RTCOLOR* RenderTexture::Get()
     {
        return m_pdata;
     }
+
+
+//=============================
+	//Class Sampler
+	//
+	//=============================
+    class Sampler
+    {
+    public:
+         Sampler():
+            WrapMode(SRE_WRAPMODE_BORDER),
+            FilterMode(SRE_FILTERMODE_NEAREST)
+         {}
+         virtual ~Sampler(){}
+
+         Color3 getcolor3(Texture* tex, FLOAT u, FLOAT v);
+         Color4 getcolor4(Texture* tex, FLOAT u, FLOAT v);
+
+    public:
+         SREVAR WrapMode;
+         SREVAR FilterMode;
+
+    };
 
 
 }

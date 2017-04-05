@@ -15,28 +15,8 @@
 #ifndef SRE_DEVICE_H_INCLUDED
 #define SRE_DEVICE_H_INCLUDED
 
-#define _SRE_PLATFORM_WIN_
-
 #include "SRE_GlobalsAndUtils.h"
 #include "SRE_Resources.h"
-
-#ifdef _SRE_PLATFORM_WIN_
-#include <windows.h>
-
-/************************************
- *if compile in visual studio, add
- *the following code here:
- *
- *   #pragma comment(lib, "winmm.lib")
- *
- *else if compile in codeblocks, add
- *libgdi32.a to the linker:
- *Setting -> Compiler ->Linker Setting-> Add:
- *
- *   CodeBlocks\MinGW\lib\libgdi32.a
- *
- ************************************/
-#endif
 
 
 

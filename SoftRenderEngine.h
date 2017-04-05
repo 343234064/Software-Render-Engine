@@ -13,7 +13,6 @@
 #ifndef _SOFTRENDERENGINE_
 #define _SOFTRENDERENGINE_
 
-
 //==============================
 //The following files using
 //name space SRE
@@ -25,6 +24,8 @@
 #include "SRE_PipeLine.h"
 #include "SRE_Shader.h"
 #include "SRE_Device.h"
+
+
 
 
 
