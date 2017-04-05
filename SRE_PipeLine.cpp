@@ -193,7 +193,6 @@ namespace SRE {
             else
             {
                 Output(nullptr);
-                g_log.Write("IA send nullptr");
             }
         }
 
@@ -397,7 +396,6 @@ namespace SRE {
           _Triangle_* triangle = new _Triangle_(*m_cachedOutVertex[0],
                                                                    *m_cachedOutVertex[1],
                                                                    *out);
-          g_log.Write("VS send triangle");
           if(nullptr == triangle)
           {
 #ifdef _SRE_DEBUG_
@@ -710,14 +708,11 @@ namespace SRE {
 
 	void VertexPostProcessor::OtherTranforms(VSOutput & input)
 	{
-        g_log.WriteKV("VPP get:", input.vertex.x, input.vertex.y, input.vertex.z, input.vertex.w);
-
         //Perspective Divide
         input.vertex.x = input.vertex.x/input.vertex.w;
         input.vertex.y = input.vertex.y/input.vertex.w;
         input.vertex.z = input.vertex.z/input.vertex.w;
 
-        g_log.WriteKV("VPP divided:", input.vertex.x, input.vertex.y, input.vertex.z, input.vertex.w);
         //Viewport Transform
         //Notice that : FLOAT -> INT
         input.vertex.x = INT(input.vertex.x*  m_viewportWidthHalf   + m_viewportWidthHalf );
@@ -725,7 +720,6 @@ namespace SRE {
 
         input.vertex.w = 1/fabs(input.vertex.w);
 
-        g_log.WriteKV("VPP transed:", input.vertex.x, input.vertex.y, input.vertex.z, input.vertex.w);
 
         //Notice that:
         //viewport :800 : 600
@@ -748,16 +742,13 @@ namespace SRE {
 
     void VertexPostProcessor::HandleElement()
     {
-        g_log.Write("VPP wait");
         m_pCurrentTriangle = GetInput();
         _Triangle_* ptriangle = (_Triangle_*)m_pCurrentTriangle.get();
         if(nullptr == ptriangle)
         {
            Output(nullptr);
-           g_log.Write("VPP send null");
            return;
         }
-        g_log.Write("VPP Get");
 
         if(m_pConstantBuffer->ClipEnable == SRE_TRUE)
         {
@@ -837,8 +828,6 @@ namespace SRE {
 	//===========================================
 	void Rasterizer::HandleElement()
 	{
-	     g_log.WriteKV("RZ wait:", m_id);
-
 	     std::shared_ptr<BasicIOElement> ptr = GetInput();
 	     m_pCurrentTriangle = (_Triangle_*)ptr.get();
 
@@ -850,7 +839,6 @@ namespace SRE {
 			      block.setArg = true;
             }
 			   else if(m_sigCount >= 2) {
-			         g_log.Write("RZ send end to all ");
 			         block.isEnd = true;
 			         m_sigCount = 0;
             }
@@ -874,8 +862,6 @@ namespace SRE {
                 return;
             }
         }
-
-        g_log.Write("RZ get tested triangle");
 
         FLOAT area = EdgeFunction2D(m_pCurrentTriangle->v[0].vertex, m_pCurrentTriangle->v[2].vertex, m_pCurrentTriangle->v[1].vertex);
         //calculate bounding box
@@ -1001,8 +987,7 @@ namespace SRE {
 			if(m_finishCount == m_subProcessorNum)
 			{
              m_finishCount = 0;
-             g_log.Write("RZ send end scene");
-				 m_pObserver->Notify(SRE_MESSAGE_ENDSCENE, m_id);
+             m_pObserver->Notify(SRE_MESSAGE_ENDSCENE, m_id);
 			}
 		}
     }
@@ -1109,11 +1094,9 @@ namespace SRE {
 			  m_pZbuffer = m_pParent->m_pZbuffer;
 			  m_pPixelShader = m_pParent->m_pPixelShader;
 			  m_pRenderTarget->Lock();
-			  g_log.WriteKV("PP get setArg:", m_id);
 		  }
         else if(task.isEnd)
 		  {
-		     g_log.WriteKV("PP get End:", m_id);
 		     m_observer->Notify(SRE_MESSAGE_ENDDRAW, m_id);
 		  }
         else
@@ -1137,12 +1120,9 @@ namespace SRE {
 	{
         while(!m_cancel)
         {
-            g_log.WriteKV("PP wait:", m_id);
             FLOAT area;
             std::shared_ptr<BasicIOElement> ptr=GetTask(area);
             if(m_end){m_end = false;continue;}
-            g_log.WriteKV("PP get task id:", m_id);
-            g_log.WriteKV("PP get task:", m_sx, m_distX, m_sy, m_distY);
 
             m_pTri = (_Triangle_*)ptr.get();
 
@@ -1207,9 +1187,6 @@ namespace SRE {
                    Scan_ZOff_IOn(w00, area);
 
             }
-
-            g_log.WriteKV("task finish", m_id);
-
         }
 
         ClearTask();

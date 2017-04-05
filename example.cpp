@@ -18,7 +18,7 @@
 *Load a image for texturing
 *This is not necessary if do not need
 ******************************************/
-#define USE_IMAGE_TEXTRUE
+//#define USE_IMAGE_TEXTRUE
 
 #ifdef USE_IMAGE_TEXTRUE
 #include "ImageLoader/ImageLoader.h"
@@ -89,14 +89,14 @@ FLOAT frameTime=0;
  *
  *After project transform,
  *the z value which in range (znear, zfar) will be transformed into range (0, 1)
- *when z = znear, z-projected = 0, z<znear, z-projected<0
+ *zwhen z = znear, z-projected = 0, z<znear, z-projected<0
  *when z = zfar,   z-projected = 1, z>zfar,   z-projected>1
 /********************************************/
-FLOAT znear = 1.0f;
+FLOAT znear = 0.5f;
 FLOAT zfar = 5.0f;
 
 VEC3 camer_speed = VEC3(0.01f, 0.01f, 0.01f);
-VEC3 camera_pos = VEC3(0.0f, 1.5f, 3.0f);
+VEC3 camera_pos = VEC3(0.0f, 1.5f, 2.0f);
 VEC3 camera_lookat = VEC3(0.0f, 0.0f, 0.0f);
 VEC3 camera_up = VEC3(0.0f, 1.0f, 0.0f);
 
@@ -105,10 +105,15 @@ VEC3 camera_up = VEC3(0.0f, 1.0f, 0.0f);
  *must equals to the window's
  *
  *the window size is 800x600 pixels,
- *so the camera view can be 4.0x3.0 units
+ *so the camera view can be 2.0x1.5 units
  *in world space
 /********************************/
 VEC2 camera_view =  VEC2(2.0f, 1.5f);
+
+Light sceneLight = Light(VEC3(1.5f, 1.0f, 0.0f),
+                                     VEC3(1.0f, 1.0f, 0.0f),
+                                     Color3(100, 200, 200),
+                                     1.3f);
 
 
 MAT44 view = MatrixViewLookAt(camera_pos , camera_lookat, camera_up);
@@ -117,7 +122,6 @@ MAT44 viewproject = Multiply(view, project);
 
 FLOAT rotateFactor = 1.0f;
 FLOAT rotateAngle = PI/4.0f;
-
 
 
 VSOutput* myVS(BYTE* v, VariableBuffer* varbuffer)
@@ -133,39 +137,41 @@ VSOutput* myVS(BYTE* v, VariableBuffer* varbuffer)
 
     MAT44 world = MatrixRotationY(rotateAngle*rotateFactor);
     out->vertex = Multiply(out->vertex, world);
-    MAT44 mview = MatrixViewLookAt(camera_pos , camera_lookat, camera_up);
-    out->vertex = Multiply(out->vertex, mview);
+   // MAT44 mview = MatrixViewLookAt(camera_pos , camera_lookat, camera_up);
+   // out->vertex = Multiply(out->vertex, mview);
 
-    out->vertex = Multiply(out->vertex, project);
+    out->vertex = Multiply(out->vertex, viewproject);
 
 
     return out;
 }
 
-
 Color4 myPS(PSInput & in)
 {
-   Color3 color;
+   Color4 color = Color4(255, 200, 200);
 #ifdef USE_IMAGE_TEXTRUE
    //texture
     color = global.sampler.getcolor3(&global.object.texture, in.texcoord.x, in.texcoord.y);
 #endif
-   //pong
-    Color4 col;
-    col.r = color.r;
-    col.g = color.g;
-    col.b = color.b;
-	return col;
+   //diffuse
+   Normalize(in.normal);
+   FLOAT diff_factor = Dot(in.normal, sceneLight.direction);
+   color.r = color.r*sceneLight.diffuse.r;
+   color.g = color.g*sceneLight.diffuse.g;
+   color.b = color.b*sceneLight.diffuse.b;
+
+   color = color*Clamp(diff_factor, 0.1f, 1.0f)*sceneLight.intensity;
+
+    return color;
 }
 
 
 bool SceneInit()
 {
+#ifdef USE_IMAGE_TEXTRUE
     char* filePath = ".\\resources\\TexPlane.obj";
     if(RESULT::SUCC != LoadObjMesh(filePath, &global.object))
        return false;
-
-#ifdef USE_IMAGE_TEXTRUE
     BYTE* image=nullptr;
     INT w=0, h=0, p=0;
     if(!LoadImageToBuffer(".\\resources\\TexPlaneTex.jpg", &image, p, w, h))
@@ -174,6 +180,11 @@ bool SceneInit()
     }
     global.object.texture.Set(image, w, h, p);
     global.sampler.FilterMode = SRE_FILTERMODE_NEAREST;
+#else
+   char* filePath = ".\\resources\\Cube.obj";
+   if(RESULT::SUCC != LoadObjMesh(filePath, &global.object))
+       return false;
+
 #endif
 
     global.vshader.SetCallBackShader(&myVS);
@@ -194,11 +205,10 @@ void OnRender()
      global.main_pipeline.SceneBegin();
 
      rotateFactor += 0.1f;
-     //global.main_pipeline.SetVertexBufferAndIndexBuffer(&Triangle.vertexes, nullptr);
      global.main_pipeline.SetVertexBufferAndIndexBuffer(&global.object.vertexes, &global.object.indexes);
 
      global.main_pipeline.constbuffer.ZEnable = SRE_TRUE;
-     global.main_pipeline.constbuffer.ClipEnable = SRE_TRUE;
+     global.main_pipeline.constbuffer.ClipEnable = SRE_FALSE;
      global.main_pipeline.constbuffer.CullEnable = SRE_TRUE;
      global.main_pipeline.constbuffer.CullMode = SRE_CULLMODE_CCW;
 
@@ -270,24 +280,18 @@ void OnFrame()
     else
         FPS++;
 
-   static bool once = true;
-
-   //if(once){
-	global.main_device.ClearFrame(255);
+   global.main_device.ClearFrame(0);
 
  	OnRender();
 
    global.main_device.Present();
-	g_log.Write("Present End");
-	//once = false;
-   //}
 
 }
 
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR sCmdLine, int iShow)
 {
-    g_log.Write("===================================\n");
+    //g_log.Write("===================================\n");
 
     if(global.main_view.Create(hInstance, "SoftwareEngine -ver0.01 -FPS:0", frame_width, frame_height))
     {

@@ -17,7 +17,7 @@
 //==============================
 //For debug use
 //==============================
-#define _SRE_DEBUG_
+//#define _SRE_DEBUG_
 //==============================
 #ifdef _SRE_DEBUG_
 #include "SRE_DebugLog.h"

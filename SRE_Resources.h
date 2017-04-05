@@ -904,7 +904,7 @@ namespace SRE {
     }
 
 
-//=============================
+   //=============================
 	//Class Sampler
 	//
 	//=============================
@@ -926,6 +926,28 @@ namespace SRE {
 
     };
 
+
+   //=============================
+	//Class Light
+	//
+	//=============================
+    class Light
+    {
+    public:
+         Light(VEC3 pos, VEC3 direct, Color3 diff, FLOAT intens):
+            position(pos),
+            direction(direct),
+            diffuse(diff),
+            intensity(intens)
+         {}
+         ~Light(){}
+
+    public:
+         VEC3    position;
+         VEC3    direction;
+         Color3  diffuse;
+         FLOAT   intensity;
+    };
 
 }
 #endif
