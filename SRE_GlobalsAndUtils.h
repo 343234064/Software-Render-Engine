@@ -32,7 +32,7 @@ using std::endl;
 //=============================
 //Little endian ) B, G, R, A
 //=============================
-#define _BGRA_OREDER_
+//#define _BGRA_OREDER_
 //=============================
 //BIG endian R, G, B, A
 //=============================
@@ -121,6 +121,7 @@ namespace SRE {
     class Texture;
     class RenderTexture;
     class Sampler;
+    class Light;
 
     template<typename T>
     class BasicIOBuffer;
@@ -136,11 +137,11 @@ namespace SRE {
     class InputAssembler;
     class VertexProcessor;
     class VertexPostProcessor;
-    class PrimitiveAssembler;
+
+    class GeometryProcessor;
     class Rasterizer;
     class PixelProcessor;
     class SREPipeLine;
-    //class OutputMerger;
 
     class VariableBuffer;
     class ConstantBuffer;
@@ -323,7 +324,8 @@ namespace SRE {
 
     const SREVAR SRE_MESSAGE_RUNERROR=0x10000090;
     const SREVAR SRE_MESSAGE_ENDDRAW=0x10000091;
-    const SREVAR SRE_MESSAGE_ENDSCENE=0x10000092;
+    const SREVAR SRE_MESSAGE_END=0x10000092;
+    const SREVAR SRE_MESSAGE_SENDDATA=0x10000093;
 
     const SREVAR SRE_WRAPMODE_WRAP=0x100000a0;
     const SREVAR SRE_WRAPMODE_MIRROR=0x100000a1;

@@ -109,6 +109,7 @@ namespace SRE {
 	//
 	//=============================
 	VEC3      Multiply(VEC3& vec, MAT33& mat);
+	VEC3      Multiply(VEC3& vec, MAT44& mat);
 	VEC4      Multiply(VEC4& vec, MAT44& mat);
 
 

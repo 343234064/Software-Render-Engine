@@ -130,7 +130,7 @@ namespace SRE {
     {
 	public:
 		 virtual ~ObserverCallBack(){}
-		 virtual void HandleMessage(SREVAR message, USINT id=0)=0;
+		 virtual void HandleMessage(SREVAR message, USINT id=0, void* data=nullptr)=0;
     };
 
 
@@ -143,12 +143,12 @@ namespace SRE {
 	class BasicObserver
 	{
     public:
-        BasicObserver(ObserverCallBack* callback=nullptr):
+        BasicObserver(ObserverCallBack* callback):
             m_callback(callback)
         {}
         BasicObserver(const BasicObserver & other):
         	m_callback(other.m_callback)
-		{}
+		  {}
         virtual ~BasicObserver(){}
 
         void SetProcessor(ObserverCallBack* callback)
@@ -158,9 +158,14 @@ namespace SRE {
 
         void Notify(SREVAR message, USINT id)
         {
-            if(nullptr != m_callback)
              m_callback->HandleMessage(message, id);
         }
+
+        void Notify(SREVAR message, USINT id, void* data)
+        {
+             m_callback->HandleMessage(message, id, data);
+        }
+
 
         BasicObserver & operator=(const BasicObserver & other)
         {
@@ -178,8 +183,49 @@ namespace SRE {
 
 
 
+	//=============================
+	//Class BasicStage
+	//
+	//
+	//=============================
+	class BasicStage:public BaseTask
+	{
+   public:
+        BasicStage(USINT id=0,
+                         BasicStage* nextstage=nullptr,
+                         BasicObserver* observer=nullptr):
+             m_id(id),
+             m_pNextStage(nextstage),
+             m_pObserver(observer)
+         {}
+        virtual ~BasicStage(){}
 
-    //=============================
+        virtual void Reset()=0;
+        virtual void SetInput(void* data, INT index)=0;
+
+        void SetNextStage(BasicStage* next)
+        {
+           if(nullptr != next)
+              m_pNextStage = next;
+        }
+
+        void SetObserver(BasicObserver* observer)
+        {
+           if(nullptr != observer)
+            m_pObserver = observer;
+        }
+
+        BasicStage(const BasicStage & other) = delete;
+        BasicStage & operator=(const BasicStage & other) = delete;
+
+   protected:
+        USINT              m_id;
+        BasicStage*      m_pNextStage;
+        BasicObserver* m_pObserver;
+	};
+
+
+   //=============================
 	//Class BasicProcessor
 	//
 	//
@@ -311,7 +357,10 @@ namespace SRE {
 
     std::shared_ptr<BasicIOElement> BasicProcessor::GetInput()
     {
-        return m_pInputQueue->wait_and_pop();
+        m_pObserver->Notify(10, m_id);
+        std::shared_ptr<BasicIOElement> out = m_pInputQueue->wait_and_pop();
+        m_pObserver->Notify(9, m_id);
+        return out;
     }
 
     void BasicProcessor::Output(BasicIOElement* out)
@@ -335,31 +384,7 @@ namespace SRE {
    //=============================
 	//Temp structures for IO
 	//=============================
-	class _index_ver_:public BasicIOElement
-	{//A temp data structure used for skipping vertex process
-     public:
-	   INT index;
-	   BYTE* vertex;
-
-     public:
-	   _index_ver_(INT i, BYTE* v):
-	       index(i),
-	       vertex(v)
-       {}
-       _index_ver_():
-	       index(-2),
-	       vertex(nullptr)
-       {}
-       ~_index_ver_()
-       {
-           delete[] vertex;
-       }
-
-       _index_ver_(const _index_ver_ & other) = delete;
-       _index_ver_ & operator=(const _index_ver_ & other) = delete;
-	};
-
-    class _vertex_:public BasicIOElement
+   class _vertex_
 	{//A temp data structure used for clipping
 	public:
 	    VERTEX4 v;
@@ -379,9 +404,14 @@ namespace SRE {
 	class _Triangle_:public BasicIOElement
 	{//A temp data structure for primitive output
     public:
-        _Triangle_(VSOutput * v1, VSOutput * v2, VSOutput * v3)
+        _Triangle_(VSOutput * v1=nullptr, VSOutput * v2=nullptr, VSOutput * v3=nullptr)
         {
-            v[0]=*v1;v[1]=*v2;v[2]=*v3;
+           if(nullptr != v1)
+                v[0]=*v1;
+           if(nullptr != v2)
+                v[1]=*v2;
+           if(nullptr != v3)
+                v[2]=*v3;
         }
         _Triangle_(VSOutput & v1, VSOutput & v2, VSOutput & v3)
         {
@@ -401,12 +431,11 @@ namespace SRE {
 	class _pixelBlock_:public BasicIOElement
 	{
     public:
-        _pixelBlock_(USINT _sx=0, USINT _sy=0, USINT _distX=0, USINT _distY=0, FLOAT _area=0.0f, bool _isEnd=false, bool _setArg=false,
+        _pixelBlock_(USINT _sx=0, USINT _sy=0, USINT _distX=0, USINT _distY=0, FLOAT _area=0.0f, bool _isEnd=false,
                      std::shared_ptr<T> _data=nullptr):
             sx(_sx), sy(_sy), distX(_distX), distY(_distY),
             area(_area),
             isEnd(_isEnd),
-            setArg(_setArg),
             tempData(_data)
         {}
         _pixelBlock_(const _pixelBlock_<T> & other):
@@ -414,7 +443,6 @@ namespace SRE {
             distX(other.distX), distY(other.distY),
             area(other.area),
             isEnd(other.isEnd),
-            setArg(other.setArg),
             tempData(other.tempData)
         {}
         ~_pixelBlock_()
@@ -425,7 +453,6 @@ namespace SRE {
 	    USINT   distX, distY;
 	    FLOAT  area;
 	    bool    isEnd;
-	    bool    setArg;
 	    std::shared_ptr<T> tempData;
 	};
 
@@ -436,46 +463,36 @@ namespace SRE {
 	//
 	//
 	//=============================
-	class InputAssembler:public BasicProcessor, public CallBackFunctions, public ObserverCallBack
+	class InputAssembler:public BasicStage
 	{
     public:
         InputAssembler(USINT id=0,
-					            PIOBUFFER * output=nullptr,
-                           BasicObserver *  observer=nullptr):
-            BasicProcessor(id, nullptr, output, observer, this),
+                               BasicStage* nextstage=nullptr,
+                               BasicObserver *  observer=nullptr):
+            BasicStage(id, nextstage, observer),
             m_vertexBuffers(),
             m_indexBuffers(),
             m_pConstantBuffer(nullptr),
             m_pCurrentHandleVbuffer(nullptr),
             m_pCurrentHandleIbuffer(nullptr),
             m_currentIndex(0),
-            m_currentIndex2(0),
-            m_valve(false)
+            m_currentIndex2(0)
         {}
         virtual ~InputAssembler()
         {}
 
-
-        void HandleElement();
-        void HandleMessage(SREVAR message, USINT id=0);
-        void OnCancel();
-        void OnPause();
-        void OnResume();
-        void OnRunError();
-        void OnRunFinish();
-        void OnStart();
-
+        void Run();
+        void Reset();
+        void SetInput(void* data, INT index);
         void ClearVertexbufferAndIndexbuffer();
-        void SetVertexAndIndexBuffers(VBUFFER* vertexbuffer, IBUFFER* indexbuffer=nullptr);
+        inline void SetVertexAndIndexBuffers(VBUFFER* vertexbuffer, IBUFFER* indexbuffer=nullptr);
         inline void SetConstantBuffer(const ConstantBuffer * cbuffer);
-        inline void BeginSceneSetting();
-        inline void EndSceneSetting();
 
         InputAssembler(const InputAssembler & other) = delete;
         InputAssembler & operator=(const InputAssembler & other) = delete;
 
     private:
-        void SendVertex(INT & actualIndex);
+        void SendVertex(INT actualIndex1, INT actualIndex2, INT actualIndex3);
 
     private:
         std::queue<VBUFFER*>       m_vertexBuffers;
@@ -488,8 +505,6 @@ namespace SRE {
         INT                                 m_currentIndex;
         INT                                 m_currentIndex2;
 
-        bool                               m_valve;
-
 	};
 
     void InputAssembler::SetConstantBuffer(const ConstantBuffer * cbuffer)
@@ -498,68 +513,51 @@ namespace SRE {
            m_pConstantBuffer = cbuffer;
     }
 
-    void InputAssembler::BeginSceneSetting()
+    void InputAssembler::SetVertexAndIndexBuffers(VBUFFER* vertexbuffer, IBUFFER* indexbuffer)
     {
-		std::lock_guard<std::mutex> lock(m_resMutex);
-        m_vertexBuffers.push(nullptr);
-        m_valve = false;
+        if(nullptr == vertexbuffer) return;
+        m_vertexBuffers.push(vertexbuffer);
+        m_indexBuffers.push(indexbuffer);
+
     }
-
-    void InputAssembler::EndSceneSetting()
-    {
-		std::lock_guard<std::mutex> lock(m_resMutex);
-        m_vertexBuffers.push(nullptr);
-    	m_valve = true;
-
-    	m_cond.notify_one();
-    }
-
     //=============================
 	//Class VertexProcessor
 	//
 	//
 	//
 	//=============================
-    class VertexProcessor:public BasicProcessor, public CallBackFunctions, public ObserverCallBack
+    class VertexProcessor:public BasicStage
     {
     public:
         VertexProcessor(USINT id=0,
-                                 PIOBUFFER * input=nullptr,
-                                 PIOBUFFER * output=nullptr,
+                                 BasicStage* nextstage=nullptr,
                                  BasicObserver * observer=nullptr):
-            BasicProcessor(id, input, output, observer, this),
+            BasicStage(id, nextstage, observer),
             m_pVertexShader(nullptr),
             m_pVariableBuffer(nullptr),
-			   m_pCVertexShader(nullptr),
-            m_pCVariableBuffer(nullptr),
-            m_cachedOutVertexIdx(-1)
-        {
-            m_cachedOutVertex[0] = nullptr;
-            m_cachedOutVertex[1] = nullptr;
+            m_curinput(0)
+			{
             m_cachedVertexIndex[0]=-1;
             m_cachedVertexIndex[1]=-1;
             m_cachedVertexIndex[2]=-1;
             m_cachedPriority[0]=4;
             m_cachedPriority[1]=2;
             m_cachedPriority[2]=1;
+            m_inputvertex[0]=nullptr;
+            m_inputvertex[1]=nullptr;
+            m_inputvertex[2]=nullptr;
+            m_inputvertexid[0]=-1;
+            m_inputvertexid[1]=-1;
+            m_inputvertexid[2]=-1;
         }
         virtual ~VertexProcessor()
         {
-           if(nullptr != m_cachedOutVertex[0])
-             delete m_cachedOutVertex[0];
-           if(nullptr != m_cachedOutVertex[1])
-             delete m_cachedOutVertex[1];
         }
 
-        void HandleElement();
-        void HandleMessage(SREVAR message, USINT id=0);
-        void OnCancel();
-        void OnPause();
-        void OnResume();
-        void OnRunError();
-        void OnRunFinish();
-        void OnStart();
 
+        void Run();
+        void Reset();
+        void SetInput(void* data, INT index);
         inline void SetVertexShader(VertexShader * vshader);
         inline void SetVariableBuffer(VariableBuffer* varbuffer);
 
@@ -567,87 +565,47 @@ namespace SRE {
         VertexProcessor & operator=(const VertexProcessor & other) = delete;
 
 	protected:
-		void   SetArgus();
       void   SetOutputVertex(VSOutput* out);
+      VSOutput* SendToVS(BYTE* vertex, USINT index);
 
     protected:
         VertexShader*   m_pVertexShader;
         VariableBuffer*  m_pVariableBuffer;
-        VertexShader*   m_pCVertexShader;
-        VariableBuffer*  m_pCVariableBuffer;
 
-        SINT                  m_cachedOutVertexIdx;
-        VSOutput*         m_cachedOutVertex[2];
         VSOutput          m_cachedVertex[3];
         USINT               m_cachedVertexIndex[3];
         USINT               m_cachedPriority[3];
 
+        BYTE*               m_inputvertex[3];
+        SINT                 m_inputvertexid[3];
+        SINT                 m_curinput;
     };
 
     void VertexProcessor::SetVertexShader(VertexShader * vshader)
     {
         if(nullptr != vshader)
-        m_pCVertexShader = vshader;
+        m_pVertexShader = vshader;
     }
 
     void VertexProcessor::SetVariableBuffer(VariableBuffer* varbuffer)
     {
         if(nullptr != varbuffer)
-        m_pCVariableBuffer = varbuffer;
+        m_pVariableBuffer = varbuffer;
     }
 
+
+
    //=============================
-	//Class PrimitiveAssembler
-	//*Unused*
-	//
-	//
-	//=============================
-	/**************************************************************
-    class PrimitiveAssembler:public BasicProcessor, public CallBackFunctions, public ObserverCallBack
-    {
-    public:
-        PrimitiveAssembler(USINT id=0,
-						             BasicIOBuffer<BasicIOElement> * input=nullptr,
-                                     BasicIOBuffer<BasicIOElement>    * output=nullptr,
-                                     BasicObserver * observer=nullptr):
-            BasicProcessor(id, input, output, observer, this)
-        {}
-        virtual ~PrimitiveAssembler()
-        {}
-
-        void HandleElement();
-        void HandleMessage(SREVAR message, USINT id=0);
-        void OnCancel();
-        void OnPause();
-        void OnResume();
-        void OnRunError();
-        void OnRunFinish();
-        void OnStart();
-
-        PrimitiveAssembler(const PrimitiveAssembler & other) = delete;
-        PrimitiveAssembler & operator=(const PrimitiveAssembler & other) = delete;
-
-
-    };
-    *******************************************************************************/
-
-
-    //=============================
 	//Class VertexPostProcessor
 	//
-	//ccv:
-	//x: (-1,1)
-	//y: (-1,1)
-	//z: ( 0,1)
 	//=============================
-    class VertexPostProcessor:public BasicProcessor, public CallBackFunctions, public ObserverCallBack
+    class VertexPostProcessor:public BasicStage
     {
     public:
         VertexPostProcessor(USINT id=0,
-							                   PIOBUFFER * input=nullptr,
-                                        PIOBUFFER * output=nullptr,
-                                        BasicObserver * observer=nullptr):
-            BasicProcessor(id, input, output, observer, this),
+                                       BasicStage* nextstage=nullptr,
+                                       BasicObserver * observer=nullptr):
+            BasicStage(id, nextstage, observer),
             m_pConstantBuffer(nullptr),
             m_pCurrentTriangle(nullptr),
             m_clipEpsilon(0.00),
@@ -662,16 +620,13 @@ namespace SRE {
             m_clipPlaneDistance[5]= 1.0f;m_clipPlaneNormal[5].z=-1.0f;
         }
         virtual ~VertexPostProcessor()
-        {}
+        {
 
-        void HandleElement();
-        void HandleMessage(SREVAR message, USINT id=0);
-        void OnCancel();
-        void OnPause();
-        void OnResume();
-        void OnRunError();
-        void OnRunFinish();
-        void OnStart();
+        }
+
+        void Run();
+        void Reset();
+        void SetInput(void* data, INT index);
 
         inline void SetClipXValue(FLOAT _min, FLOAT _max);
         inline void SetClipYValue(FLOAT _min, FLOAT _max);
@@ -695,8 +650,8 @@ namespace SRE {
         void SendTriangle(VSOutput & v1, VSOutput & v2, VSOutput & v3);
 
     protected:
-       const ConstantBuffer*                    m_pConstantBuffer;
-        std::shared_ptr<BasicIOElement> m_pCurrentTriangle;
+       const ConstantBuffer*   m_pConstantBuffer;
+        _Triangle_*                   m_pCurrentTriangle;
         FLOAT         m_clipPlaneDistance[6];//-x, x, -y, y, -z, z
         VEC3           m_clipPlaneNormal[6];
         FLOAT         m_clipEpsilon;
@@ -748,7 +703,120 @@ namespace SRE {
 	}
 
 
-    //=============================
+   //=============================
+	//Class GeometryProcessor
+	//
+	//
+	//
+	//=============================
+   class GeometryProcessor:public BasicProcessor, public CallBackFunctions, public ObserverCallBack
+   {
+   public:
+      GeometryProcessor(USINT id=0,
+						                  PIOBUFFER * output=nullptr,
+                                    BasicObserver * observer=nullptr):
+            BasicProcessor(id, nullptr, output, observer, this),
+            m_subObserver(this),
+            m_ia(1, nullptr, &m_subObserver),
+            m_vp(2, nullptr, &m_subObserver),
+            m_vpp(3, nullptr, &m_subObserver),
+            m_valve(false)
+      {
+         m_ia.SetNextStage(&m_vp);
+         m_vp.SetNextStage(&m_vpp);
+      }
+      virtual ~GeometryProcessor(){}
+
+      void HandleElement();
+      void HandleMessage(SREVAR message, USINT id=0, void* data=nullptr);
+      void OnCancel();
+      void OnPause();
+      void OnResume();
+      void OnRunError();
+      void OnRunFinish();
+      void OnStart();
+
+      void BeginScene();
+      void EndScene();
+      inline void SetVariableBuffer(VariableBuffer* varbuffer);
+      inline void SetConstantBuffer(const ConstantBuffer* conbuffer);
+      inline void SetVertexBufferAndIndexBuffer(VBUFFER* vertexbuffer, IBUFFER* indexbuffer=nullptr);
+      inline void SetVertexShader(VertexShader * vshader);
+      inline void SetClipXValue(FLOAT x_min, FLOAT x_max);
+      inline void SetClipYValue(FLOAT y_min, FLOAT y_max);
+      inline void SetClipZValue(FLOAT z_min, FLOAT z_max);
+      inline void SetClipTolerance(FLOAT tolerance);
+      inline void SetViewportHeight(USINT height);
+      inline void SetViewportWidth(USINT width);
+
+      GeometryProcessor(const GeometryProcessor & other) = delete;
+      GeometryProcessor & operator=(const GeometryProcessor & other) = delete;
+
+   protected:
+      BasicObserver            m_subObserver;
+
+   protected:
+      InputAssembler          m_ia;
+      VertexProcessor        m_vp;
+      VertexPostProcessor  m_vpp;
+
+   protected:
+      bool                         m_valve;
+
+   };
+
+   void GeometryProcessor::SetVariableBuffer(VariableBuffer* varbuffer)
+   {
+      m_vp.SetVariableBuffer(varbuffer);
+   }
+
+   void GeometryProcessor::SetConstantBuffer(const ConstantBuffer* conbuffer)
+   {
+      m_ia.SetConstantBuffer(conbuffer);
+      m_vpp.SetConstantBuffer(conbuffer);
+   }
+
+   void GeometryProcessor::SetVertexBufferAndIndexBuffer(VBUFFER* vertexbuffer, IBUFFER* indexbuffer)
+   {
+      m_ia.SetVertexAndIndexBuffers(vertexbuffer, indexbuffer);
+   }
+
+   void GeometryProcessor::SetVertexShader(VertexShader * vshader)
+   {
+      m_vp.SetVertexShader(vshader);
+   }
+
+   void GeometryProcessor::SetClipXValue(FLOAT x_min, FLOAT x_max)
+   {
+      m_vpp.SetClipXValue(x_min, x_max);
+   }
+
+   void GeometryProcessor::SetClipYValue(FLOAT y_min, FLOAT y_max)
+   {
+      m_vpp.SetClipYValue(y_min, y_max);
+   }
+
+   void GeometryProcessor::SetClipZValue(FLOAT z_min, FLOAT z_max)
+   {
+      m_vpp.SetClipZValue(z_min, z_max);
+   }
+
+   void GeometryProcessor::SetClipTolerance(FLOAT tolerance)
+   {
+      m_vpp.SetClipTolerance(tolerance);
+   }
+
+   void GeometryProcessor::SetViewportHeight(USINT height)
+   {
+      m_vpp.SetViewportHeight(height);
+   }
+
+   void GeometryProcessor::SetViewportWidth(USINT width)
+   {
+      m_vpp.SetViewportWidth(width);
+   }
+
+   //=============================
 	//Class Rasterizer
 	//
 	//
@@ -773,8 +841,7 @@ namespace SRE {
             m_sampleStep(1),
             m_pZbuffer(nullptr),
             m_pRenderTarget(nullptr),
-            m_pPixelShader(nullptr),
-			   m_sigCount(0)
+            m_pPixelShader(nullptr)
         {}
         virtual ~Rasterizer()
         {
@@ -783,7 +850,7 @@ namespace SRE {
         }
 
         void HandleElement();
-        void HandleMessage(SREVAR message, USINT id=0);
+        void HandleMessage(SREVAR message, USINT id=0, void* data=nullptr);
         void OnCancel();
         void OnPause();
         void OnResume();
@@ -803,6 +870,9 @@ namespace SRE {
         inline void SetSampleStep(USINT sampleStep);
         inline void SetSamplePixelBlockSize(USINT blockSize);
 
+        void  SetProcessorArgus(USINT id);
+        void  SetAllProcessorArgus();
+
         Rasterizer(const Rasterizer & other) = delete;
         Rasterizer & operator=(const Rasterizer & other) = delete;
 
@@ -810,7 +880,6 @@ namespace SRE {
         bool BackFaceCulling();//Using cross product(CCW, CW mode will give different result) to calculate face normal
                                            //and then test the face normal with the eye ray
                                            //if BackFaceCulling return true, we send this triangle to rasterizer
-		  void  SetProcessorArgus(USINT id);
 
     protected:
     	  BasicObserver               m_subObserver;
@@ -828,10 +897,6 @@ namespace SRE {
         ZBUFFER*                             m_pZbuffer;
         RenderTexture*                   m_pRenderTarget;
         PixelShader *                       m_pPixelShader;
-
-		  USINT                                  m_sigCount;
-
-		  friend class PixelProcessor;
 
     };
 
@@ -866,7 +931,7 @@ namespace SRE {
 
 	void Rasterizer::SetSampleStep(USINT sampleStep)
 	{
-		m_sampleStep = sampleStep;
+	 	m_sampleStep = sampleStep;
 	}
 
 	void Rasterizer::SetSamplePixelBlockSize(USINT blockSize)
@@ -885,8 +950,7 @@ namespace SRE {
     public:
         PixelProcessor(USINT id,
 					               BasicObserver* observer=nullptr,
-                              USINT sampleStep=0,
-                              Rasterizer* parent=nullptr):
+                              USINT sampleStep=0):
             m_id(id),
             m_observer(observer),
             m_inputQueue(),
@@ -900,7 +964,6 @@ namespace SRE {
             m_sx(0), m_sy(0),
             m_distX(0), m_distY(0),
             m_end(false),
-            m_pParent(parent),
             m_pConstantBuffer(nullptr),
             m_pZbuffer(nullptr),
             m_pRenderTarget(nullptr),
@@ -920,7 +983,6 @@ namespace SRE {
             m_sx(0), m_sy(0),
             m_distX(0), m_distY(0),
             m_end(false),
-            m_pParent(other.m_pParent),
             m_pConstantBuffer(other.m_pConstantBuffer),
             m_pZbuffer(other.m_pZbuffer),
             m_pRenderTarget(other.m_pRenderTarget),
@@ -978,7 +1040,6 @@ namespace SRE {
         FLOAT                        m_wStepY[3];
         bool                          m_end;
 
-        Rasterizer*                           m_pParent;
         const ConstantBuffer*         m_pConstantBuffer;
         ZBUFFER*                             m_pZbuffer;
         RenderTexture*                   m_pRenderTarget;
@@ -1029,95 +1090,6 @@ namespace SRE {
     	if(m_thread.joinable())
 			 m_thread.join();
     }
-
-
-    /*
-	bool PixelProcessor::ZTest(INT pos, FLOAT interpolatedZ)
-	{
-        if(interpolatedZ < m_pZbuffer->GetData(pos))
-        {
-            m_pZbuffer->SetData(pos, interpolatedZ);
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-	}*/
-
-
-
-
-    //=============================
-	//Class OutputMerger
-	//*Unused*
-	//
-	//
-	//=============================
-	/**********************************************
-    class OutputMerger:public BasicProcessor, public CallBackFunctions, public ObserverCallBack
-    {
-    public:
-        OutputMerger(USINT id=0,
-					          BasicIOBuffer<BasicIOElement> * input=nullptr,
-                              BasicObserver * observer=nullptr):
-             BasicProcessor(id, input, nullptr, observer, this),
-			 m_pConstantBuffer(nullptr),
-			 m_pFrame(nullptr),
-			 m_pCurTarget(nullptr),
-			 m_toFrame(false)
-        {}
-        virtual ~OutputMerger()
-        {}
-
-
-        void HandleElement();
-        void HandleMessage(SREVAR message, USINT id);
-        void OnCancel();
-        void OnPause();
-        void OnResume();
-        void OnRunError();
-        void OnRunFinish();
-        void OnStart();
-
-        inline void SetFrameBuffer(DECOLOR* frameBuffer);
-        inline void SetConstantBuffer(const ConstantBuffer*  cbuffer);
-        inline void SetOutputToFrameBuffer(bool toFrame);
-
-        OutputMerger(const OutputMerger & other) = delete;
-        OutputMerger & operator=(const OutputMerger & other) = delete;
-
-    protected:
-    	const ConstantBuffer*  m_pConstantBuffer;
-        DECOLOR*                    m_pFrame;
-        RenderTexture*            m_pCurTarget;
-
-        bool                            m_toFrame;
-
-
-    };
-
-
-    void OutputMerger::SetFrameBuffer(DECOLOR* frameBuffer)
-    {
-    	if(nullptr != frameBuffer)
-			m_pFrame = frameBuffer;
-    }
-
-
-    void OutputMerger::SetConstantBuffer(const ConstantBuffer*  cbuffer)
-    {
-    	if(nullptr != cbuffer)
-			m_pConstantBuffer = cbuffer;
-    }
-
-
-    void OutputMerger::SetOutputToFrameBuffer(bool toFrame)
-    {
-    	m_toFrame = toFrame;
-    }
-	 *****************************************************************/
-
 
 
 
@@ -1172,10 +1144,8 @@ namespace SRE {
     public:
         SREPipeLine(BasicObserver* observer=nullptr):
             BasePipeLine(observer),
-            m_IA(1), m_VP(2), m_VPP(3), m_RZ(4),
-            m_IAoutputBuffer(),
-            m_VPoutputBuffer(),
-            m_VPPoutputBuffer(),
+            m_GP(1), m_RZ(2),
+            m_GPoutputBuffer(),
             m_zbuffer(),
             m_pRender(nullptr),
             constbuffer(),
@@ -1199,36 +1169,35 @@ namespace SRE {
         void OnRunFinish();
         void OnStart();
 
-        void HandleMessage(SREVAR message, USINT id=0);
+        void HandleMessage(SREVAR message, USINT id=0, void* data=nullptr);
+
+        SREPipeLine(const SREPipeLine & other) = delete;
+        SREPipeLine & operator=(const SREPipeLine & other) = delete;
 
     public:
-        void SceneBegin();
-        void SceneEnd();
-        void SetVertexBufferAndIndexBuffer(VBUFFER* vertexbuffer, IBUFFER* indexbuffer=nullptr);
-        void SetVertexShader(VertexShader * vshader);
-        void SetClipXValue(FLOAT x_min, FLOAT x_max);
-        void SetClipYValue(FLOAT y_min, FLOAT y_max);
-        void SetClipZValue(FLOAT z_min, FLOAT z_max);
-        void SetClipTolerance(FLOAT tolerance);
-        void SetPixelShader(PixelShader* pshader);
-        void SetSubProcessors(USINT num);
-        void SetSamplePixelBlockSize(USINT size);
-        void SetSampleStep(USINT step);
-        void SetRenderTarget(RenderTexture* target);
+        void BeginScene();
+        void EndScene();
+        inline void SetVertexBufferAndIndexBuffer(VBUFFER* vertexbuffer, IBUFFER* indexbuffer=nullptr);
+        inline void SetVertexShader(VertexShader * vshader);
+        inline void SetClipXValue(FLOAT x_min, FLOAT x_max);
+        inline void SetClipYValue(FLOAT y_min, FLOAT y_max);
+        inline void SetClipZValue(FLOAT z_min, FLOAT z_max);
+        inline void SetClipTolerance(FLOAT tolerance);
+        inline void SetPixelShader(PixelShader* pshader);
+        inline void SetSubProcessors(USINT num);
+        inline void SetSamplePixelBlockSize(USINT size);
+        inline void SetSampleStep(USINT step);
+        inline void SetRenderTarget(RenderTexture* target);
+        inline void SetObserver(BasicObserver* observer);
         RESULT ResetFrameSize(USINT width, USINT height);
-        void SetObserver(BasicObserver* observer);
         void ResetZbuffer(FLOAT maxDepth);
 
     protected:
-        InputAssembler              m_IA;
-        VertexProcessor             m_VP;
-        VertexPostProcessor      m_VPP;
+        GeometryProcessor       m_GP;
         Rasterizer                      m_RZ;
 
     protected:
-        PIOBUFFER m_IAoutputBuffer;
-        PIOBUFFER m_VPoutputBuffer;
-        PIOBUFFER m_VPPoutputBuffer;
+        PIOBUFFER m_GPoutputBuffer;
 
     protected:
         ZBUFFER                          m_zbuffer;
@@ -1244,6 +1213,64 @@ namespace SRE {
 
 
 
+   void SREPipeLine::SetVertexBufferAndIndexBuffer(VBUFFER* vertexbuffer, IBUFFER* indexbuffer)
+   {
+      m_GP.SetVertexBufferAndIndexBuffer(vertexbuffer, indexbuffer);
+   }
+
+   void SREPipeLine::SetVertexShader(VertexShader * vshader)
+   {
+      m_GP.SetVertexShader(vshader);
+   }
+
+   void SREPipeLine::SetClipXValue(FLOAT x_min, FLOAT x_max)
+   {
+      if(m_started) return;
+      m_GP.SetClipXValue(x_min, x_max);
+   }
+
+   void SREPipeLine::SetClipYValue(FLOAT y_min, FLOAT y_max)
+   {
+      if(m_started) return;
+      m_GP.SetClipYValue(y_min, y_max);
+   }
+
+   void SREPipeLine::SetClipZValue(FLOAT z_min, FLOAT z_max)
+   {
+      if(m_started) return;
+      m_GP.SetClipZValue(z_min, z_max);
+   }
+
+   void SREPipeLine::SetClipTolerance(FLOAT tolerance)
+   {
+      if(m_started) return;
+      m_GP.SetClipTolerance(tolerance);
+   }
+
+   void SREPipeLine::SetPixelShader(PixelShader* pshader)
+   {
+      m_RZ.SetPixelShader(pshader);
+   }
+
+   void SREPipeLine::SetSamplePixelBlockSize(USINT size)
+   {
+      m_RZ.SetSamplePixelBlockSize(size);
+   }
+
+   void SREPipeLine::SetSampleStep(USINT step)
+   {
+      m_RZ.SetSampleStep(step);
+   }
+
+   void SREPipeLine::SetRenderTarget(RenderTexture* target)
+   {
+      m_RZ.SetRenderTarget(target);
+   }
+
+   void SREPipeLine::SetObserver(BasicObserver* observer)
+   {
+      m_pExternObserver = observer;
+   }
 
 
 

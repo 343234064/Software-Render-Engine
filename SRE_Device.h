@@ -64,6 +64,7 @@ namespace SRE {
         void     ClearFrame(INT grayLevel);
         void     Present();
         void     PresentReady();
+        void     PresentError();
         RenderTexture*  GetFrontFrameBuffer();
         RenderTexture*  GetNextFrameBuffer();
         void     RemoveFrameBuffers();

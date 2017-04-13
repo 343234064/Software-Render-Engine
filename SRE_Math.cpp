@@ -740,6 +740,19 @@ namespace SRE {
 
 	}
 
+	//==================================
+	//Multiply a 3DVector with a 4x4 Matrix
+	//
+	//==================================
+	VEC3    Multiply(VEC3& vec, MAT44& mat)
+	{
+      return VEC3(
+        vec.x*mat._11 + vec.y*mat._21 + vec.z*mat._31,
+        vec.x*mat._12 + vec.y*mat._22 + vec.z*mat._32,
+        vec.x*mat._13 + vec.y*mat._23 + vec.z*mat._33
+      );
+
+	}
 
 	//==================================
 	//Multiply a 4DVector with a 4x4 Matrix

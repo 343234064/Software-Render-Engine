@@ -21,6 +21,18 @@ namespace SRE {
 	//
 	//
 	//=============================
+   BYTE* VertexBuffer::GetVertexAddr(INT index)
+	{
+#ifdef _SRE_DEBUG_
+	    if(index >= m_vertexNum|| index < 0)
+        {
+            _ERRORLOG(SRE_ERROR_INVALIDARG);
+            return nullptr;
+        }
+#endif
+        return m_vertexes + index*m_vertexSize;
+	}
+
 	BYTE* VertexBuffer::GetVertex(INT index)
 	{
 #ifdef _SRE_DEBUG_

@@ -715,6 +715,7 @@ namespace SRE {
                 delete[] m_vertexes;
         }
 
+        BYTE*     GetVertexAddr(INT index);
         BYTE*     GetVertex(INT index);
         BYTE*     GetAttributes(INT index);
         FLOAT    GetVertexX(INT index);
@@ -934,6 +935,12 @@ namespace SRE {
     class Light
     {
     public:
+         Light():
+            position(),
+            direction(),
+            diffuse(),
+            intensity(0.0f)
+         {}
          Light(VEC3 pos, VEC3 direct, Color3 diff, FLOAT intens):
             position(pos),
             direction(direct),

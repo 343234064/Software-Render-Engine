@@ -105,17 +105,28 @@ namespace SRE {
 		SREVAR get;
 		m_msgbuffer.wait_and_pop(get);
 
-      m_pDeviceAdapter->PresentToScreen((BYTE*)m_front->data->Get(),
+		if(get == SRE_MESSAGE_END)
+      {
+         m_front->data->Lock();
+         m_pDeviceAdapter->PresentToScreen((BYTE*)m_front->data->Get(),
 											                       m_front->data->GetWidth(),
 											                       m_front->data->GetHeight());
-      m_front->data->Unlock();
-      m_front = m_front->next;
+         m_front->data->Unlock();
+         m_front = m_front->next;
+      }
+
+
 	}
 
 
 	void  Device::PresentReady()
 	{
-		m_msgbuffer.push(SRE_MESSAGE_ENDSCENE);
+		m_msgbuffer.push(SRE_MESSAGE_END);
+	}
+
+	void  Device::PresentError()
+	{
+		m_msgbuffer.push(SRE_MESSAGE_RUNERROR);
 	}
 
    RenderTexture*  Device::GetFrontFrameBuffer()
@@ -374,7 +385,7 @@ namespace SRE {
         m_hwnd = CreateWindowEx(WS_EX_APPWINDOW,
                                 wndClassEx.lpszClassName,
                                 winTitle,
-                                WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+                                (WS_OVERLAPPEDWINDOW & ~WS_SIZEBOX ) | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
                                 0, 0,
                                 winWidth, winHeight,
                                 nullptr,

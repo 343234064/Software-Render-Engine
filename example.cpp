@@ -14,17 +14,6 @@
 #include <stdio.h>
 #include "SoftRenderEngine.h"
 
-/*****************************************
-*Load a image for texturing
-*This is not necessary if do not need
-******************************************/
-//#define USE_IMAGE_TEXTRUE
-
-#ifdef USE_IMAGE_TEXTRUE
-#include "ImageLoader/ImageLoader.h"
-#endif
-
-
 using namespace SRE;
 using  std::cout;
 using  std::endl;
@@ -50,7 +39,9 @@ class Global:public ObserverCallBack
 {
 public:
    Global():
-      pileLineObserver(this)
+      pileLineObserver(this),
+      objectIdx(0),
+      lightIdx(0)
    {}
    ~Global(){}
 
@@ -61,16 +52,25 @@ public:
    VertexShader      vshader;
    PixelShader         pshader;
 
-   Mesh                  object;
+   Mesh                  object[3];
+   INT                     objectIdx;
+   Light                  sceneLight[3];
+   INT                     lightIdx;
+
    Sampler              sampler;
 
    BasicObserver     pileLineObserver;
 
 public:
-   void HandleMessage(SREVAR message, USINT id)
+   void HandleMessage(SREVAR message, USINT id, void* data=nullptr)
    {
-      if(message == SRE_MESSAGE_ENDSCENE)
+      if(message == SRE_MESSAGE_END)
          main_device.PresentReady();
+      else if(message == SRE_MESSAGE_RUNERROR)
+      {
+         main_device.PresentError();
+         cout<<"Run Error"<<endl;
+      }
    }
 };
 
@@ -110,24 +110,17 @@ VEC3 camera_up = VEC3(0.0f, 1.0f, 0.0f);
 /********************************/
 VEC2 camera_view =  VEC2(2.0f, 1.5f);
 
-Light sceneLight = Light(VEC3(1.5f, 1.0f, 0.0f),
-                                     VEC3(1.0f, 1.0f, 0.0f),
-                                     Color3(100, 200, 200),
-                                     1.3f);
-
-
 MAT44 view = MatrixViewLookAt(camera_pos , camera_lookat, camera_up);
 MAT44 project = MatrixProjectPerspective(camera_view.x, camera_view.y, znear, zfar);
 MAT44 viewproject = Multiply(view, project);
 
 FLOAT rotateFactor = 1.0f;
-FLOAT rotateAngle = PI/4.0f;
+FLOAT rotateAngle = PI/6.0f;
 
 
 VSOutput* myVS(BYTE* v, VariableBuffer* varbuffer)
 {
     VSOutput * out = new VSOutput();
-    //vertex* ver = (vertex*)v;
     vertex_noc* ver = (vertex_noc*)v;
 
     out->vertex = ver->ver;
@@ -137,6 +130,7 @@ VSOutput* myVS(BYTE* v, VariableBuffer* varbuffer)
 
     MAT44 world = MatrixRotationY(rotateAngle*rotateFactor);
     out->vertex = Multiply(out->vertex, world);
+    out->normal = Multiply(out->normal, world);
    // MAT44 mview = MatrixViewLookAt(camera_pos , camera_lookat, camera_up);
    // out->vertex = Multiply(out->vertex, mview);
 
@@ -148,19 +142,15 @@ VSOutput* myVS(BYTE* v, VariableBuffer* varbuffer)
 
 Color4 myPS(PSInput & in)
 {
-   Color4 color = Color4(255, 200, 200);
-#ifdef USE_IMAGE_TEXTRUE
-   //texture
-    color = global.sampler.getcolor3(&global.object.texture, in.texcoord.x, in.texcoord.y);
-#endif
+   Color4 color = Color4(200, 200, 200);
    //diffuse
    Normalize(in.normal);
-   FLOAT diff_factor = Dot(in.normal, sceneLight.direction);
-   color.r = color.r*sceneLight.diffuse.r;
-   color.g = color.g*sceneLight.diffuse.g;
-   color.b = color.b*sceneLight.diffuse.b;
+   FLOAT diff_factor = Dot(in.normal, global.sceneLight[global.lightIdx].direction);
+   color.r = color.r*global.sceneLight[global.lightIdx].diffuse.r;
+   color.g = color.g*global.sceneLight[global.lightIdx].diffuse.g;
+   color.b = color.b*global.sceneLight[global.lightIdx].diffuse.b;
 
-   color = color*Clamp(diff_factor, 0.1f, 1.0f)*sceneLight.intensity;
+   color = color*Clamp(diff_factor, 0.1f, 1.0f)*global.sceneLight[global.lightIdx].intensity;
 
     return color;
 }
@@ -168,24 +158,43 @@ Color4 myPS(PSInput & in)
 
 bool SceneInit()
 {
-#ifdef USE_IMAGE_TEXTRUE
-    char* filePath = ".\\resources\\TexPlane.obj";
-    if(RESULT::SUCC != LoadObjMesh(filePath, &global.object))
-       return false;
-    BYTE* image=nullptr;
-    INT w=0, h=0, p=0;
-    if(!LoadImageToBuffer(".\\resources\\TexPlaneTex.jpg", &image, p, w, h))
-    {
-		 return false;
-    }
-    global.object.texture.Set(image, w, h, p);
-    global.sampler.FilterMode = SRE_FILTERMODE_NEAREST;
-#else
-   char* filePath = ".\\resources\\Cube.obj";
-   if(RESULT::SUCC != LoadObjMesh(filePath, &global.object))
-       return false;
 
-#endif
+   char* filePath1 = ".\\resources\\rabbit_high.obj";
+   if(RESULT::SUCC != LoadObjMesh(filePath1, &global.object[0]))
+   {
+      cout<<"Load obj file failed, Please Check the file path"<<endl;
+      return false;
+   }
+
+   char* filePath2 = ".\\resources\\dragon_high.obj";
+   if(RESULT::SUCC != LoadObjMesh(filePath2, &global.object[1]))
+   {
+      cout<<"Load obj file failed, Please Check the file path"<<endl;
+      return false;
+   }
+
+   char* filePath3 = ".\\resources\\Cube.obj";
+   if(RESULT::SUCC != LoadObjMesh(filePath3, &global.object[2]))
+   {
+      cout<<"Load obj file failed, Please Check the file path"<<endl;
+      return false;
+   }
+
+
+    global.sceneLight[0]  = Light(VEC3(1.5f, 1.0f, 0.0f),
+                                                VEC3(-1.0f, 1.0f, 0.0f),
+                                                Color3(220, 220, 220),
+                                                1.0f);
+
+    global.sceneLight[1]  = Light(VEC3(1.5f, 1.0f, 0.0f),
+                                                VEC3(1.0f, -1.0f, 0.0f),
+                                                Color3(255, 190, 120),
+                                                1.1f);
+
+    global.sceneLight[2]  = Light(VEC3(1.5f, 1.0f, 0.0f),
+                                                VEC3(-1.0f, -1.0f, 0.0f),
+                                                Color3(120, 190, 255),
+                                                1.1f);
 
     global.vshader.SetCallBackShader(&myVS);
     global.pshader.SetCallBackShader(&myPS);
@@ -202,13 +211,12 @@ bool SceneInit()
 
 void OnRender()
 {
-     global.main_pipeline.SceneBegin();
+     global.main_pipeline.BeginScene();
 
      rotateFactor += 0.1f;
-     global.main_pipeline.SetVertexBufferAndIndexBuffer(&global.object.vertexes, &global.object.indexes);
+     global.main_pipeline.SetVertexBufferAndIndexBuffer(&global.object[global.objectIdx].vertexes, &global.object[global.objectIdx].indexes);
 
      global.main_pipeline.constbuffer.ZEnable = SRE_TRUE;
-     global.main_pipeline.constbuffer.ClipEnable = SRE_FALSE;
      global.main_pipeline.constbuffer.CullEnable = SRE_TRUE;
      global.main_pipeline.constbuffer.CullMode = SRE_CULLMODE_CCW;
 
@@ -219,38 +227,32 @@ void OnRender()
      global.main_pipeline.SetPixelShader(&global.pshader);
      global.main_pipeline.SetRenderTarget(global.main_device.GetFrontFrameBuffer());
 
-     global.main_pipeline.SceneEnd();
+     global.main_pipeline.EndScene();
 
 }
 
-
-
-void OnResize(INT width, INT height)
-{
-    //main_device.Resize(width, height);;
-}
 
 void OnKeyDown(UINT key)
 {
    switch (key)
    {
-   case 'A':
-      camera_lookat.x -= frameTime*camer_speed.x;
+   case '1':
+      global.objectIdx = 0;
       break;
-   case 'D':
-      camera_lookat.x += frameTime*camer_speed.x;
+   case '2':
+      global.objectIdx = 1;
       break;
-   case 'W':
-      camera_lookat.z += frameTime*camer_speed.x;
-      break;
-   case 'S':
-      camera_lookat.z -= frameTime*camer_speed.x;
+   case '3':
+      global.objectIdx = 2;
       break;
    case 'Q':
-      camera_lookat.y += frameTime*camer_speed.x;
+      global.lightIdx = 0;
+      break;
+   case 'W':
+      global.lightIdx = 1;
       break;
    case 'E':
-      camera_lookat.z -= frameTime*camer_speed.x;
+      global.lightIdx = 2;
       break;
    default:
       break;
@@ -280,11 +282,13 @@ void OnFrame()
     else
         FPS++;
 
+   //g_log.Write("PRESENT START");
    global.main_device.ClearFrame(0);
 
  	OnRender();
 
    global.main_device.Present();
+   //g_log.Write("PRESENT END");
 
 }
 
