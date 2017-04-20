@@ -294,6 +294,7 @@ namespace SRE {
 
         inline void  SetData(INT pos, const T & data);
         inline T  &   GetData(INT pos);
+        inline bool  Empty() const;
         void  SetDataSquare(INT sx, INT sy, INT ex, INT ey, const T & data);
         void  ResetData(const T & resetData);
         bool  ResetBuffer(T * resetData, INT size);
@@ -320,11 +321,17 @@ namespace SRE {
 
 
 
-    //=============================
+   //=============================
 	//Class Buffer functions
 	//
 	//
 	//=============================
+	template <typename T>
+	bool Buffer<T>::Empty() const
+	{
+	   return m_bufferSize<=0;
+	}
+
 	template <typename T>
 	void Buffer<T>::ResetData(const T & resetData)
 	{

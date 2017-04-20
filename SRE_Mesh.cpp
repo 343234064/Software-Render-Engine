@@ -164,6 +164,127 @@ namespace SRE {
    }
 
 
+   RESULT LoadObjMesh2(char* filePath,  Mesh* p_outmesh)
+   {
+       if(nullptr == filePath) return RESULT::INVALIDARG;
+       if(nullptr == p_outmesh) return RESULT::INVALIDARG;
+
+       std::ifstream file(filePath, std::ios::in);
+
+       std::string line;
+       std::string name="\0";
+       INT faceCount=0;
+       bool tex=false, nor=false;
+       std::vector<VERTEX3> vertexes;
+       std::vector<VEC3>      normals;
+       std::vector<VEC2>      texcoord;
+       std::vector<USINT>     indexes;
+
+       FLOAT x, y, z;
+       USINT  index;
+       while(getline(file, line))
+       {
+          if(line.substr(0,2)=="g ")
+          {
+              name = line.substr(2);
+          }
+          if(line.substr(0,2)== "v ")
+          {
+              std::istringstream s(line.substr(2));
+              s>>x;s>>y;s>>z;
+              vertexes.push_back(VERTEX3(x, y, z));
+          }
+          else if(line.substr(0,3)== "vt ")
+          {
+              std::istringstream s(line.substr(3));
+              s>>x;s>>y;
+              texcoord.push_back(VEC2(x, y));
+              tex=true;
+          }
+          else if(line.substr(0,3)== "vn ")
+          {
+              std::istringstream s(line.substr(3));
+              s>>x;s>>y;s>>z;
+              normals.push_back(VEC3(x, y, z));
+              nor=true;
+          }
+          else if(line.substr(0,2)== "f ")
+          {
+              std::istringstream s(line.substr(2));
+              USINT i=0;
+              while(i<3)
+              {
+                  s>>index;
+                  indexes.push_back(index);
+                  if(tex){
+                     s.ignore(line.size(), '/');
+                     s>>index;
+                     indexes.push_back(index);
+                  }
+                  if(nor){
+                     s.ignore(line.size(), '/');
+                     s>>index;
+                     indexes.push_back(index);
+                  }
+                  i++;
+              }
+              faceCount ++;
+           }
+       }
+
+       if(vertexes.size()>0)
+       {
+          BYTE*    vbuffer = nullptr;
+          USINT*   ibuffer = nullptr;
+
+          INT ver_num = 3*faceCount;
+          INT ind_num = 3*faceCount;
+          INT sizever3 = sizeof(VERTEX3);
+          INT sizevec3 = sizeof(VEC3);
+          INT sizevec2 = sizeof(VEC2);
+
+          INT per_ver_size = sizever3;
+
+          if(nor) per_ver_size += sizevec3;
+          if(tex) per_ver_size += sizevec2;
+
+          vbuffer = new BYTE[ver_num*per_ver_size];
+          if(nullptr == vbuffer) return RESULT::OUTMEMORY;
+
+          ibuffer = new USINT[ind_num];
+          if(nullptr == ibuffer) return RESULT::OUTMEMORY;
+
+          INT i=0, vn=0;
+          while(i<indexes.size())
+          {
+              *(VERTEX3*)(vbuffer + vn*per_ver_size) = vertexes[indexes[i]-1];
+
+             if(tex)
+                *(VEC2*)(vbuffer + vn*per_ver_size + sizever3) = texcoord[indexes[++i]-1];
+
+             if(nor)
+                *(VEC3*)(vbuffer + vn*per_ver_size + sizever3 + sizevec2) = normals[indexes[++i]-1];
+
+             vn++;
+             i++;
+          }
+
+
+
+          RESULT re = CreateVertexBuffer(ver_num, per_ver_size, SRE_FORMAT_VERTEX_XYZ | SRE_FORMAT_ATTRIBUTE_TEXCOORDUV | SRE_FORMAT_ATTRIBUTE_NORMAL,
+                                                           vbuffer,  &(p_outmesh->vertexes));
+          if(re == RESULT::SUCC)
+          {
+             p_outmesh->name = name;
+          }
+          delete[] vbuffer;
+          delete[] ibuffer;
+          return re;
+       }
+       else
+          return RESULT::FAIL;
+
+   }
 
 
 

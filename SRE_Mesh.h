@@ -25,7 +25,7 @@ namespace SRE {
 	//Public functions
 	//===========================================
     RESULT LoadObjMesh(char* filePath,  Mesh* p_outmesh);
-    RESULT LoadObjMeshFromGroup(char* filePath,  char* groupName, Mesh* p_outmesh);
+    RESULT LoadObjMesh2(char* filePath,  Mesh* p_outmesh);
 
 
 

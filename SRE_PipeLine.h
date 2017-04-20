@@ -1184,11 +1184,11 @@ namespace SRE {
         inline void SetClipZValue(FLOAT z_min, FLOAT z_max);
         inline void SetClipTolerance(FLOAT tolerance);
         inline void SetPixelShader(PixelShader* pshader);
-        inline void SetSubProcessors(USINT num);
         inline void SetSamplePixelBlockSize(USINT size);
         inline void SetSampleStep(USINT step);
         inline void SetRenderTarget(RenderTexture* target);
         inline void SetObserver(BasicObserver* observer);
+        void SetSubProcessors(USINT num);
         RESULT ResetFrameSize(USINT width, USINT height);
         void ResetZbuffer(FLOAT maxDepth);
 

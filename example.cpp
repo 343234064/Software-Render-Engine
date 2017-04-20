@@ -52,7 +52,7 @@ public:
    VertexShader      vshader;
    PixelShader         pshader;
 
-   Mesh                  object[3];
+   Mesh                  object[4];
    INT                     objectIdx;
    Light                  sceneLight[3];
    INT                     lightIdx;
@@ -115,7 +115,7 @@ MAT44 project = MatrixProjectPerspective(camera_view.x, camera_view.y, znear, zf
 MAT44 viewproject = Multiply(view, project);
 
 FLOAT rotateFactor = 1.0f;
-FLOAT rotateAngle = PI/6.0f;
+FLOAT rotateAngle = PI/4.0f;
 
 
 VSOutput* myVS(BYTE* v, VariableBuffer* varbuffer)
@@ -159,22 +159,30 @@ Color4 myPS(PSInput & in)
 bool SceneInit()
 {
 
-   char* filePath1 = ".\\resources\\rabbit_high.obj";
-   if(RESULT::SUCC != LoadObjMesh(filePath1, &global.object[0]))
+   char* filePath1 = ".\\resources\\rabbit_high_2.obj";
+   if(RESULT::SUCC != LoadObjMesh2(filePath1, &global.object[0]))
    {
       cout<<"Load obj file failed, Please Check the file path"<<endl;
       return false;
    }
 
-   char* filePath2 = ".\\resources\\dragon_high.obj";
-   if(RESULT::SUCC != LoadObjMesh(filePath2, &global.object[1]))
+   char* filePath2 = ".\\resources\\dragon_high_2.obj";
+   if(RESULT::SUCC != LoadObjMesh2(filePath2, &global.object[1]))
    {
       cout<<"Load obj file failed, Please Check the file path"<<endl;
       return false;
    }
 
-   char* filePath3 = ".\\resources\\Cube.obj";
-   if(RESULT::SUCC != LoadObjMesh(filePath3, &global.object[2]))
+   char* filePath3 = ".\\resources\\dragon_high_3.obj";
+   if(RESULT::SUCC != LoadObjMesh2(filePath3, &global.object[2]))
+   {
+      cout<<"Load obj file failed, Please Check the file path"<<endl;
+      return false;
+   }
+
+
+   char* filePath4 = ".\\resources\\Cube.obj";
+   if(RESULT::SUCC != LoadObjMesh(filePath4, &global.object[3]))
    {
       cout<<"Load obj file failed, Please Check the file path"<<endl;
       return false;
@@ -193,7 +201,7 @@ bool SceneInit()
 
     global.sceneLight[2]  = Light(VEC3(1.5f, 1.0f, 0.0f),
                                                 VEC3(-1.0f, -1.0f, 0.0f),
-                                                Color3(120, 190, 255),
+                                                Color3(120, 120, 255),
                                                 1.1f);
 
     global.vshader.SetCallBackShader(&myVS);
@@ -202,7 +210,6 @@ bool SceneInit()
     global.main_pipeline.SetSamplePixelBlockSize(300);
     global.main_pipeline.SetSampleStep(1);
     global.main_pipeline.SetClipZValue(znear, zfar);
-
 
     global.main_pipeline.SetObserver(&global.pileLineObserver);
 
@@ -244,6 +251,9 @@ void OnKeyDown(UINT key)
       break;
    case '3':
       global.objectIdx = 2;
+      break;
+   case '4':
+      global.objectIdx = 3;
       break;
    case 'Q':
       global.lightIdx = 0;

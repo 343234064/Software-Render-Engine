@@ -156,7 +156,7 @@ namespace SRE {
             }
 
             INT vertexNum = m_pCurrentHandleVbuffer->GetVertexNumber();
-            if(nullptr != m_pCurrentHandleIbuffer)
+            if(nullptr != m_pCurrentHandleIbuffer && !m_pCurrentHandleIbuffer->Empty())
             {
                 if(actualIndex3 >= m_pCurrentHandleIbuffer->GetBufferSize())
                 {
