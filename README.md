@@ -3,7 +3,7 @@ A software render engine.
 
 * Using C++.
 * Multithreading.
-* Not finish.
+* 
 
 Current Process:
 * 1.Basic math classes and transform functions completed 
@@ -14,5 +14,5 @@ Current Process:
 * 6.VertexPostProcessor completed
 * 7.Rasterizer completed
 * 8.Basic PileLine completed
-* 9.Testing ....
+* 9.All Completed
 
